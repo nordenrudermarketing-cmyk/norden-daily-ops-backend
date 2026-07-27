@@ -49,12 +49,17 @@ npm run dev
 
 部署後打開 Railway 給的網址就會直接看到登入頁。
 
+新增：
+
+- `assign.html` — 小隊長：今日房號分配（下拉選單指派每間房給誰，一次儲存）
+  - 可從 checklist.html 上方連結進入
+  - 對應 API：`GET /api/rooms`、`GET /api/staff/list`、
+    `GET /api/room-cleanings/assignments`、`POST /api/room-cleanings/assign-batch`
+
 ## 已知限制 / 下一步
 
-- **房號分配還沒有介面**：目前房務同仁打開打卡頁，看到的是資料庫裡已經存在的
-  `room_cleanings` 紀錄（也就是 `POST /api/room-cleanings/assign` 建立的）。小隊長
-  「今天誰掃哪幾間」的分配畫面還沒做，現階段要先手動呼叫 API 或直接在 Supabase
-  Table Editor 裡建立當天的紀錄。這是下一步優先要做的功能。
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
   資料庫會變得肥大。之後建議改成上傳到 Supabase Storage，資料庫只存網址連結。
 - 主管端電腦儀表板還沒做（今日獎金總表、缺失趨勢、樓主細清進度）。
+- 目前任何「房務」類角色都能看到房號分配連結，還沒有依「當天是否為小隊長」
+  （`daily_shift_assignments.is_team_lead`）做權限限制，先靠人工自律使用。

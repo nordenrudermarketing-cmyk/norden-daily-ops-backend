@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>房號分配 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>房號分配</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="checklist.html">回打卡頁</a>
+    </div>
+
+    <div class="field">
+      <label for="workDate">日期</label>
+      <input type="text" id="workDate">
+    </div>
+
+    <div class="summary-bar">
+      <div class="summary-item">
+        <div class="summary-label">已分配</div>
+        <div class="summary-value" id="sumAssigned">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">未分配</div>
+        <div class="summary-value danger" id="sumUnassigned">0</div>
+      </div>
+    </div>
+
+    <div id="roomList"></div>
+
+    <div style="margin-top:16px;">
+      <button class="btn" id="saveBtn">儲存分配</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="assign.js"></script>
+</body>
+</html>

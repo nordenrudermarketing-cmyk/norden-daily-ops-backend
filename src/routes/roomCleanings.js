@@ -20,6 +20,45 @@ router.post('/assign', async (req, res) => {
   res.json(data);
 });
 
+// POST /api/room-cleanings/assign-batch
+// { branch_id, work_date, assignments: [{ room_id, staff_id }, ...] }
+// 小隊長：一次分配當天全部房號
+router.post('/assign-batch', async (req, res) => {
+  const { work_date, assignments } = req.body;
+  if (!Array.isArray(assignments) || assignments.length === 0) {
+    return res.status(400).json({ error: '沒有分配任何房號' });
+  }
+
+  const rows = assignments.map((a) => ({
+    room_id: a.room_id,
+    cleaned_by: a.staff_id,
+    work_date,
+    status: 'pending',
+  }));
+
+  const { data, error } = await supabase
+    .from('room_cleanings')
+    .upsert(rows, { onConflict: 'room_id,work_date' })
+    .select();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// GET /api/room-cleanings/assignments?branch_id=xxx&date=2026-07-27
+// 小隊長：查看當天已分配的狀況（含未分配房號清單，由前端跟 /api/rooms 比對）
+router.get('/assignments', async (req, res) => {
+  const { branch_id, date } = req.query;
+  const { data, error } = await supabase
+    .from('room_cleanings')
+    .select('id, room_id, status, rooms!inner(room_number, floor, is_large, branch_id), staff:cleaned_by(id, name)')
+    .eq('work_date', date)
+    .eq('rooms.branch_id', branch_id);
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 // GET /api/room-cleanings/mine?staff_id=xxx&date=2026-07-27
 // 房務同仁：今日負責的房號清單
 router.get('/mine', async (req, res) => {

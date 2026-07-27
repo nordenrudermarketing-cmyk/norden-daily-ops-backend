@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import staffRoutes from './routes/staff.js';
 import roomCleaningRoutes from './routes/roomCleanings.js';
 import bonusRoutes from './routes/bonus.js';
+import roomsRoutes from './routes/rooms.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'norden-d
 app.use('/api', staffRoutes);
 app.use('/api/room-cleanings', roomCleaningRoutes);
 app.use('/api/bonus', bonusRoutes);
+app.use('/api/rooms', roomsRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

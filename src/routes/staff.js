@@ -20,4 +20,21 @@ router.post('/login', async (req, res) => {
   res.json(data);
 });
 
+// GET /api/staff/list?branch_id=xxx&category=housekeeping
+// 該館某類職務的在職同仁清單（給小隊長分配房號用）
+router.get('/staff/list', async (req, res) => {
+  const { branch_id, category } = req.query;
+  let query = supabase
+    .from('staff')
+    .select('id, name, roles!inner(name, category)')
+    .eq('branch_id', branch_id)
+    .eq('is_active', true);
+
+  if (category) query = query.eq('roles.category', category);
+
+  const { data, error } = await query.order('name');
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 export default router;
