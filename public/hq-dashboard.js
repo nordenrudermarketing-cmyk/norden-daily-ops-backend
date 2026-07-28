@@ -44,9 +44,84 @@ async function loadOverview() {
       <div class="metric-line"><span>未處理缺失</span><span class="val ${b.unresolved_defects > 0 ? 'warn' : ''}">${b.unresolved_defects}${b.oldest_defect_days !== null ? `（最久 ${b.oldest_defect_days} 天）` : ''}</span></div>
       <div class="metric-line"><span>店經理巡館完成</span><span class="val">${b.manager_checklist_done} / 8</span></div>
       <div class="metric-line"><span>待處理總公司任務</span><span class="val ${b.pending_hq_tasks > 0 ? 'warn' : ''}">${b.pending_hq_tasks}</span></div>
+      <p style="font-size:10.5px;color:var(--accent);margin:8px 0 0;">點卡片查看實際內容 ▾</p>
+      <div class="branch-detail" style="display:none;"></div>
     `;
+
+    let loaded = false;
+    card.addEventListener('click', async (e) => {
+      const detail = card.querySelector('.branch-detail');
+      if (e.target.closest('button')) return; // 避免點到裡面的按鈕又觸發收合
+      const showing = detail.style.display !== 'none';
+      detail.style.display = showing ? 'none' : 'block';
+      if (!showing && !loaded) {
+        loaded = true;
+        await loadBranchDetail(b.branch_id, detail);
+      }
+    });
+
     grid.appendChild(card);
   });
+}
+
+async function loadBranchDetail(branchId, container) {
+  container.innerHTML = '<p class="empty-state" style="padding:10px 0;">載入中…</p>';
+
+  const [anomaliesRes, defectsRes] = await Promise.all([
+    fetch(`${API}/api/issues/anomalies?branch_id=${branchId}`).then((r) => r.json()),
+    fetch(`${API}/api/issues/list?branch_id=${branchId}&resolved=false`).then((r) => r.json()),
+  ]);
+
+  let html = '';
+
+  html += '<h4>系統偵測異常</h4>';
+  if (anomalies_empty(anomaliesRes)) {
+    html += '<p class="item" style="color:var(--ink-soft);">目前沒有</p>';
+  } else {
+    anomaliesRes.forEach((a) => {
+      html += `<div class="item">
+        ${a.description}
+        <div class="meta">${new Date(a.detected_at).toLocaleDateString('zh-TW')}</div>
+        <button data-resolve-anomaly="${a.id}">確認處理</button>
+      </div>`;
+    });
+  }
+
+  html += '<h4 style="margin-top:10px;">未處理缺失（最新10筆）</h4>';
+  const topDefects = (defectsRes || []).slice(0, 10);
+  if (topDefects.length === 0) {
+    html += '<p class="item" style="color:var(--ink-soft);">目前沒有</p>';
+  } else {
+    topDefects.forEach((d) => {
+      const sourceLabel = { room: '客房', public_area: '公共空間', deep_clean: '細清', shift_task: '客務班別任務' }[d.source_type] || d.source_type;
+      html += `<div class="item">
+        <strong>${sourceLabel}${d.location_label ? '・' + d.location_label : ''}</strong>　${d.description || ''}
+        <div class="meta">${d.staff?.name || ''}・${new Date(d.reported_at).toLocaleString('zh-TW')}</div>
+        <button data-resolve-defect="${d.id}">標記已處理</button>
+      </div>`;
+    });
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('[data-resolve-anomaly]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await fetch(`${API}/api/issues/anomalies/${btn.dataset.resolveAnomaly}/resolve`, { method: 'POST' });
+      loadBranchDetail(branchId, container);
+      loadOverview();
+    });
+  });
+  container.querySelectorAll('[data-resolve-defect]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await fetch(`${API}/api/issues/${btn.dataset.resolveDefect}/resolve`, { method: 'POST' });
+      loadBranchDetail(branchId, container);
+      loadOverview();
+    });
+  });
+}
+
+function anomalies_empty(arr) {
+  return !arr || arr.length === 0;
 }
 
 async function loadTasks() {
