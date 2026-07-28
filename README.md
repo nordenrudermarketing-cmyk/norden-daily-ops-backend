@@ -56,6 +56,11 @@ npm run dev
   - 對應 API：`GET /api/rooms`、`GET /api/staff/list`、
     `GET /api/room-cleanings/assignments`、`POST /api/room-cleanings/assign-batch`
 
+- `dashboard.html` — 店經理：電腦版營運總覽（今日房況、房務業績獎金總表、未處理缺失、
+  本月細清進度）
+  - 對應 API：`GET /api/dashboard/summary`
+  - 登入時角色若為「店經理」會自動導向這頁
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時

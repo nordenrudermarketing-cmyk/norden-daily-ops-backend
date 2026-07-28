@@ -38,7 +38,9 @@ async function doLogin() {
 
 function routeByRole(staff) {
   const roleName = staff.roles?.name || '';
-  if (roleName.includes('房務')) {
+  if (roleName === '店經理') {
+    window.location.href = 'dashboard.html';
+  } else if (roleName.includes('房務')) {
     window.location.href = 'checklist.html';
   } else if (roleName === '客務C班') {
     window.location.href = 'inspect.html';

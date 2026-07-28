@@ -8,6 +8,7 @@ import staffRoutes from './routes/staff.js';
 import roomCleaningRoutes from './routes/roomCleanings.js';
 import bonusRoutes from './routes/bonus.js';
 import roomsRoutes from './routes/rooms.js';
+import dashboardRoutes from './routes/dashboard.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use('/api', staffRoutes);
 app.use('/api/room-cleanings', roomCleaningRoutes);
 app.use('/api/bonus', bonusRoutes);
 app.use('/api/rooms', roomsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));
