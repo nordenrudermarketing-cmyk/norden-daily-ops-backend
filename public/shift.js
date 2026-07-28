@@ -20,6 +20,7 @@ if (shiftCode === 'C') {
 document.getElementById('reportCancel').addEventListener('click', closeReportOverlay);
 document.getElementById('reportSubmit').addEventListener('click', submitReport);
 let activeReportTask = null;
+let activeReportTaskId = null;
 
 loadTasks();
 
@@ -62,7 +63,7 @@ function renderTasks(tasks) {
         <div class="action-row">
           <button class="danger-outline">回報異常</button>
         </div>`;
-      card.querySelector('button').addEventListener('click', () => openReportOverlay(t.task_name));
+      card.querySelector('button').addEventListener('click', () => openReportOverlay(t.id, t.task_name));
     } else {
       card.innerHTML = `
         <div class="card-row">
@@ -74,13 +75,14 @@ function renderTasks(tasks) {
         </div>`;
       const [doneBtn, reportBtn] = card.querySelectorAll('button');
       doneBtn.addEventListener('click', () => completeTask(t.id));
-      reportBtn.addEventListener('click', () => openReportOverlay(t.task_name));
+      reportBtn.addEventListener('click', () => openReportOverlay(t.id, t.task_name));
     }
     listEl.appendChild(card);
   });
 }
 
-function openReportOverlay(taskName) {
+function openReportOverlay(taskId, taskName) {
+  activeReportTaskId = taskId;
   activeReportTask = taskName;
   document.getElementById('reportTaskTitle').textContent = `回報異常・${taskName}`;
   document.getElementById('reportNote').value = '';
@@ -90,6 +92,7 @@ function openReportOverlay(taskName) {
 
 function closeReportOverlay() {
   document.getElementById('reportOverlay').style.display = 'none';
+  activeReportTaskId = null;
   activeReportTask = null;
 }
 
@@ -108,6 +111,7 @@ async function submitReport() {
       body: JSON.stringify({
         branch_id: staff.branch_id,
         source_type: 'shift_task',
+        source_id: activeReportTaskId,
         source_label: activeReportTask,
         reported_by: staff.id,
         description: note,
