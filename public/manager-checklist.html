@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>每日巡館 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>每日巡館</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div class="summary-bar">
+      <div class="summary-item">
+        <div class="summary-label">完成</div>
+        <div class="summary-value" id="sumDone">0</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">剩餘</div>
+        <div class="summary-value" id="sumRemaining">0</div>
+      </div>
+    </div>
+
+    <div id="taskList"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="manager-checklist.js"></script>
+</body>
+</html>

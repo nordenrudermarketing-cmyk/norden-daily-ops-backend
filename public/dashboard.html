@@ -19,6 +19,12 @@
   .miss { color: var(--danger); }
   .progress-bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 6px; }
   .progress-fill { height: 100%; background: var(--accent); }
+  .anomaly-banner { background: var(--danger-soft); border: 1px solid #e3bfae; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
+  .anomaly-banner .anomaly-title { font-size: 13px; font-weight: 600; color: var(--danger); margin: 0 0 8px; }
+  .anomaly-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #e3bfae; }
+  .anomaly-row:first-of-type { border-top: none; }
+  .anomaly-row p { margin: 0; font-size: 13px; }
+  .anomaly-row button { flex-shrink: 0; font-size: 12px; padding: 6px 12px; border-radius: 8px; border: 1px solid #e3bfae; background: #fff; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -36,7 +42,11 @@
       <input type="text" id="viewDate">
     </div>
 
+    <div id="anomalyAlert"></div>
+
     <div style="margin-bottom:16px;">
+      <a href="manager-checklist.html" style="font-size:12px;color:var(--accent);">每日巡館清單 →</a>
+      &nbsp;&nbsp;
       <a href="schedule.html" style="font-size:12px;color:var(--accent);">排班表 →</a>
       &nbsp;&nbsp;
       <a href="templates.html" style="font-size:12px;color:var(--accent);">客務任務範本管理 →</a>

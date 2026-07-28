@@ -129,7 +129,7 @@ router.post('/:id/inspect', async (req, res) => {
       defect_photo_url: has_defect ? defect_photo_url : null,
     })
     .eq('id', id)
-    .select()
+    .select('*, rooms(id, room_number, branch_id)')
     .single();
 
   if (error) return res.status(400).json({ error: error.message });
@@ -137,17 +137,65 @@ router.post('/:id/inspect', async (req, res) => {
   // 有缺失同步寫入統一缺失回報表，方便之後做異常趨勢分析
   if (has_defect) {
     await supabase.from('defect_logs').insert({
-      branch_id: req.body.branch_id ?? null,
+      branch_id: req.body.branch_id ?? data.rooms?.branch_id ?? null,
       source_type: 'room',
       source_id: id,
       reported_by: checked_by,
       description: defect_note,
       photo_url: defect_photo_url,
     });
+
+    // 檢查這間房最近是不是反覆出問題，是的話自動產生系統異常警示
+    await checkRoomRepeatAnomaly(data.rooms, req.body.branch_id ?? data.rooms?.branch_id);
   }
 
   res.json(data);
 });
+
+// 同一間房在 30 天內累積到門檻次數（預設 3 次），自動產生一筆系統偵測異常
+// 已經有一筆未處理的同類型異常時不會重複產生，避免洗版
+async function checkRoomRepeatAnomaly(room, branchId) {
+  if (!room?.id) return;
+  const THRESHOLD = 3;
+  const WINDOW_DAYS = 30;
+
+  const { data: cleaningsForRoom } = await supabase
+    .from('room_cleanings')
+    .select('id')
+    .eq('room_id', room.id);
+  const cleaningIds = (cleaningsForRoom ?? []).map((c) => c.id);
+  if (cleaningIds.length === 0) return;
+
+  const since = new Date();
+  since.setDate(since.getDate() - WINDOW_DAYS);
+
+  const { count } = await supabase
+    .from('defect_logs')
+    .select('id', { count: 'exact', head: true })
+    .eq('source_type', 'room')
+    .in('source_id', cleaningIds)
+    .gte('reported_at', since.toISOString());
+
+  if ((count ?? 0) < THRESHOLD) return;
+
+  const { data: existing } = await supabase
+    .from('anomaly_logs')
+    .select('id')
+    .eq('type', 'repeat_defect_room')
+    .eq('related_source_id', room.id)
+    .eq('resolved', false)
+    .maybeSingle();
+
+  if (existing) return; // 已經有一筆待處理的了，不重複產生
+
+  await supabase.from('anomaly_logs').insert({
+    branch_id: branchId,
+    type: 'repeat_defect_room',
+    related_source_type: 'room',
+    related_source_id: room.id,
+    description: `${room.room_number} 房近${WINDOW_DAYS}天已累積 ${count} 次異常回報，建議安排檢查根本原因`,
+  });
+}
 
 // POST /api/room-cleanings/:id/resolve-defect
 // 房務同仁：缺失已經處理好了（例如補了毛巾），標記解決

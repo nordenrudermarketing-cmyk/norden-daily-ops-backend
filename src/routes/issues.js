@@ -120,4 +120,42 @@ router.get('/room-trends', async (req, res) => {
   res.json(result);
 });
 
+// GET /api/issues/anomalies?branch_id=xxx
+// 系統自動偵測出來的異常（目前是「同一間房反覆出問題」這種），給店經理總覽用
+router.get('/anomalies', async (req, res) => {
+  const { branch_id } = req.query;
+  const { data, error } = await supabase
+    .from('anomaly_logs')
+    .select('id, type, description, detected_at, related_source_type, related_source_id')
+    .eq('branch_id', branch_id)
+    .eq('resolved', false)
+    .order('detected_at', { ascending: false });
+
+  if (error) return res.status(400).json({ error: error.message });
+
+  const roomIds = data.filter((a) => a.related_source_type === 'room').map((a) => a.related_source_id);
+  let roomLabels = {};
+  if (roomIds.length > 0) {
+    const { data: rooms } = await supabase.from('rooms').select('id, room_number').in('id', roomIds);
+    (rooms ?? []).forEach((r) => { roomLabels[r.id] = r.room_number; });
+  }
+
+  res.json(data.map((a) => ({ ...a, location_label: roomLabels[a.related_source_id] || null })));
+});
+
+// POST /api/issues/anomalies/:id/resolve
+// 店經理確認已經處理根本原因（例如已請維修、已深層清潔），下一次累積到門檻才會再跳新的一筆
+router.post('/anomalies/:id/resolve', async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from('anomaly_logs')
+    .update({ resolved: true, resolved_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 export default router;

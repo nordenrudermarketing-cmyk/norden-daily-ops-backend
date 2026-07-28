@@ -13,6 +13,35 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 });
 
 loadSummary();
+loadAnomalies();
+
+async function loadAnomalies() {
+  const el = document.getElementById('anomalyAlert');
+  try {
+    const res = await fetch(`${API}/api/issues/anomalies?branch_id=${staff.branch_id}`);
+    const anomalies = await res.json();
+    if (!anomalies || anomalies.length === 0) { el.innerHTML = ''; return; }
+
+    el.innerHTML = `<div class="anomaly-banner">
+      <p class="anomaly-title">⚠ 系統偵測異常（${anomalies.length}）</p>
+      ${anomalies.map((a) => `
+        <div class="anomaly-row" data-id="${a.id}">
+          <p>${a.description}</p>
+          <button>確認處理</button>
+        </div>`).join('')}
+    </div>`;
+
+    el.querySelectorAll('.anomaly-row button').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const row = e.target.closest('.anomaly-row');
+        await fetch(`${API}/api/issues/anomalies/${row.dataset.id}/resolve`, { method: 'POST' });
+        loadAnomalies();
+      });
+    });
+  } catch (err) {
+    el.innerHTML = '';
+  }
+}
 
 async function loadSummary() {
   try {

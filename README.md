@@ -111,6 +111,24 @@ npm run dev
     `GET /api/issues/room-trends`
   - 可從店經理儀表板上方連結進入
 
+- **系統偵測異常（自動）**：同一間房在30天內累積到3次異常回報（不管有沒有處理過都算），
+  系統會自動在 `anomaly_logs` 產生一筆警示，店經理登入儀表板會直接看到紅色提示區塊，
+  不用自己去異常處理頁翻。已經有一筆待處理的同類型警示不會重複產生，避免洗版。
+  店經理按「確認處理」後，下一次再累積到門檻才會產生新的一筆。
+  - 對應 API：`GET /api/issues/anomalies`、`POST /api/issues/anomalies/:id/resolve`
+  - 偵測邏輯寫在 `POST /api/room-cleanings/:id/inspect` 裡，目前門檻（3次/30天）是寫死在
+    程式碼裡，之後如果想讓店經理自己調整門檻，可以再加設定頁面
+
+- `manager-checklist.html` — 店經理：每日巡館清單（對應原始文件的八項工作：每日巡館、
+  住房率確認、人力配置確認、客訴與旅客反饋、設備維修案件、房務及櫃檯品質抽查、
+  同仁教育與溝通、異常事件回報）
+  - 「住房率確認」「人力配置確認」會自動帶入系統既有數字（今日房務完成數、今日排班
+    人數），不用手動再查一次
+  - 對應 API：`GET /api/manager-checklist/today`、`POST /api/manager-checklist/:id/complete`
+  - 可從店經理儀表板上方連結進入
+
+**部署前多一步**：先到 Supabase SQL Editor 執行 `schema_v5_manager_checklist.sql`。
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
