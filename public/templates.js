@@ -48,12 +48,38 @@ function renderTable(templates) {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'small-btn';
     toggleBtn.textContent = t.is_active === false ? '重新啟用' : '停用';
-    toggleBtn.addEventListener('click', () => toggleActive(t.id, t.is_active === false, toggleBtn, tr));
+    toggleBtn.addEventListener('click', () => {
+      // 每次點擊都用目前畫面上的實際狀態判斷，不要用一開始載入時的舊資料
+      const currentlyInactive = tr.classList.contains('inactive');
+      toggleActive(t.id, currentlyInactive, toggleBtn, tr);
+    });
 
     statusTd.appendChild(saveBtn);
     statusTd.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'small-btn';
+    deleteBtn.textContent = '刪除';
+    deleteBtn.style.marginLeft = '6px';
+    deleteBtn.style.color = 'var(--danger)';
+    deleteBtn.addEventListener('click', () => deleteTemplate(t.id, t.task_name, tr));
+    statusTd.appendChild(deleteBtn);
+
     body.appendChild(tr);
   });
+}
+
+async function deleteTemplate(id, taskName, tr) {
+  if (!confirm(`確定要刪除「${taskName}」嗎？這個動作無法復原。`)) return;
+
+  const res = await fetch(`${API}/api/templates/shift-tasks/${id}`, { method: 'DELETE' });
+  const result = await res.json();
+
+  if (!res.ok) {
+    alert(result.error || '刪除失敗');
+    return;
+  }
+  tr.remove();
 }
 
 async function saveRow(id, tr) {
