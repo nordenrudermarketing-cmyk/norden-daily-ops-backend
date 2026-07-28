@@ -25,6 +25,15 @@
   .anomaly-row:first-of-type { border-top: none; }
   .anomaly-row p { margin: 0; font-size: 13px; }
   .anomaly-row button { flex-shrink: 0; font-size: 12px; padding: 6px 12px; border-radius: 8px; border: 1px solid #e3bfae; background: #fff; cursor: pointer; }
+  .hq-banner { background: var(--accent-soft); border: 1px solid #b9d3c5; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
+  .hq-banner .hq-title { font-size: 13px; font-weight: 600; color: var(--accent); margin: 0 0 8px; }
+  .hq-row { padding: 8px 0; border-top: 1px solid #b9d3c5; }
+  .hq-row:first-of-type { border-top: none; }
+  .hq-row p.t { margin: 0; font-size: 13px; font-weight: 600; }
+  .hq-row p.d { margin: 2px 0 6px; font-size: 12px; color: var(--ink-soft); }
+  .hq-row .row-actions { display: flex; gap: 6px; }
+  .hq-row input[type="text"] { flex: 1; font-size: 12px; padding: 6px; }
+  .hq-row button { font-size: 12px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -43,6 +52,7 @@
     </div>
 
     <div id="anomalyAlert"></div>
+    <div id="hqTaskAlert"></div>
 
     <div style="margin-bottom:16px;">
       <a href="manager-checklist.html" style="font-size:12px;color:var(--accent);">每日巡館清單 →</a>

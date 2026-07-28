@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>總公司總覽 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 1000px; }
+  .branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .branch-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .branch-card.stale { border-color: #e3bfae; background: var(--danger-soft); }
+  .branch-card h3 { margin: 0 0 10px; font-size: 16px; }
+  .metric-line { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.06); }
+  .metric-line:first-of-type { border-top: none; }
+  .metric-line .val { font-weight: 600; }
+  .metric-line .val.warn { color: var(--danger); }
+  .task-form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+  .task-form .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .task-form .row .field { flex: 1; min-width: 160px; margin-bottom: 10px; }
+  table.tasks { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  table.tasks th, table.tasks td { text-align: left; padding: 8px 10px; font-size: 12.5px; border-bottom: 1px solid var(--line); }
+  table.tasks th { background: var(--accent-soft); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>總公司總覽</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <button class="logout-link" id="logoutBtn">登出</button>
+    </div>
+
+    <div class="branch-grid" id="branchGrid"></div>
+
+    <div class="task-form">
+      <p style="font-weight:500;margin:0 0 12px;">交辦新任務</p>
+      <div class="row">
+        <div class="field"><label>標題</label><input type="text" id="taskTitle" placeholder="例如：更新公區防颱準備"></div>
+        <div class="field"><label>目標館別</label><select id="taskBranch"></select></div>
+        <div class="field"><label>期限</label><input type="text" id="taskDue" placeholder="YYYY-MM-DD"></div>
+      </div>
+      <div class="field"><label>說明</label><textarea id="taskDesc"></textarea></div>
+      <div class="field"><label>交辦人</label><input type="text" id="taskAssignedBy"></div>
+      <button class="primary" id="taskSubmit">送出任務</button>
+    </div>
+
+    <p style="font-weight:500;margin:0 0 10px;">所有交辦任務</p>
+    <table class="tasks" id="taskTable">
+      <thead><tr><th>館別</th><th>標題</th><th>期限</th><th>狀態</th><th>回報</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="hq-dashboard.js"></script>
+</body>
+</html>

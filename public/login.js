@@ -58,7 +58,9 @@ function routeByRole(staff) {
 
   // 沒有排班資料，或今天的代碼還沒有對應頁面，退回用固定職務判斷
   const roleName = staff.roles?.name || '';
-  if (roleName === '店經理') {
+  if (roleName === '總公司') {
+    window.location.href = 'hq-dashboard.html';
+  } else if (roleName === '店經理') {
     window.location.href = 'dashboard.html';
   } else if (roleName.includes('房務')) {
     window.location.href = 'checklist.html';

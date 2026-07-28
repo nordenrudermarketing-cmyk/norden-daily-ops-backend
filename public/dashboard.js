@@ -14,6 +14,44 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 loadSummary();
 loadAnomalies();
+loadHqTasks();
+
+async function loadHqTasks() {
+  const el = document.getElementById('hqTaskAlert');
+  try {
+    const res = await fetch(`${API}/api/hq/tasks/branch?branch_id=${staff.branch_id}&status=pending`);
+    const tasks = await res.json();
+    if (!tasks || tasks.length === 0) { el.innerHTML = ''; return; }
+
+    el.innerHTML = `<div class="hq-banner">
+      <p class="hq-title">📋 總公司交辦事項（${tasks.length}）</p>
+      ${tasks.map((t) => `
+        <div class="hq-row" data-id="${t.id}">
+          <p class="t">${t.title}${t.due_date ? `　期限：${t.due_date}` : ''}</p>
+          <p class="d">${t.description || ''}${t.assigned_by ? `　－ ${t.assigned_by}` : ''}</p>
+          <div class="row-actions">
+            <input type="text" placeholder="回報內容（選填）">
+            <button>標記完成</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+    el.querySelectorAll('.hq-row button').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const row = e.target.closest('.hq-row');
+        const notes = row.querySelector('input').value;
+        await fetch(`${API}/api/hq/tasks/${row.dataset.id}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed_by: staff.id, response_notes: notes }),
+        });
+        loadHqTasks();
+      });
+    });
+  } catch (err) {
+    el.innerHTML = '';
+  }
+}
 
 async function loadAnomalies() {
   const el = document.getElementById('anomalyAlert');
