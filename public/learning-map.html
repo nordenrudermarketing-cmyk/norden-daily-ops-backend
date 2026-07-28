@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學習地圖 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 820px; }
+  .picker-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .picker-row .field { margin-bottom: 0; min-width: 160px; }
+  .progress-summary { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
+  .progress-summary .big { font-size: 24px; font-weight: 600; }
+  .unit-group-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; }
+  .unit-topic-title { font-size: 12px; color: var(--accent); margin: 14px 0 4px; }
+  .unit-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; }
+  .unit-row.pass { border-color: #b9d3c5; background: var(--accent-soft); }
+  .unit-row.fail { border-color: #e3bfae; background: var(--danger-soft); }
+  .unit-name { font-size: 13px; margin: 0 0 8px; }
+  .unit-fields { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .unit-fields input, .unit-fields select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+  .unit-fields input[type="text"] { width: 100px; }
+  .unit-fields input[type="date"] { width: 130px; }
+  .unit-fields button { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  .exam-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>新人學習地圖</h1>
+        <p>教學者可以直接在這裡填培訓員、日期、驗收結果</p>
+      </div>
+      <a class="logout-link" href="index.html">回登入</a>
+    </div>
+
+    <div class="picker-row">
+      <div class="field">
+        <label for="categorySelect">職務類別</label>
+        <select id="categorySelect">
+          <option value="housekeeping">房務</option>
+          <option value="frontdesk">客務</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="staffSelect">同仁</label>
+        <select id="staffSelect"></select>
+      </div>
+    </div>
+
+    <div class="progress-summary" id="progressSummary" style="display:none;">
+      <div class="big" id="progressBig">0%</div>
+      <div>
+        <p style="margin:0;font-size:13px;">已合格 <span id="progressPass">0</span> / <span id="progressTotal">0</span> 項</p>
+      </div>
+    </div>
+
+    <div id="unitsList"></div>
+
+    <div id="examSection" style="display:none;">
+      <div class="unit-group-title">整房實作考核</div>
+      <div id="examList"></div>
+      <div class="exam-card">
+        <p style="font-weight:500;margin:0 0 10px;">新增一筆考核紀錄</p>
+        <div class="field"><label>房間組成</label><input type="text" id="examBreakdown" placeholder="例如：四人房1、雙人房1、雙床房2、背包房2、4人背包房1(含外衛浴)"></div>
+        <div class="field"><label>時間限制（分鐘）</label><input type="text" id="examTimeLimit" value="240" inputmode="numeric"></div>
+        <div class="field"><label>分數</label><input type="text" id="examScore" inputmode="numeric"></div>
+        <div class="field"><label>考核者</label><input type="text" id="examAssessor"></div>
+        <div class="field"><label>備註</label><textarea id="examNotes"></textarea></div>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <input type="checkbox" id="examPassed" style="width:auto;"> 合格
+        </label>
+        <button class="primary" id="examSubmit">新增考核紀錄</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="learning-map.js"></script>
+</body>
+</html>
