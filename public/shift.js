@@ -4,7 +4,7 @@ if (!staff) window.location.href = 'index.html';
 
 const today = new Date().toISOString().slice(0, 10);
 const roleName = staff.roles?.name || '';
-const shiftCode = roleName.replace('客務', '').replace('班', ''); // 客務A班 -> A
+const shiftCode = staff.todayShiftCode || roleName.replace('客務', '').replace('班', ''); // 有排班用排班，沒有就退回固定職務
 
 document.getElementById('staffLine').textContent = `${staff.name}・${roleName}・${today}`;
 document.getElementById('logoutBtn').addEventListener('click', () => {

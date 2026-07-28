@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>任務範本管理 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  table.tpl { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  table.tpl th, table.tpl td { border-bottom: 1px solid var(--line); padding: 8px; font-size: 13px; text-align: left; }
+  table.tpl th { background: var(--accent-soft); font-weight: 500; }
+  table.tpl input, table.tpl select { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+  table.tpl tr.inactive { opacity: 0.45; }
+  .small-btn { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+  .new-row-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .new-row-form .field { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>客務班別任務範本管理</h1>
+        <p>異動後，同仁隔天打開任務頁就會看到最新內容</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="tpl" id="tplTable">
+        <thead>
+          <tr><th>班別</th><th>任務名稱</th><th>週期</th><th>週期內容</th><th>順序</th><th>狀態</th></tr>
+        </thead>
+        <tbody id="tplBody"></tbody>
+      </table>
+    </div>
+
+    <div class="new-row-form">
+      <p style="font-weight:500;margin:0 0 10px;">新增任務</p>
+      <div class="field"><label>班別</label>
+        <select id="newShift"><option value="A">A班</option><option value="B">B班</option><option value="C">C班</option></select>
+      </div>
+      <div class="field"><label>任務名稱</label><input type="text" id="newName" placeholder="例如：清冰箱、除霜"></div>
+      <div class="field"><label>週期</label>
+        <select id="newType">
+          <option value="daily">每天</option>
+          <option value="weekday">依星期（例如每週二四六）</option>
+          <option value="monthly_date">依日期（例如每月25號）</option>
+        </select>
+      </div>
+      <div class="field"><label>週期內容（daily 不用填；weekday 用 1-7 逗號分隔，1=週一；monthly_date 用日期數字逗號分隔）</label>
+        <input type="text" id="newValue" placeholder="例如：2,4,6 或 25">
+      </div>
+      <button class="primary" id="addBtn">新增</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="templates.js"></script>
+</body>
+</html>

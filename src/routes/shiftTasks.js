@@ -22,6 +22,7 @@ router.get('/today', async (req, res) => {
     .select('id, task_name, schedule_type, schedule_value, sort_order')
     .eq('branch_id', branch_id)
     .eq('shift_code', shift_code)
+    .eq('is_active', true)
     .order('sort_order');
 
   if (error) return res.status(400).json({ error: error.message });

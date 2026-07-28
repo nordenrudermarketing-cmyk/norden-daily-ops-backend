@@ -13,6 +13,8 @@ import deepCleanRoutes from './routes/deepClean.js';
 import shiftTasksRoutes from './routes/shiftTasks.js';
 import issuesRoutes from './routes/issues.js';
 import handoverRoutes from './routes/handover.js';
+import scheduleRoutes from './routes/schedule.js';
+import templatesRoutes from './routes/templates.js';
 
 dotenv.config();
 
@@ -33,6 +35,8 @@ app.use('/api/deep-clean', deepCleanRoutes);
 app.use('/api/shift-tasks', shiftTasksRoutes);
 app.use('/api/issues', issuesRoutes);
 app.use('/api/handover', handoverRoutes);
+app.use('/api/schedule', scheduleRoutes);
+app.use('/api/templates', templatesRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

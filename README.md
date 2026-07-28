@@ -85,6 +85,23 @@ npm run dev
 **部署前多一步**：先到 Supabase SQL Editor 執行 `schema_v3_handover.sql`（新增交班表
 的資料表），再上傳程式碼。
 
+- `schedule.html` — 店經理：排班表（取代 Excel）
+  - 依部門分組顯示同仁，每格是下拉選單選當天班別代碼
+  - 自動統計每人休假天數（跟目標天數不符會標紅）、每日客務/房務上班人數（低於門檻標紅）
+  - 點日期標題可切換「禁休日」（粉色），跟休假天數目標、最低上班人數都可以每月調整
+  - 對應 API：`GET/POST /api/schedule/*`
+  - **這是協助計算的工具，不會自動生成班表**——班別代碼要主管自己填，系統只負責統計跟警告
+- `templates.html` — 店經理：客務班別任務範本管理（新增/編輯/停用任務項目，不用等改程式碼）
+  - 對應 API：`GET/POST/PUT /api/templates/shift-tasks*`
+- `offday.html` — 排休日登入會看到的簡單頁面
+
+**登入流程改了**：現在登入時會先查今天的排班表（`staff_schedule`），如果today有排班紀錄，
+依實際排的班別代碼導向對應頁面（A/B→shift.html，C→inspect.html，房→checklist.html，
+1→offday.html）；如果今天沒有排班紀錄（例如還沒排班、或代碼是中/特/管/PT這種還沒對應頁面的），
+才會退回用同仁的固定職務判斷，維持原本行為當備援。
+
+**部署前多一步**：先到 Supabase SQL Editor 執行 `schema_v4_schedule.sql`。
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
@@ -92,6 +109,8 @@ npm run dev
 - 主管端電腦儀表板還沒做（今日獎金總表、缺失趨勢、樓主細清進度）。
 - 目前任何「房務」類角色都能看到房號分配跟細清排程連結，還沒有依「當天是否為
   小隊長／樓主」做權限限制（你確認過小隊長不用權限控管，先維持人工自律）。
+- 排班表的「特」「中」「管」「PT1」「PT2」目前沒有對應的任務頁面，登入時會退回用固定
+  職務判斷；如果之後想幫這些班別也做專屬頁面，可以再討論。
 - 教育訓練系統（新人學習地圖、教練制度、四階段考核）還沒開始建，設計方向已在
   對話中討論過，包含 learning_paths / learning_units / staff_learning_progress /
   coach_assignments / assessment_stages / performance_reviews 這幾張表。

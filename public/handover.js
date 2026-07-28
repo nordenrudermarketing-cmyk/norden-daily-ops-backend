@@ -4,7 +4,7 @@ if (!staff) window.location.href = 'index.html';
 
 const today = new Date().toISOString().slice(0, 10);
 const roleName = staff.roles?.name || '';
-const myShift = roleName.replace('客務', '').replace('班', '');
+const myShift = staff.todayShiftCode || roleName.replace('客務', '').replace('班', '');
 
 document.getElementById('dateLine').textContent = today;
 if (['A', 'B', 'C'].includes(myShift)) document.getElementById('shiftCode').value = myShift;
