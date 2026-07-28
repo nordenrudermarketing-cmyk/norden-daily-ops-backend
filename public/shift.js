@@ -54,12 +54,18 @@ function renderTasks(tasks) {
     const card = document.createElement('div');
     card.className = 'card' + (isDone ? ' done' : '');
 
+    // 已回報的異常（不分是哪位同班同仁報的，大家都看得到，避免重複回報同一件事）
+    const reportsHtml = (t.reports && t.reports.length > 0)
+      ? t.reports.map((r) => `<p class="card-note">已回報：${r.description}（${r.staff?.name || ''}）</p>`).join('')
+      : '';
+
     if (isDone) {
       card.innerHTML = `
         <div class="card-row">
           <span class="card-title">${t.task_name}</span>
           <span class="card-meta">${t.completion.staff?.name || ''}・${new Date(t.completion.completed_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+        ${reportsHtml}
         <div class="action-row">
           <button class="danger-outline">回報異常</button>
         </div>`;
@@ -69,6 +75,7 @@ function renderTasks(tasks) {
         <div class="card-row">
           <span class="card-title">${t.task_name}</span>
         </div>
+        ${reportsHtml}
         <div class="action-row">
           <button class="btn">標記完成</button>
           <button class="danger-outline">回報異常</button>
