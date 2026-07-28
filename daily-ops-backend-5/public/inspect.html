@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>巡房檢查 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>巡房檢查</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <button class="logout-link" id="logoutBtn">登出</button>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <a href="shift.html" style="font-size:12px;color:var(--accent);">今日班別任務 →</a>
+    </div>
+
+    <div id="roomList"></div>
+  </div>
+
+  <div class="overlay" id="defectOverlay" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="defectRoomTitle" style="margin-bottom:12px;">回報缺失</p>
+      <div class="field">
+        <label for="defectNote">缺失說明</label>
+        <textarea id="defectNote" placeholder="例如：浴巾污漬未更換"></textarea>
+      </div>
+      <div class="field">
+        <label for="defectPhoto">照片</label>
+        <input type="file" id="defectPhoto" accept="image/*" capture="environment">
+      </div>
+      <div class="action-row">
+        <button class="secondary" id="defectCancel">取消</button>
+        <button class="btn" id="defectSubmit">送出</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="inspect.js"></script>
+</body>
+</html>

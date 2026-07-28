@@ -1,0 +1,171 @@
+:root {
+  --bg: #f7f5f1;
+  --surface: #ffffff;
+  --ink: #23291f;
+  --ink-soft: #6b6f63;
+  --line: #e3e0d8;
+  --accent: #2f5d4f;
+  --accent-soft: #e4ede9;
+  --danger: #b3462c;
+  --danger-soft: #f8e9e4;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.screen {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.topbar h1 { font-size: 18px; font-weight: 600; margin: 0; }
+.topbar p { font-size: 12px; color: var(--ink-soft); margin: 2px 0 0; }
+
+.logout-link {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.summary-bar {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.summary-item { flex: 1; text-align: center; }
+.summary-item + .summary-item { border-left: 1px solid var(--line); }
+.summary-label { font-size: 11px; color: var(--ink-soft); }
+.summary-value { font-size: 20px; font-weight: 600; margin-top: 2px; }
+.summary-value.danger { color: var(--danger); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.card.done { opacity: 0.55; }
+.card.flagged { background: var(--danger-soft); border-color: #e3bfae; }
+.card.active { border-color: var(--accent); }
+
+.card-row { display: flex; align-items: center; gap: 10px; }
+.card-title { font-size: 15px; font-weight: 500; flex: 1; }
+.card-meta { font-size: 11px; color: var(--ink-soft); }
+.card-note { font-size: 12px; color: var(--danger); margin: 6px 0 0; }
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+button.primary, .btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+button.primary:active, .btn:active { opacity: 0.85; }
+
+button.secondary {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+button.danger-outline {
+  border: 1px solid #e3bfae;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.action-row { display: flex; gap: 8px; margin-top: 10px; }
+.action-row > * { flex: 1; }
+
+input[type="text"], input[type="password"], textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+  background: var(--surface);
+  color: var(--ink);
+}
+textarea { min-height: 64px; resize: vertical; font-family: inherit; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+
+.center-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 28px 22px;
+}
+.login-box h1 { font-size: 20px; margin: 0 0 4px; }
+.login-box p { font-size: 13px; color: var(--ink-soft); margin: 0 0 20px; }
+
+.error-msg { font-size: 13px; color: var(--danger); margin-top: 8px; min-height: 16px; }
+
+.empty-state {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(35,41,31,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 10;
+}
+.overlay .card { width: 100%; max-width: 360px; margin: 0; }
