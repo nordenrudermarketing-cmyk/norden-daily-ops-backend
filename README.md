@@ -61,10 +61,37 @@ npm run dev
   - 對應 API：`GET /api/dashboard/summary`
   - 登入時角色若為「店經理」會自動導向這頁
 
+- `deep-clean.html` — 樓主：本月細清排程（設定各樓層樓主、各樓層排第幾週、產生本月
+  任務、標記完成）
+  - 對應 API：`GET/POST /api/deep-clean/floor-owners`、`GET /api/deep-clean/templates`、
+    `GET /api/deep-clean/month`、`POST /api/deep-clean/generate`、
+    `POST /api/deep-clean/:id/complete`
+  - 可從 checklist.html 上方連結進入
+- `shift.html` — 客務A/B/C班：今日班別任務打卡（依 daily/weekday/monthly_date 規則
+  自動判斷今天該出現哪些任務）
+  - 對應 API：`GET /api/shift-tasks/today`、`POST /api/shift-tasks/:id/complete`
+  - 登入時角色為「客務A班」「客務B班」會直接導向這頁；「客務C班」導向 inspect.html，
+    但頁面上方有連結可以切換過去
+
+- `handover.html` — 客務：交班表（對應紙本格式的結構化欄位＋可自訂欄位）
+  - 「公區、客房設備異常回報」欄位會自動帶入當天所有任務按「回報異常」產生的內容，
+    同仁可以再編輯或補充
+  - 對應 API：`GET /api/handover/today`、`GET /api/handover/defects-today`、`POST /api/handover`
+  - 同一天同一班別重複送出會更新，不會重複建立
+- `shift.html` 每個任務旁邊多了「回報異常」按鈕（不管任務有沒有標記完成都能按），
+  對應 API：`POST /api/issues/report`——這支是通用的，之後房務/細清任務要加同樣的
+  回報按鈕，可以直接呼叫同一支 API
+
+**部署前多一步**：先到 Supabase SQL Editor 執行 `schema_v3_handover.sql`（新增交班表
+的資料表），再上傳程式碼。
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
   資料庫會變得肥大。之後建議改成上傳到 Supabase Storage，資料庫只存網址連結。
 - 主管端電腦儀表板還沒做（今日獎金總表、缺失趨勢、樓主細清進度）。
-- 目前任何「房務」類角色都能看到房號分配連結，還沒有依「當天是否為小隊長」
-  （`daily_shift_assignments.is_team_lead`）做權限限制，先靠人工自律使用。
+- 目前任何「房務」類角色都能看到房號分配跟細清排程連結，還沒有依「當天是否為
+  小隊長／樓主」做權限限制（你確認過小隊長不用權限控管，先維持人工自律）。
+- 教育訓練系統（新人學習地圖、教練制度、四階段考核）還沒開始建，設計方向已在
+  對話中討論過，包含 learning_paths / learning_units / staff_learning_progress /
+  coach_assignments / assessment_stages / performance_reviews 這幾張表。

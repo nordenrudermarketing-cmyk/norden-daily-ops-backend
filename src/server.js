@@ -9,6 +9,10 @@ import roomCleaningRoutes from './routes/roomCleanings.js';
 import bonusRoutes from './routes/bonus.js';
 import roomsRoutes from './routes/rooms.js';
 import dashboardRoutes from './routes/dashboard.js';
+import deepCleanRoutes from './routes/deepClean.js';
+import shiftTasksRoutes from './routes/shiftTasks.js';
+import issuesRoutes from './routes/issues.js';
+import handoverRoutes from './routes/handover.js';
 
 dotenv.config();
 
@@ -25,6 +29,10 @@ app.use('/api/room-cleanings', roomCleaningRoutes);
 app.use('/api/bonus', bonusRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/deep-clean', deepCleanRoutes);
+app.use('/api/shift-tasks', shiftTasksRoutes);
+app.use('/api/issues', issuesRoutes);
+app.use('/api/handover', handoverRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

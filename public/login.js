@@ -44,6 +44,8 @@ function routeByRole(staff) {
     window.location.href = 'checklist.html';
   } else if (roleName === '客務C班') {
     window.location.href = 'inspect.html';
+  } else if (roleName === '客務A班' || roleName === '客務B班') {
+    window.location.href = 'shift.html';
   } else {
     alert(`目前尚未有對應「${roleName}」的頁面，之後會陸續加上。`);
   }
