@@ -51,9 +51,28 @@ router.get('/today', async (req, res) => {
   const completionByTemplate = {};
   (completions ?? []).forEach((c) => { completionByTemplate[c.template_id] = c; });
 
+  // 同一天、同一項任務的異常回報也不分人——A班兩位同仁誰報告的都算數，另一位要看得到
+  const start = `${date}T00:00:00`;
+  const end = `${date}T23:59:59`;
+  const { data: reports } = await supabase
+    .from('defect_logs')
+    .select('id, source_id, description, reported_at, staff:reported_by(name)')
+    .eq('source_type', 'shift_task')
+    .in('source_id', templateIds.length ? templateIds : ['00000000-0000-0000-0000-000000000000'])
+    .gte('reported_at', start)
+    .lte('reported_at', end)
+    .order('reported_at');
+
+  const reportsByTemplate = {};
+  (reports ?? []).forEach((r) => {
+    reportsByTemplate[r.source_id] = reportsByTemplate[r.source_id] || [];
+    reportsByTemplate[r.source_id].push(r);
+  });
+
   const result = todayTemplates.map((t) => ({
     ...t,
     completion: completionByTemplate[t.id] || null,
+    reports: reportsByTemplate[t.id] || [],
   }));
 
   res.json(result);
