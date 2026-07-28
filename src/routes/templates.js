@@ -61,4 +61,20 @@ router.post('/shift-tasks/:id/toggle', async (req, res) => {
   res.json(data);
 });
 
+// DELETE /api/templates/shift-tasks/:id
+// 直接刪除；如果已經有同仁打卡/回報過這個任務（有關聯的完成紀錄），資料庫會擋下來，
+// 這種情況請改用「停用」，保留歷史紀錄的關聯完整。
+router.delete('/shift-tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase.from('shift_task_templates').delete().eq('id', id);
+
+  if (error) {
+    if (error.code === '23503') {
+      return res.status(409).json({ error: '這個任務已經有同仁打卡或回報過，無法直接刪除，請改用「停用」。' });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+  res.json({ ok: true });
+});
+
 export default router;
