@@ -30,7 +30,7 @@ function renderRooms(rooms) {
   const listEl = document.getElementById('roomList');
 
   const done = rooms.filter((r) => r.status === 'completed').length;
-  const defect = rooms.filter((r) => r.has_defect).length;
+  const defect = rooms.filter((r) => r.has_defect && !r.defect_resolved).length;
   document.getElementById('sumDone').textContent = done;
   document.getElementById('sumDefect').textContent = defect;
   document.getElementById('sumRemaining').textContent = rooms.length - done;
@@ -45,17 +45,28 @@ function renderRooms(rooms) {
     const room = r.rooms;
     const card = document.createElement('div');
     const isDone = r.status === 'completed';
-    card.className = 'card' + (isDone ? ' done' : '') + (r.has_defect ? ' flagged' : '');
+    const hasOpenDefect = r.has_defect && !r.defect_resolved;
+    card.className = 'card' + (isDone && !hasOpenDefect ? ' done' : '') + (hasOpenDefect ? ' flagged' : '');
 
     const title = room.room_number + (room.is_large ? '（大房）' : '');
 
-    if (r.has_defect) {
+    if (hasOpenDefect) {
       card.innerHTML = `
         <div class="card-row">
           <span class="card-title">${title}</span>
           <span class="badge" style="background:var(--danger-soft);color:var(--danger);">缺失</span>
         </div>
-        <p class="card-note">${r.defect_note || ''}</p>`;
+        <p class="card-note">${r.defect_note || ''}</p>
+        <div class="action-row">
+          <button class="btn">標記已處理</button>
+        </div>`;
+      card.querySelector('button').addEventListener('click', () => resolveDefect(r.id));
+    } else if (r.has_defect && r.defect_resolved) {
+      card.innerHTML = `
+        <div class="card-row">
+          <span class="card-title">${title}</span>
+          <span class="card-meta">缺失已處理</span>
+        </div>`;
     } else if (isDone) {
       card.innerHTML = `
         <div class="card-row">
@@ -74,6 +85,16 @@ function renderRooms(rooms) {
     }
     listEl.appendChild(card);
   });
+}
+
+async function resolveDefect(cleaningId) {
+  try {
+    const res = await fetch(`${API}/api/room-cleanings/${cleaningId}/resolve-defect`, { method: 'POST' });
+    if (!res.ok) throw new Error('標記失敗');
+    loadRooms();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function completeRoom(cleaningId) {
