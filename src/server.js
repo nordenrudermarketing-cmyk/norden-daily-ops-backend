@@ -17,6 +17,7 @@ import scheduleRoutes from './routes/schedule.js';
 import templatesRoutes from './routes/templates.js';
 import managerChecklistRoutes from './routes/managerChecklist.js';
 import trainingRoutes from './routes/training.js';
+import assessmentRoutes from './routes/assessment.js';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/manager-checklist', managerChecklistRoutes);
 app.use('/api/training', trainingRoutes);
+app.use('/api/assessment', assessmentRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

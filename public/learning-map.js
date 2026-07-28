@@ -28,6 +28,11 @@ async function loadStaffOptions() {
   loadProgress();
 }
 
+const CATEGORIES = ['工作態度', '專業能力', '工作品質', '工作效率', '溝通能力', '團隊合作', '主動性', '責任感', '問題處理', '品牌認同'];
+const STAGES = ['認識', '操作', '獨立', '穩定'];
+let selectedStage = null;
+let currentStages = [];
+
 async function loadProgress() {
   const targetStaffId = staffSelect.value;
   const category = categorySelect.value;
@@ -41,6 +46,90 @@ async function loadProgress() {
   renderUnits(data.units || []);
 
   if (category === 'housekeeping') loadExams(targetStaffId);
+
+  document.getElementById('stageSection').style.display = 'block';
+  loadStages(targetStaffId);
+}
+
+async function loadStages(targetStaffId) {
+  const res = await fetch(`${API}/api/assessment/stages?staff_id=${targetStaffId}`);
+  currentStages = await res.json();
+  selectedStage = selectedStage || STAGES[0];
+  renderStageStepper();
+  renderStageForm();
+}
+
+function renderStageStepper() {
+  const el = document.getElementById('stageStepper');
+  el.innerHTML = '';
+  STAGES.forEach((stage) => {
+    const info = currentStages.find((s) => s.stage === stage);
+    const pill = document.createElement('div');
+    pill.className = 'stage-pill' + (stage === selectedStage ? ' selected' : '') + (info?.result === 'pass' ? ' pass' : '');
+    const statusText = info?.result === 'pass' ? '已通過' : info?.result === 'not_yet' ? '未通過' : '尚未評核';
+    pill.innerHTML = `<div>${stage}</div><div class="stage-status">${statusText}</div>`;
+    pill.addEventListener('click', () => { selectedStage = stage; renderStageStepper(); renderStageForm(); });
+    el.appendChild(pill);
+  });
+}
+
+function renderStageForm() {
+  const el = document.getElementById('stageForm');
+  const info = currentStages.find((s) => s.stage === selectedStage) || { category_ratings: {} };
+  const ratings = info.category_ratings || {};
+
+  el.innerHTML = `
+    <div class="exam-card">
+      <p style="font-weight:500;margin:0 0 10px;">${selectedStage}階段評核</p>
+      <div class="rating-grid">
+        ${CATEGORIES.map((cat) => `
+          <div class="rating-item">
+            <label>${cat}</label>
+            <select data-cat="${cat}">
+              <option value="" ${!ratings[cat] ? 'selected' : ''}>未評</option>
+              <option value="good" ${ratings[cat] === 'good' ? 'selected' : ''}>良好</option>
+              <option value="ok" ${ratings[cat] === 'ok' ? 'selected' : ''}>普通</option>
+              <option value="needs_improvement" ${ratings[cat] === 'needs_improvement' ? 'selected' : ''}>待加強</option>
+            </select>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label>評核者</label><input type="text" id="stageEvaluator" value="${info.evaluated_by || ''}"></div>
+      <div class="field"><label>備註</label><textarea id="stageNotes">${info.notes || ''}</textarea></div>
+      <div class="field"><label>結果</label>
+        <select id="stageResult">
+          <option value="" ${!info.result ? 'selected' : ''}>尚未判定</option>
+          <option value="pass" ${info.result === 'pass' ? 'selected' : ''}>通過</option>
+          <option value="not_yet" ${info.result === 'not_yet' ? 'selected' : ''}>尚未通過</option>
+        </select>
+      </div>
+      <button class="primary" id="stageSaveBtn">儲存${selectedStage}階段評核</button>
+    </div>`;
+
+  document.getElementById('stageSaveBtn').addEventListener('click', saveStage);
+}
+
+async function saveStage() {
+  const categoryRatings = {};
+  document.querySelectorAll('#stageForm [data-cat]').forEach((sel) => {
+    if (sel.value) categoryRatings[sel.dataset.cat] = sel.value;
+  });
+
+  const payload = {
+    staff_id: staffSelect.value,
+    stage: selectedStage,
+    evaluated_by: document.getElementById('stageEvaluator').value,
+    category_ratings: categoryRatings,
+    result: document.getElementById('stageResult').value || null,
+    notes: document.getElementById('stageNotes').value,
+  };
+
+  await fetch(`${API}/api/assessment/stages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  loadStages(staffSelect.value);
 }
 
 function renderUnits(units) {
