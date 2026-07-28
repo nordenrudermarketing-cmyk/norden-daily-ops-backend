@@ -65,7 +65,7 @@ router.get('/mine', async (req, res) => {
   const { staff_id, date } = req.query;
   const { data, error } = await supabase
     .from('room_cleanings')
-    .select('id, status, has_defect, defect_note, completed_at, rooms(room_number, is_large, floor)')
+    .select('id, status, has_defect, defect_resolved, defect_note, completed_at, rooms(room_number, is_large, floor)')
     .eq('cleaned_by', staff_id)
     .eq('work_date', date)
     .order('id');
@@ -145,6 +145,31 @@ router.post('/:id/inspect', async (req, res) => {
       photo_url: defect_photo_url,
     });
   }
+
+  res.json(data);
+});
+
+// POST /api/room-cleanings/:id/resolve-defect
+// 房務同仁：缺失已經處理好了（例如補了毛巾），標記解決
+// 同步把 room_cleanings 跟對應的 defect_logs 都標記，兩邊資料才會一致
+router.post('/:id/resolve-defect', async (req, res) => {
+  const { id } = req.params;
+
+  const { data, error } = await supabase
+    .from('room_cleanings')
+    .update({ defect_resolved: true })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return res.status(400).json({ error: error.message });
+
+  await supabase
+    .from('defect_logs')
+    .update({ resolved: true, resolved_at: new Date().toISOString() })
+    .eq('source_type', 'room')
+    .eq('source_id', id)
+    .eq('resolved', false);
 
   res.json(data);
 });
