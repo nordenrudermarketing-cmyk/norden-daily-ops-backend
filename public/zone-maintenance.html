@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>責任區保養排程 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 100%; padding: 20px; }
+  .top-controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+  .top-controls .field { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 24px; }
+  table.maint { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+  table.maint th, table.maint td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; }
+  table.maint th.task-col, table.maint td.task-col { position: sticky; left: 0; background: var(--surface); z-index: 2; text-align: left; padding-left: 8px; min-width: 220px; white-space: normal; }
+  table.maint th { background: var(--accent-soft); font-weight: 500; }
+  table.maint tr.cycle-row td { background: var(--accent-soft); font-weight: 600; text-align: left; padding-left: 8px; }
+  table.maint td.cell { cursor: pointer; }
+  table.maint td.cell.done { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .paint-table { margin-top: 10px; }
+  .paint-table select, .paint-table input { font-size: 12px; padding: 4px; }
+  .small-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>責任區保養排程</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="checklist.html">回打卡頁</a>
+    </div>
+
+    <div class="top-controls">
+      <div class="field"><label for="monthInput">月份</label><input type="month" id="monthInput"></div>
+      <div class="field"><label for="zoneSelect">責任區</label><select id="zoneSelect"></select></div>
+      <div class="field"><label for="ownerSelect">目前負責人</label><select id="ownerSelect"></select></div>
+      <button class="primary" id="generateBtn" style="width:auto;padding:10px 20px;">產生本月任務（全部責任區）</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="maint" id="maintTable"></table>
+    </div>
+
+    <div class="section-title" style="font-weight:600;margin-bottom:8px;">油漆巡視狀態</div>
+    <div class="table-wrap paint-table">
+      <table class="maint" id="paintTable">
+        <thead><tr><th>房號</th><th>狀態</th><th>備註</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="zone-maintenance.js"></script>
+</body>
+</html>

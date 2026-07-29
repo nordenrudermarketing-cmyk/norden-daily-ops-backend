@@ -10,6 +10,22 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   window.location.href = 'index.html';
 });
 
+// 依館別是否使用「A-E責任區」制度，決定顯示樓層版（台中館）還是責任區版（台東1館）的保養排程連結
+(async () => {
+  try {
+    const res = await fetch(`${API}/api/room-maintenance/zones?branch_id=${staff.branch_id}`);
+    const zones = await res.json();
+    const slot = document.getElementById('maintenanceLinkSlot');
+    if (zones && zones.length > 0) {
+      slot.innerHTML = '<a href="zone-maintenance.html" style="font-size:12px;color:var(--accent);">責任區保養排程 →</a>';
+    } else {
+      slot.innerHTML = '<a href="deep-clean.html" style="font-size:12px;color:var(--accent);">樓主：本月細清排程 →</a>';
+    }
+  } catch (e) {
+    // 查不到就不顯示，不影響其他功能
+  }
+})();
+
 loadRooms();
 
 async function loadRooms() {
