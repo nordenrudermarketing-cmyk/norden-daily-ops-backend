@@ -30,7 +30,7 @@ loadMonth();
 async function loadToday() {
   const el = document.getElementById('todayList');
   el.innerHTML = '<p class="empty-state">載入中…</p>';
-  const res = await fetch(`${API}/api/public-area-maintenance/today?branch_id=${staff.branch_id}&date=${today}`);
+  const res = await fetch(`${API}/api/public-area-maintenance/today?branch_id=${staff.branch_id}&date=${today}&staff_id=${staff.id}`);
   const items = await res.json();
   render(el, items, CYCLE_ORDER_TODAY, 'today');
 }
@@ -38,14 +38,14 @@ async function loadToday() {
 async function loadMonth() {
   const el = document.getElementById('monthList');
   el.innerHTML = '<p class="empty-state">載入中…</p>';
-  const res = await fetch(`${API}/api/public-area-maintenance/month?branch_id=${staff.branch_id}&month=${monthStr}`);
+  const res = await fetch(`${API}/api/public-area-maintenance/month?branch_id=${staff.branch_id}&month=${monthStr}&staff_id=${staff.id}`);
   const items = await res.json();
   render(el, items, CYCLE_ORDER_MONTH, 'month');
 }
 
 function render(el, items, cycleOrder, periodType) {
   if (items.length === 0) {
-    el.innerHTML = '<p class="empty-state">目前沒有項目。</p>';
+    el.innerHTML = '<p class="empty-state">目前還沒有分配到任何項目，請跟小隊長確認。</p>';
     return;
   }
 

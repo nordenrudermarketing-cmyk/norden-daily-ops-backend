@@ -287,10 +287,32 @@ npm run dev
 - 對應 API：`GET /api/public-area-maintenance/today`、`GET /api/public-area-maintenance/month`、
   `POST /api/public-area-maintenance/:id/complete`
 
-**部署前要跑兩份 SQL，依序執行**：`schema_v14_public_area.sql` → `schema_v14_seed.sql`。
+**加了小隊長分配機制**：公區任務現在也要小隊長先分配才會出現在同仁的打卡頁，跟房號分配
+邏輯一致：
+- `public-area-assign.html`（從打卡頁點「小隊長：公區任務分配」進去）：分「今日公區」「本月／本季公區」
+  兩個分頁，每項任務用下拉選單選要分配給誰，點「儲存分配」
+- 同仁的 `public-area.html` 現在只會顯示**分配給自己**的項目，沒被分配到會看到
+  「目前還沒有分配到任何項目，請跟小隊長確認」
+- 已經標記完成的項目，追加分配時不會被覆蓋（跟房號分配的修正邏輯一致）
+- 對應 API：`POST /api/public-area-maintenance/assign-batch`
+
+**部署前要跑三份 SQL，依序執行**：`schema_v14_public_area.sql` → `schema_v14_seed.sql` →
+`schema_v15_pa_assign.sql`（如果 v14 兩份已經跑過，只需要補跑這份新的）。
 
 **已知小缺口**：這個連結目前台中館的房務同仁登入也看得到（會顯示空白清單，因為台中館
 沒有建這套內容），沒有像責任區保養排程那樣做館別判斷隱藏，之後如果想補上可以再說。
+
+## 小隊長權限跟排班表接起來
+
+之前「今日房號分配」「公區任務分配」這兩個連結是任何房務同仁都看得到，沒有真的去檢查
+排班表上今天指定的小隊長是誰。現在改成：**只有今天在排班表被指定為小隊長的那位同仁，
+才會在打卡頁看到這兩個連結**，其他房務同仁看不到（畫面上隱藏，不是後端強制擋，跟系統
+其他地方的權限設計一致）。
+
+前提是店經理有在排班表把「今日房務小隊長」那一列填好，如果沒填，當天就不會有人看到
+這兩個連結——這也是提醒排班表要確實填寫的一個附帶效果。
+
+對應 API：`GET /api/schedule/team-lead-today`
 
 ## 已知限制 / 下一步
 

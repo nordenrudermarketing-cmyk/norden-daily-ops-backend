@@ -96,4 +96,19 @@ router.post('/save', async (req, res) => {
   }
 });
 
+// GET /api/schedule/team-lead-today?branch_id=xxx&date=2026-07-27
+// 給打卡頁判斷「今天登入的這位同仁是不是排班表上指定的小隊長」用
+router.get('/team-lead-today', async (req, res) => {
+  const { branch_id, date } = req.query;
+  const { data, error } = await supabase
+    .from('daily_team_leads')
+    .select('staff_id')
+    .eq('branch_id', branch_id)
+    .eq('work_date', date)
+    .maybeSingle();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ staff_id: data?.staff_id || null });
+});
+
 export default router;

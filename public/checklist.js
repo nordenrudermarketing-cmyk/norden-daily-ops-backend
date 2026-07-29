@@ -26,6 +26,22 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   }
 })();
 
+// 只有今天排班表指定的小隊長，才看得到「今日房號分配」「公區任務分配」這兩個連結
+(async () => {
+  try {
+    const res = await fetch(`${API}/api/schedule/team-lead-today?branch_id=${staff.branch_id}&date=${today}`);
+    const result = await res.json();
+    if (result.staff_id === staff.id) {
+      document.getElementById('assignLink').style.display = 'inline';
+      document.getElementById('assignSep').style.display = 'inline';
+      document.getElementById('paAssignLink').style.display = 'inline';
+      document.getElementById('paAssignSep').style.display = 'inline';
+    }
+  } catch (e) {
+    // 查不到就維持隱藏，不影響其他功能
+  }
+})();
+
 loadRooms();
 
 async function loadRooms() {
