@@ -11,21 +11,49 @@ function isoWeekday(dateStr) {
 
 // GET /api/shift-tasks/today?branch_id=xxx&shift_code=C&date=2026-07-27
 // 該班別當天應該出現的任務（依 daily / weekday / monthly_date 規則過濾）
+//
+// 依當天實際排班切換整套任務清單：如果今天有排 C 班就用「ABC」版本，
+// 沒有排 C 班（例如 AABB）就用「AABB」版本——AABB 版本的內容是館別自己
+// 把 C 班工作拆開揉進 A、B 班的實際清單，不是系統自動合併，所以兩套內容
+// 分開存、分開建置。如果某個班別沒有對應排班型態的版本，會自動退回 ABC 版本。
 router.get('/today', async (req, res) => {
   const { branch_id, shift_code, date } = req.query;
   if (!branch_id || !shift_code || !date) {
     return res.status(400).json({ error: '缺少 branch_id、shift_code 或 date' });
   }
 
-  const { data: templates, error } = await supabase
+  // 查今天實際排班，看有沒有排 C 班
+  const { data: todaySchedule } = await supabase
+    .from('staff_schedule')
+    .select('shift_code')
+    .eq('branch_id', branch_id)
+    .eq('work_date', date);
+  const hasCToday = (todaySchedule ?? []).some((s) => s.shift_code === 'C');
+  const targetPattern = hasCToday ? 'ABC' : 'AABB';
+
+  let { data: templates, error } = await supabase
     .from('shift_task_templates')
-    .select('id, task_name, schedule_type, schedule_value, sort_order')
+    .select('id, task_name, schedule_type, schedule_value, sort_order, shift_code, schedule_pattern')
     .eq('branch_id', branch_id)
     .eq('shift_code', shift_code)
+    .eq('schedule_pattern', targetPattern)
     .eq('is_active', true)
     .order('sort_order');
 
   if (error) return res.status(400).json({ error: error.message });
+
+  // 沒有這個班別的 AABB 版本（例如館別沒建、或這個班別本來就不受影響），退回 ABC 版本
+  if ((templates ?? []).length === 0 && targetPattern !== 'ABC') {
+    const fallback = await supabase
+      .from('shift_task_templates')
+      .select('id, task_name, schedule_type, schedule_value, sort_order, shift_code, schedule_pattern')
+      .eq('branch_id', branch_id)
+      .eq('shift_code', shift_code)
+      .eq('schedule_pattern', 'ABC')
+      .eq('is_active', true)
+      .order('sort_order');
+    templates = fallback.data;
+  }
 
   const weekday = isoWeekday(date);
   const dayOfMonth = Number(date.slice(8, 10));

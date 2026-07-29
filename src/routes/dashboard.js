@@ -45,12 +45,13 @@ router.get('/summary', async (req, res) => {
     for (const s of hkStaff ?? []) {
       const { data: ownCleanings } = await supabase
         .from('room_cleanings')
-        .select('id, status, has_defect, completed_before_deadline')
+        .select('id, status, has_defect, completed_before_deadline, checked_by')
         .eq('cleaned_by', s.id)
         .eq('work_date', date);
 
       const assignedCount = ownCleanings?.length ?? 0;
-      const completedRows = ownCleanings?.filter((c) => c.status === 'completed') ?? [];
+      // 只算客務已經巡房檢查過的房間，還沒確認的不列入獎金
+      const completedRows = ownCleanings?.filter((c) => c.status === 'completed' && c.checked_by) ?? [];
       const roomsCompleted = completedRows.length;
       const completedBeforeDeadlineCount = completedRows.filter((c) => c.completed_before_deadline).length;
       const defectCount = completedRows.filter((c) => c.has_defect).length;

@@ -39,12 +39,14 @@ router.get('/daily', async (req, res) => {
   for (const staff of staffList) {
     const { data: cleanings } = await supabase
       .from('room_cleanings')
-      .select('id, status, has_defect, completed_before_deadline')
+      .select('id, status, has_defect, completed_before_deadline, checked_by')
       .eq('cleaned_by', staff.id)
       .eq('work_date', date);
 
     const assignedCount = cleanings?.length ?? 0;
-    const completedRows = cleanings?.filter((c) => c.status === 'completed') ?? [];
+    // 只有客務巡房檢查過（checked_by 有值）的房間才算進獎金，
+    // 避免經理看到的獎金總表包含還沒被確認過的房間
+    const completedRows = cleanings?.filter((c) => c.status === 'completed' && c.checked_by) ?? [];
     const roomsCompleted = completedRows.length;
     const completedBeforeDeadlineCount = completedRows.filter((c) => c.completed_before_deadline).length;
     const defectCount = completedRows.filter((c) => c.has_defect).length;

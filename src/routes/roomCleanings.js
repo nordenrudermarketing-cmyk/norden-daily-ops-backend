@@ -22,19 +22,35 @@ router.post('/assign', async (req, res) => {
 
 // POST /api/room-cleanings/assign-batch
 // { branch_id, work_date, assignments: [{ room_id, staff_id }, ...] }
-// 小隊長：一次分配當天全部房號
+// 小隊長：分配當天房號。已經標記「完成」的房間不會被這支 API 動到
+// （避免小隊長追加分配新房號時，把同仁已經打卡完成的房間洗回「待完成」，
+//  導致同仁被迫重新按一次完成、記錄到錯誤的完成時間）
 router.post('/assign-batch', async (req, res) => {
   const { work_date, assignments } = req.body;
   if (!Array.isArray(assignments) || assignments.length === 0) {
     return res.status(400).json({ error: '沒有分配任何房號' });
   }
 
-  const rows = assignments.map((a) => ({
-    room_id: a.room_id,
-    cleaned_by: a.staff_id,
-    work_date,
-    status: 'pending',
-  }));
+  const roomIds = assignments.map((a) => a.room_id);
+  const { data: existing, error: existingErr } = await supabase
+    .from('room_cleanings')
+    .select('room_id, status')
+    .eq('work_date', work_date)
+    .in('room_id', roomIds);
+  if (existingErr) return res.status(400).json({ error: existingErr.message });
+
+  const completedRoomIds = new Set((existing ?? []).filter((r) => r.status === 'completed').map((r) => r.room_id));
+
+  const rows = assignments
+    .filter((a) => !completedRoomIds.has(a.room_id)) // 已完成的房間跳過，不去動它
+    .map((a) => ({
+      room_id: a.room_id,
+      cleaned_by: a.staff_id,
+      work_date,
+      status: 'pending',
+    }));
+
+  if (rows.length === 0) return res.json([]); // 全部都已完成，沒有需要異動的
 
   const { data, error } = await supabase
     .from('room_cleanings')
