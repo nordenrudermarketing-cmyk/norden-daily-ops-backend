@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
+import { calculateBonus } from '../lib/bonusCalc.js';
 
 const router = express.Router();
 
@@ -24,14 +25,13 @@ router.get('/summary', async (req, res) => {
     // 2. 房務業績獎金總表
     const { data: settings } = await supabase
       .from('bonus_settings')
-      .select('daily_target_rooms, rate_per_room')
+      .select('*')
       .eq('branch_id', branch_id)
       .order('effective_date', { ascending: false })
       .limit(1)
       .single();
 
     const target = settings?.daily_target_rooms ?? 12;
-    const rate = settings?.rate_per_room ?? 20;
 
     const { data: hkStaff } = await supabase
       .from('staff')
@@ -44,22 +44,30 @@ router.get('/summary', async (req, res) => {
     for (const s of hkStaff ?? []) {
       const { data: ownCleanings } = await supabase
         .from('room_cleanings')
-        .select('id, has_defect')
+        .select('id, status, has_defect, completed_before_deadline')
         .eq('cleaned_by', s.id)
-        .eq('work_date', date)
-        .eq('status', 'completed');
+        .eq('work_date', date);
 
-      const roomsCompleted = ownCleanings?.length ?? 0;
-      const defectCount = ownCleanings?.filter((c) => c.has_defect).length ?? 0;
-      const netRooms = Math.max(roomsCompleted - defectCount, 0);
+      const assignedCount = ownCleanings?.length ?? 0;
+      const completedRows = ownCleanings?.filter((c) => c.status === 'completed') ?? [];
+      const roomsCompleted = completedRows.length;
+      const completedBeforeDeadlineCount = completedRows.filter((c) => c.completed_before_deadline).length;
+      const defectCount = completedRows.filter((c) => c.has_defect).length;
+
+      const { bonus_amount, net_rooms, disqualified } = calculateBonus(settings || {}, {
+        assignedCount,
+        completedBeforeDeadlineCount,
+        defectCount,
+      });
 
       bonusTable.push({
         name: s.name,
         rooms_completed: roomsCompleted,
         defect_count: defectCount,
-        net_rooms: netRooms,
+        net_rooms,
         met_target: roomsCompleted >= target,
-        bonus_amount: netRooms * rate,
+        disqualified,
+        bonus_amount,
       });
     }
 
@@ -86,7 +94,7 @@ router.get('/summary', async (req, res) => {
     res.json({
       date,
       rooms: { total: totalRooms, completed: completedRooms, with_defect: defectRooms },
-      bonus: { target, rate, staff: bonusTable },
+      bonus: { target, rate_type: settings?.rate_type ?? 'linear', staff: bonusTable },
       unresolved_defects: defects ?? [],
       deep_clean: { total: deepCleanTotal, completed: deepCleanDone },
     });

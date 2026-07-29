@@ -112,7 +112,7 @@ function render(data) {
       <td class="${s.defect_count > 0 ? 'miss' : ''}">${s.defect_count}</td>
       <td>${s.net_rooms}</td>
       <td>${s.met_target ? '✓' : `未達（目標${data.bonus.target}間）`}</td>
-      <td>$${s.bonus_amount}</td>`;
+      <td>$${s.bonus_amount}${s.disqualified ? '<br><span style="color:var(--danger);font-size:11px;">未全部完成，不計獎金</span>' : ''}</td>`;
     bonusBody.appendChild(tr);
   });
 
