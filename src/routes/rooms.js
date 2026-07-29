@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
   const { branch_id } = req.query;
   const { data, error } = await supabase
     .from('rooms')
-    .select('id, room_number, floor, is_large')
+    .select('id, room_number, floor, is_large, zone')
     .eq('branch_id', branch_id)
     .eq('is_active', true)
     .order('floor')

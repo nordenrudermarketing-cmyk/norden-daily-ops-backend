@@ -12,6 +12,7 @@ document.getElementById('saveBtn').addEventListener('click', saveAssignments);
 let rooms = [];
 let housekeepingStaff = [];
 let currentAssignments = {}; // room_id -> staff_id
+let zoneOwners = {}; // zone -> staff_id
 
 loadAll();
 
@@ -20,17 +21,22 @@ async function loadAll() {
   listEl.innerHTML = '<p class="empty-state">載入中…</p>';
 
   try {
-    const [roomsRes, staffRes, assignedRes] = await Promise.all([
+    const [roomsRes, staffRes, assignedRes, zoneOwnersRes] = await Promise.all([
       fetch(`${API}/api/rooms?branch_id=${staff.branch_id}`),
       fetch(`${API}/api/staff/list?branch_id=${staff.branch_id}&category=housekeeping`),
       fetch(`${API}/api/room-cleanings/assignments?branch_id=${staff.branch_id}&date=${dateInput.value}`),
+      fetch(`${API}/api/room-maintenance/zone-owners?branch_id=${staff.branch_id}`),
     ]);
     rooms = await roomsRes.json();
     housekeepingStaff = await staffRes.json();
     const assigned = await assignedRes.json();
+    const zoneOwnersList = await zoneOwnersRes.json();
 
     currentAssignments = {};
     assigned.forEach((a) => { currentAssignments[a.room_id] = a.staff?.id || ''; });
+
+    zoneOwners = {};
+    (zoneOwnersList ?? []).forEach((o) => { zoneOwners[o.zone] = o.staff?.id || ''; });
 
     renderRooms();
   } catch (err) {
@@ -71,7 +77,13 @@ function renderRooms() {
 
     select.addEventListener('change', updateSummary);
 
-    row.innerHTML = `<span class="card-title">${room.room_number}${room.is_large ? '（大房）' : ''}</span>`;
+    const ownerName = room.zone && zoneOwners[room.zone]
+      ? housekeepingStaff.find((s) => s.id === zoneOwners[room.zone])?.name
+      : null;
+    const zoneLabel = room.zone
+      ? `<span class="badge" style="margin-left:6px;">${room.zone}區${ownerName ? '・' + ownerName : ''}</span>`
+      : '';
+    row.innerHTML = `<span class="card-title">${room.room_number}${room.is_large ? '（大房）' : ''}${zoneLabel}</span>`;
     row.appendChild(select);
     listEl.appendChild(row);
   });
