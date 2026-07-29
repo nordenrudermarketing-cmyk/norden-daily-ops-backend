@@ -276,6 +276,22 @@ npm run dev
 
 **部署前要跑兩份 SQL，依序執行**：`schema_v13_zone_maintenance.sql` → `schema_v13_seed.sql`。
 
+## 台東1館：公區保養月曆
+
+`public-area.html`，從房務打卡頁點「公區保養 →」進去，分兩個分頁：
+
+- **今日公區**：早上日常公區、下午日常公區、隊長任務，還有依「這週是第幾週」自動判斷
+  該顯示哪一組每週輪替項目（清蜘蛛網是1、3週；盆栽擦拭是2、4週）
+- **本月／本季公區**：月清（22項，每月都要做）+ 依月份自動判斷適用的季清（三組月份各兩三項）
+  + 依當月奇偶自動判斷適用的雙月清（椅墊清潔／懶人肩頭保養）
+- 對應 API：`GET /api/public-area-maintenance/today`、`GET /api/public-area-maintenance/month`、
+  `POST /api/public-area-maintenance/:id/complete`
+
+**部署前要跑兩份 SQL，依序執行**：`schema_v14_public_area.sql` → `schema_v14_seed.sql`。
+
+**已知小缺口**：這個連結目前台中館的房務同仁登入也看得到（會顯示空白清單，因為台中館
+沒有建這套內容），沒有像責任區保養排程那樣做館別判斷隱藏，之後如果想補上可以再說。
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
