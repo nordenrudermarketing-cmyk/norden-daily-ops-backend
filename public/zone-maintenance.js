@@ -3,6 +3,7 @@ const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
 const CYCLE_LABEL = { week1: '第一週', week2: '第二週', week3: '第三週', week4: '第四週', monthly: '月任務', quarterly: '季清' };
+const CYCLE_ORDER = ['week1', 'week2', 'week3', 'week4', 'monthly', 'quarterly'];
 const PAINT_OPTIONS = [
   ['clean', '○ 乾淨'],
   ['needs_paint', '△ 需油漆'],
@@ -103,7 +104,14 @@ async function loadZoneData() {
 }
 
 function renderTable(data) {
-  const { rooms, templates, completions } = data;
+  const { rooms, completions } = data;
+  // 先照「第一週→第二週→第三週→第四週→月任務→季清」分組排序，組內再照範本本來的順序排
+  const templates = [...data.templates].sort((a, b) => {
+    const cycleDiff = CYCLE_ORDER.indexOf(a.cycle) - CYCLE_ORDER.indexOf(b.cycle);
+    if (cycleDiff !== 0) return cycleDiff;
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  });
+
   const table = document.getElementById('maintTable');
   table.innerHTML = '';
 
