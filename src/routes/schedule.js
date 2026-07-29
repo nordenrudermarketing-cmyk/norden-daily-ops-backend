@@ -28,11 +28,12 @@ router.get('/month', async (req, res) => {
   const monthEnd = nextMonth.toISOString().slice(0, 10);
 
   try {
-    const [staffRes, scheduleRes, blackoutRes, settingsRes] = await Promise.all([
+    const [staffRes, scheduleRes, blackoutRes, settingsRes, teamLeadRes] = await Promise.all([
       supabase.from('staff').select('id, name, roles!inner(name, category)').eq('branch_id', branch_id).eq('is_active', true).order('name'),
       supabase.from('staff_schedule').select('staff_id, work_date, shift_code').eq('branch_id', branch_id).gte('work_date', monthStart).lt('work_date', monthEnd),
       supabase.from('schedule_blackout_dates').select('date, note').eq('branch_id', branch_id).gte('date', monthStart).lt('date', monthEnd),
       supabase.from('schedule_settings').select('*').eq('branch_id', branch_id).eq('month', monthStart).maybeSingle(),
+      supabase.from('daily_team_leads').select('work_date, staff_id').eq('branch_id', branch_id).gte('work_date', monthStart).lt('work_date', monthEnd),
     ]);
 
     if (staffRes.error) throw staffRes.error;
@@ -44,6 +45,7 @@ router.get('/month', async (req, res) => {
       schedule: scheduleRes.data,
       blackout_dates: (blackoutRes.data || []).map((b) => b.date),
       settings: settingsRes.data || { target_off_days: 11, min_staff_frontdesk: 3, min_staff_housekeeping: 3 },
+      team_leads: teamLeadRes.data || [],
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -53,7 +55,7 @@ router.get('/month', async (req, res) => {
 // POST /api/schedule/save
 // { branch_id, month, entries: [{staff_id, work_date, shift_code}], blackout_dates: ["2026-07-04", ...], settings: {...} }
 router.post('/save', async (req, res) => {
-  const { branch_id, month, entries, blackout_dates, settings } = req.body;
+  const { branch_id, month, entries, blackout_dates, settings, team_leads } = req.body;
 
   try {
     if (Array.isArray(entries) && entries.length > 0) {
@@ -76,6 +78,16 @@ router.post('/save', async (req, res) => {
         .from('schedule_settings')
         .upsert({ branch_id, month, ...settings }, { onConflict: 'branch_id,month' });
       if (error) throw error;
+    }
+
+    if (team_leads && typeof team_leads === 'object') {
+      const rows = Object.entries(team_leads)
+        .filter(([, staffId]) => staffId)
+        .map(([workDate, staffId]) => ({ branch_id, work_date: workDate, staff_id: staffId }));
+      if (rows.length > 0) {
+        const { error } = await supabase.from('daily_team_leads').upsert(rows, { onConflict: 'branch_id,work_date' });
+        if (error) throw error;
+      }
     }
 
     res.json({ ok: true });

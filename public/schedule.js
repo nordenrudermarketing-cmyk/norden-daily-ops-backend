@@ -17,6 +17,7 @@ document.getElementById('saveBtn').addEventListener('click', saveAll);
 let monthData = null;
 let blackoutSet = new Set();
 let scheduleMap = {}; // staff_id -> { 'YYYY-MM-DD': code }
+let teamLeadMap = {}; // 'YYYY-MM-DD' -> staff_id
 
 loadMonth();
 
@@ -38,6 +39,8 @@ async function loadMonth() {
     scheduleMap[s.staff_id] = scheduleMap[s.staff_id] || {};
     scheduleMap[s.staff_id][s.work_date] = s.shift_code;
   });
+  teamLeadMap = {};
+  (monthData.team_leads || []).forEach((t) => { teamLeadMap[t.work_date] = t.staff_id; });
 
   document.getElementById('targetOff').value = monthData.settings.target_off_days;
   document.getElementById('minFrontdesk').value = monthData.settings.min_staff_frontdesk;
@@ -140,6 +143,28 @@ function renderTable(monthStr) {
     days.map((d) => `<td id="sumH-${dateStr(d)}"></td>`).join('') + '<td></td>';
   tbody.appendChild(housekeepingRow);
 
+  // 房務小隊長（經理排班時一併指定）
+  const leadRow = document.createElement('tr');
+  leadRow.className = 'lead-row';
+  const leadNameTd = document.createElement('td');
+  leadNameTd.className = 'name-col';
+  leadNameTd.textContent = '房務小隊長';
+  leadRow.appendChild(leadNameTd);
+
+  const housekeepingStaffList = grouped['housekeeping'] || [];
+  days.forEach((d) => {
+    const ds = dateStr(d);
+    const td = document.createElement('td');
+    const select = document.createElement('select');
+    select.dataset.date = ds;
+    select.innerHTML = '<option value="">—</option>' +
+      housekeepingStaffList.map((s) => `<option value="${s.id}" ${s.id === teamLeadMap[ds] ? 'selected' : ''}>${s.name}</option>`).join('');
+    td.appendChild(select);
+    leadRow.appendChild(td);
+  });
+  leadRow.appendChild(document.createElement('td'));
+  tbody.appendChild(leadRow);
+
   table.appendChild(tbody);
 
   updateTotals();
@@ -207,7 +232,13 @@ function updateTotals() {
 async function saveAll() {
   const entries = [];
   document.querySelectorAll('#schedTable select').forEach((sel) => {
+    if (!sel.dataset.staffId) return; // 排除房務小隊長那一列（沒有 staffId，是另一種資料）
     if (sel.value) entries.push({ staff_id: sel.dataset.staffId, work_date: sel.dataset.date, shift_code: sel.value });
+  });
+
+  const teamLeads = {};
+  document.querySelectorAll('.lead-row select').forEach((sel) => {
+    teamLeads[sel.dataset.date] = sel.value || null;
   });
 
   const monthDate = `${monthInput.value}-01`;
@@ -229,6 +260,7 @@ async function saveAll() {
           min_staff_frontdesk: Number(document.getElementById('minFrontdesk').value) || 3,
           min_staff_housekeeping: Number(document.getElementById('minHousekeeping').value) || 3,
         },
+        team_leads: teamLeads,
       }),
     });
     if (!res.ok) throw new Error((await res.json()).error || '儲存失敗');

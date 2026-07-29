@@ -12,7 +12,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   window.location.href = 'index.html';
 });
 
-if (shiftCode === 'C') {
+if (shiftCode === 'C' || shiftCode === 'B') {
   document.getElementById('linkRow').innerHTML =
     '<a href="inspect.html" style="font-size:12px;color:var(--accent);">前往巡房檢查 →</a>';
 }

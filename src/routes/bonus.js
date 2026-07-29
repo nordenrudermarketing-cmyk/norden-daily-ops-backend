@@ -29,7 +29,8 @@ router.get('/daily', async (req, res) => {
     .select('id, name, roles!inner(category)')
     .eq('branch_id', branch_id)
     .eq('roles.category', 'housekeeping')
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .eq('is_part_time', false);
 
   if (staffErr) return res.status(400).json({ error: staffErr.message });
 

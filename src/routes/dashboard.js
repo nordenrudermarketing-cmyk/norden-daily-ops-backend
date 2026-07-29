@@ -38,7 +38,8 @@ router.get('/summary', async (req, res) => {
       .select('id, name, roles!inner(category)')
       .eq('branch_id', branch_id)
       .eq('roles.category', 'housekeeping')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .eq('is_part_time', false);
 
     const bonusTable = [];
     for (const s of hkStaff ?? []) {
