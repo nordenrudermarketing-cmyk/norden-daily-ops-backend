@@ -24,6 +24,7 @@ document.getElementById('ownerSelect').addEventListener('change', saveOwner);
 
 let housekeepingStaff = [];
 let zoneOwners = {}; // zone -> staff_id
+const isManager = staff.roles?.name === '店經理';
 
 init();
 
@@ -33,15 +34,37 @@ async function init() {
     fetch(`${API}/api/staff/list?branch_id=${staff.branch_id}&category=housekeeping`).then((r) => r.json()),
   ]);
   housekeepingStaff = staffRes;
-  zoneSelect.innerHTML = zonesRes.map((z) => `<option value="${z}">${z}區</option>`).join('');
-
-  const ownerSelect = document.getElementById('ownerSelect');
-  ownerSelect.innerHTML = '<option value="">未指定</option>' + housekeepingStaff.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
 
   await loadOwners();
-  loadOwnerForZone();
-  loadZoneData();
-  loadPaint();
+
+  if (isManager) {
+    // 店經理：可以看全部責任區、可以指派負責人
+    zoneSelect.innerHTML = zonesRes.map((z) => `<option value="${z}">${z}區</option>`).join('');
+    const ownerSelect = document.getElementById('ownerSelect');
+    ownerSelect.innerHTML = '<option value="">未指定</option>' + housekeepingStaff.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+    loadOwnerForZone();
+    loadZoneData();
+    loadPaint();
+  } else {
+    // 房務同仁：只能看自己被指派的責任區，不能切換、不能改負責人
+    const myZone = Object.entries(zoneOwners).find(([, staffId]) => staffId === staff.id)?.[0];
+    document.getElementById('zoneFieldWrap').style.display = 'none';
+    document.getElementById('ownerFieldWrap').style.display = 'none';
+    document.getElementById('generateBtn').style.display = 'none';
+
+    if (!myZone) {
+      document.getElementById('restrictedNotice').style.display = 'block';
+      document.getElementById('restrictedNotice').innerHTML =
+        '<p class="empty-state">你目前還沒有被指派責任區，請聯繫店經理確認。</p>';
+      document.getElementById('topControls').style.display = 'none';
+      return;
+    }
+
+    zoneSelect.innerHTML = `<option value="${myZone}">${myZone}區（你的責任區）</option>`;
+    zoneSelect.disabled = true;
+    loadZoneData();
+    loadPaint();
+  }
 }
 
 async function loadOwners() {

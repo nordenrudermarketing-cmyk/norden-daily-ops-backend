@@ -32,10 +32,12 @@
       <a class="logout-link" href="checklist.html">回打卡頁</a>
     </div>
 
-    <div class="top-controls">
+    <div id="restrictedNotice" style="display:none;"></div>
+
+    <div class="top-controls" id="topControls">
       <div class="field"><label for="monthInput">月份</label><input type="month" id="monthInput"></div>
-      <div class="field"><label for="zoneSelect">責任區</label><select id="zoneSelect"></select></div>
-      <div class="field"><label for="ownerSelect">目前負責人</label><select id="ownerSelect"></select></div>
+      <div class="field" id="zoneFieldWrap"><label for="zoneSelect">責任區</label><select id="zoneSelect"></select></div>
+      <div class="field" id="ownerFieldWrap"><label for="ownerSelect">目前負責人</label><select id="ownerSelect"></select></div>
       <button class="primary" id="generateBtn" style="width:auto;padding:10px 20px;">產生本月任務（全部責任區）</button>
     </div>
 
