@@ -21,6 +21,7 @@ import assessmentRoutes from './routes/assessment.js';
 import hqRoutes from './routes/hq.js';
 import roomMaintenanceRoutes from './routes/roomMaintenance.js';
 import publicAreaRoutes from './routes/publicArea.js';
+import selfEvalRoutes from './routes/selfEval.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/assessment', assessmentRoutes);
 app.use('/api/hq', hqRoutes);
 app.use('/api/room-maintenance', roomMaintenanceRoutes);
 app.use('/api/public-area-maintenance', publicAreaRoutes);
+app.use('/api/self-eval', selfEvalRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

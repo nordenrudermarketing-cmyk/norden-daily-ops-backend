@@ -238,4 +238,58 @@ router.post('/:id/resolve-defect', async (req, res) => {
   res.json(data);
 });
 
+// POST /api/room-cleanings/register-complaint
+// { branch_id, room_id, work_date, description, reported_by, photo_url }
+// 客務事後補登客訴：找到該房該日的打掃紀錄，標記為缺失（客訴也算缺失，會影響當日獎金）
+// 如果那天那間房根本沒有打掃紀錄（例如沒被分配到），會建立一筆沒有指定房務同仁的紀錄，
+// 純粹留下客訴紀錄，不會影響任何人的獎金
+router.post('/register-complaint', async (req, res) => {
+  const { branch_id, room_id, work_date, description, reported_by, photo_url } = req.body;
+  if (!description) return res.status(400).json({ error: '請填寫客訴內容' });
+
+  const noteText = `客訴：${description}`;
+
+  const { data: existing } = await supabase
+    .from('room_cleanings')
+    .select('id, defect_note')
+    .eq('room_id', room_id)
+    .eq('work_date', work_date)
+    .maybeSingle();
+
+  let cleaningRow;
+  if (existing) {
+    const mergedNote = existing.defect_note ? `${existing.defect_note}；${noteText}` : noteText;
+    const { data, error } = await supabase
+      .from('room_cleanings')
+      .update({ has_defect: true, defect_note: mergedNote, defect_photo_url: photo_url || null, defect_resolved: false })
+      .eq('id', existing.id)
+      .select('*, rooms(id, room_number, branch_id)')
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    cleaningRow = data;
+  } else {
+    // 那天沒有打掃紀錄（例如沒被分配），建立一筆沒有指定房務同仁的紀錄純粹留存客訴
+    const { data, error } = await supabase
+      .from('room_cleanings')
+      .insert({ room_id, work_date, status: 'completed', has_defect: true, defect_note: noteText, defect_photo_url: photo_url || null })
+      .select('*, rooms(id, room_number, branch_id)')
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    cleaningRow = data;
+  }
+
+  await supabase.from('defect_logs').insert({
+    branch_id: branch_id ?? cleaningRow.rooms?.branch_id ?? null,
+    source_type: 'room',
+    source_id: cleaningRow.id,
+    reported_by,
+    description: noteText,
+    photo_url: photo_url || null,
+  });
+
+  await checkRoomRepeatAnomaly(cleaningRow.rooms, branch_id ?? cleaningRow.rooms?.branch_id);
+
+  res.json(cleaningRow);
+});
+
 export default router;

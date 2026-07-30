@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>審閱自評表 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  .staff-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .staff-row .status { font-size: 12px; padding: 3px 10px; border-radius: 8px; }
+  .status.none { background: var(--danger-soft); color: var(--danger); }
+  .status.draft { background: #fff6e0; color: #a67c00; }
+  .status.submitted { background: var(--accent-soft); color: var(--accent); }
+  .status.reviewed { background: var(--surface-1); color: var(--ink-soft); }
+  .q-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .q-text { font-size: 14px; margin: 0 0 8px; line-height: 1.5; }
+  .staff-answer-box { background: var(--surface-1); border-radius: 8px; padding: 8px; font-size: 12.5px; margin-bottom: 10px; }
+  .q-yesno { display: flex; gap: 10px; margin-bottom: 8px; }
+  .q-yesno label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .q-note { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 44px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">審閱自評表</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" id="backLink" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div id="listView">
+      <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+      <div id="staffList"></div>
+    </div>
+
+    <div id="detailView" style="display:none;"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="self-eval-review.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自評題目管理 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  table.tpl { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  table.tpl th, table.tpl td { border-bottom: 1px solid var(--line); padding: 8px; font-size: 12.5px; text-align: left; vertical-align: top; }
+  table.tpl th { background: var(--accent-soft); font-weight: 500; }
+  table.tpl input, table.tpl select, table.tpl textarea { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; font-family: inherit; }
+  table.tpl tr.inactive { opacity: 0.45; }
+  .small-btn { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; margin-right: 4px; margin-bottom: 4px; }
+  .new-row-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .new-row-form .field { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>自評題目管理</h1>
+        <p>異動後，同仁下次打開自評表就會看到最新題目</p>
+      </div>
+      <a class="logout-link" href="hq-dashboard.html">回總覽</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="tpl" id="tplTable">
+        <thead><tr><th style="width:12%;">類別</th><th style="width:38%;">題目（中文）</th><th style="width:30%;">題目（印尼文，選填）</th><th style="width:6%;">順序</th><th style="width:14%;">狀態</th></tr></thead>
+        <tbody id="tplBody"></tbody>
+      </table>
+    </div>
+
+    <div class="new-row-form">
+      <p style="font-weight:500;margin:0 0 10px;">新增題目</p>
+      <div class="field"><label>類別</label>
+        <select id="newCategory">
+          <option value="common">全部門共同</option>
+          <option value="management">主管職專屬</option>
+          <option value="housekeeping">房務部門專屬</option>
+          <option value="frontdesk">客務部門專屬</option>
+        </select>
+      </div>
+      <div class="field"><label>題目（中文）</label><textarea id="newZh"></textarea></div>
+      <div class="field"><label>題目（印尼文，選填）</label><textarea id="newId"></textarea></div>
+      <button class="primary" id="addBtn">新增</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="self-eval-templates.js"></script>
+</body>
+</html>

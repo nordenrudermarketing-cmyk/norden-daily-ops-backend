@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每月自評表 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 760px; }
+  .due-banner { background: var(--accent-soft); border: 1px solid #b9d3c5; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--accent); }
+  .due-banner.overdue { background: var(--danger-soft); border-color: #e3bfae; color: var(--danger); }
+  .q-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .q-text { font-size: 14px; margin: 0 0 10px; line-height: 1.5; }
+  .q-yesno { display: flex; gap: 10px; margin-bottom: 8px; }
+  .q-yesno label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .q-note { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 50px; }
+  .locked-note { background: var(--surface-1); border-radius: 8px; padding: 8px; font-size: 12px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>每月工作夥伴自檢表</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="index.html">回登入</a>
+    </div>
+
+    <div id="dueBanner"></div>
+    <div id="statusBanner"></div>
+    <div id="questionsList"></div>
+
+    <div id="signOffArea" style="display:none;">
+      <button class="primary" id="saveDraftBtn" style="margin-bottom:8px;">儲存草稿</button>
+      <button class="primary" id="submitBtn" style="background:var(--accent);">確認送出</button>
+      <p class="error-msg" id="statusMsg"></p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="self-eval.js"></script>
+</body>
+</html>

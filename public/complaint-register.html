@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>客訴登記 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>客訴登記</h1>
+        <p>客訴會算成缺失，影響當日房務獎金</p>
+      </div>
+      <a class="logout-link" href="shift.html">回任務頁</a>
+    </div>
+
+    <div class="field"><label for="dateInput">發生日期</label><input type="text" id="dateInput"></div>
+    <div class="field"><label for="roomSelect">房號</label><select id="roomSelect"></select></div>
+    <div class="field"><label for="descInput">客訴內容</label><textarea id="descInput" placeholder="例如：客人反映浴室有異味"></textarea></div>
+    <div class="field"><label for="photoInput">照片（選填）</label><input type="file" id="photoInput" accept="image/*"></div>
+
+    <button class="primary" id="submitBtn">送出登記</button>
+    <p class="error-msg" id="statusMsg"></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="complaint-register.js"></script>
+</body>
+</html>
