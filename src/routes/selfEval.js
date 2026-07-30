@@ -224,4 +224,41 @@ router.post('/manager-review', async (req, res) => {
   res.json(data);
 });
 
+// GET /api/self-eval/hq-flagged?eval_month=2026-07-01(選填)
+// 總公司：所有館別「已審閱完成」的表裡，被勾「否」的項目彙總（同仁自評否 或 主管確認否 都算）
+router.get('/hq-flagged', async (req, res) => {
+  const { eval_month } = req.query;
+
+  let subQuery = supabase
+    .from('self_eval_submissions')
+    .select('id, staff_id, branch_id, eval_month, interview_date, manager_interview_notes, staff:staff_id(name), branches:branch_id(name)')
+    .eq('status', 'reviewed');
+  if (eval_month) subQuery = subQuery.eq('eval_month', eval_month);
+
+  const { data: submissions, error: subErr } = await subQuery;
+  if (subErr) return res.status(400).json({ error: subErr.message });
+  if (!submissions || submissions.length === 0) return res.json([]);
+
+  const submissionIds = submissions.map((s) => s.id);
+  const { data: answers, error: ansErr } = await supabase
+    .from('self_eval_answers')
+    .select('*, template:template_id(category, question_zh, sort_order)')
+    .in('submission_id', submissionIds)
+    .or('staff_answer.eq.no,manager_answer.eq.no');
+  if (ansErr) return res.status(400).json({ error: ansErr.message });
+
+  const subMap = {};
+  submissions.forEach((s) => { subMap[s.id] = s; });
+
+  const result = (answers ?? []).map((a) => ({
+    ...a,
+    staff_name: subMap[a.submission_id]?.staff?.name,
+    branch_name: subMap[a.submission_id]?.branches?.name,
+    eval_month: subMap[a.submission_id]?.eval_month,
+    interview_date: subMap[a.submission_id]?.interview_date,
+  })).sort((a, b) => (a.branch_name || '').localeCompare(b.branch_name || ''));
+
+  res.json(result);
+});
+
 export default router;

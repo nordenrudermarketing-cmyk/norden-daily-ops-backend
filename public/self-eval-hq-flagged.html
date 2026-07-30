@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自評異常彙總 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  .flag-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .flag-card .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .flag-card .who { font-size: 13px; font-weight: 600; }
+  .flag-card .month { font-size: 11px; color: var(--ink-soft); }
+  .flag-card .q { font-size: 13px; margin: 0 0 8px; }
+  .flag-card .ans-box { background: var(--surface-1); border-radius: 8px; padding: 8px; font-size: 12px; margin-bottom: 6px; }
+  .flag-card .ans-box.no { background: var(--danger-soft); color: var(--danger); }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>自評異常彙總</h1>
+        <p>所有館別已審閱完成的自評表中，被勾「否」的項目</p>
+      </div>
+      <a class="logout-link" href="hq-dashboard.html">回總覽</a>
+    </div>
+
+    <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+
+    <div id="flagList"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="self-eval-hq-flagged.js"></script>
+</body>
+</html>
