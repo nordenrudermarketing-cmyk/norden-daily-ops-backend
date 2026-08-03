@@ -416,6 +416,30 @@ npm run dev
 
 **部署前要跑兩份 SQL，依序執行**：`schema_v18_tt1_learning.sql` → `schema_v18_seed.sql`。
 
+## 四個新功能（NO SHOW／評論回報／例行事項／開班收班日報）
+
+- **NO SHOW記錄**（`no-show.html`，客務任務頁有連結）：客務發現No Show就登記一筆，姓名/訂單、
+  房型、有沒有收費、金額、備註，當天清單即時顯示
+  - 對應 API：`GET/POST /api/no-show`
+
+- **評論回報**（`review-check.html`）：固定四平台（BK/AG/Ctrip/Google），每天巡查一次，
+  正常就按「已檢查」，發現故障/客訴類評論就按「發現異常評論」填說明
+  - 對應 API：`GET /api/review-checks/today`、`POST /api/review-checks/check`
+
+- **例行事項總表**（採購/銀行/總務）：
+  - 同仁端 `routine-tasks.html`：只看得到分配給自己的項目，可以更新進度說明跟狀態
+  - 店經理端 `routine-tasks-manage.html`：看得到全部項目，可以新增、編輯、指派負責人
+  - 這是**持續存在的清單**，不是每日/每月重新產生，經理每月要換負責人直接改指派欄位即可
+  - 對應 API：`GET/POST/PUT /api/routine-tasks*`
+
+- **開班收班日報**（`manager-daily-report.html`，只有店經理用）：跟台中館的巡館打勾清單不同，
+  是敘述式日報——開班時填「預計執行事項」，收班時填「完成事項/未完成待追蹤/各項抽檢/
+  總公司反應事項」，同一天算一份，先開班再收班
+  - 對應 API：`GET /api/manager-reports/today`、`POST /api/manager-reports/open`、
+    `POST /api/manager-reports/close`
+
+**部署前要跑 SQL**：執行 `schema_v20_tt1_extras.sql`。
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時

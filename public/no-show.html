@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>NO SHOW 記錄 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>NO SHOW 記錄</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="shift.html">回任務頁</a>
+    </div>
+
+    <div class="field"><label for="guestInfo">訂單/客人資訊</label><input type="text" id="guestInfo" placeholder="姓名／訂單編號"></div>
+    <div class="field"><label for="roomType">房型</label><input type="text" id="roomType"></div>
+    <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <input type="checkbox" id="charged" style="width:auto;"> 有收費
+    </label>
+    <div class="field"><label for="amount">金額（若有收費）</label><input type="text" id="amount" inputmode="numeric"></div>
+    <div class="field"><label for="note">備註</label><textarea id="note"></textarea></div>
+    <button class="primary" id="addBtn">新增紀錄</button>
+
+    <div class="section-title" style="font-weight:600;margin:20px 0 8px;">今日 NO SHOW 清單</div>
+    <div id="list"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="no-show.js"></script>
+</body>
+</html>

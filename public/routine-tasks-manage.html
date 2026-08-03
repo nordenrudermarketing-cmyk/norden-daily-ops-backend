@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>例行事項管理 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  table.rt { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  table.rt th, table.rt td { border-bottom: 1px solid var(--line); padding: 8px; font-size: 12.5px; text-align: left; vertical-align: top; }
+  table.rt th { background: var(--accent-soft); font-weight: 500; }
+  table.rt input, table.rt select, table.rt textarea { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; font-family: inherit; }
+  table.rt tr.completed { opacity: 0.5; }
+  .small-btn { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; margin-bottom: 4px; }
+  .new-row-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .new-row-form .field { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>例行事項管理</h1>
+        <p>採購／銀行／總務，可以指派負責人給客務同仁</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <table class="rt" id="rtTable">
+      <thead><tr><th style="width:10%;">類別</th><th style="width:22%;">項目</th><th style="width:12%;">週次</th><th style="width:16%;">負責人</th><th style="width:12%;">預計完成</th><th style="width:8%;">狀態</th><th style="width:20%;">進度說明</th></tr></thead>
+      <tbody id="rtBody"></tbody>
+    </table>
+
+    <div class="new-row-form">
+      <p style="font-weight:500;margin:0 0 10px;">新增例行事項</p>
+      <div class="field"><label>類別</label>
+        <select id="newCategory"><option value="採購">採購</option><option value="銀行">銀行</option><option value="總務">總務</option></select>
+      </div>
+      <div class="field"><label>項目名稱</label><input type="text" id="newName"></div>
+      <div class="field"><label>週次說明</label><input type="text" id="newWeek" placeholder="例如：每月第一週"></div>
+      <div class="field"><label>預計完成日</label><input type="text" id="newDue" placeholder="YYYY-MM-DD"></div>
+      <button class="primary" id="addBtn">新增</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="routine-tasks-manage.js"></script>
+</body>
+</html>

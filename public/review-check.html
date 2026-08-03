@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>評論回報 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>評論回報</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="shift.html">回任務頁</a>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <div class="overlay" id="noteOverlay" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="overlayTitle" style="margin-bottom:12px;">回報異常評論</p>
+      <div class="field"><label for="overlayNote">說明（例如故障/客訴內容）</label><textarea id="overlayNote"></textarea></div>
+      <div class="action-row">
+        <button class="secondary" id="overlayCancel">取消</button>
+        <button class="btn" id="overlaySubmit">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="review-check.js"></script>
+</body>
+</html>

@@ -23,6 +23,10 @@ import roomMaintenanceRoutes from './routes/roomMaintenance.js';
 import publicAreaRoutes from './routes/publicArea.js';
 import selfEvalRoutes from './routes/selfEval.js';
 import reflectionsRoutes from './routes/reflections.js';
+import noShowRoutes from './routes/noShow.js';
+import reviewCheckRoutes from './routes/reviewCheck.js';
+import routineTasksRoutes from './routes/routineTasks.js';
+import managerReportsRoutes from './routes/managerReports.js';
 
 dotenv.config();
 
@@ -53,6 +57,10 @@ app.use('/api/room-maintenance', roomMaintenanceRoutes);
 app.use('/api/public-area-maintenance', publicAreaRoutes);
 app.use('/api/self-eval', selfEvalRoutes);
 app.use('/api/reflections', reflectionsRoutes);
+app.use('/api/no-show', noShowRoutes);
+app.use('/api/review-checks', reviewCheckRoutes);
+app.use('/api/routine-tasks', routineTasksRoutes);
+app.use('/api/manager-reports', managerReportsRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));
