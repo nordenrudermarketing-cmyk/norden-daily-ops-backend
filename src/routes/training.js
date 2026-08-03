@@ -3,22 +3,21 @@ import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
 
-// GET /api/training/progress?staff_id=xxx&category=housekeeping
+// GET /api/training/progress?staff_id=xxx&category=housekeeping&branch_id=xxx
 // 該同仁在該職務學習地圖上的完整進度（每一項訓練項目 + 目前進度）
+// 學習地圖是分館別的（台中館跟台東1館的房務學習內容不一樣），一定要帶 branch_id
 router.get('/progress', async (req, res) => {
-  const { staff_id, category } = req.query;
+  const { staff_id, category, branch_id } = req.query;
 
-  const { data: path, error: pathErr } = await supabase
-    .from('learning_paths')
-    .select('id, name')
-    .eq('category', category)
-    .maybeSingle();
+  let pathQuery = supabase.from('learning_paths').select('id, name').eq('category', category);
+  if (branch_id) pathQuery = pathQuery.eq('branch_id', branch_id);
+  const { data: path, error: pathErr } = await pathQuery.maybeSingle();
   if (pathErr) return res.status(400).json({ error: pathErr.message });
   if (!path) return res.json({ path: null, units: [] });
 
   const { data: units, error: unitErr } = await supabase
     .from('learning_units')
-    .select('id, topic, category, item_name, sort_order')
+    .select('id, topic, category, item_name, item_name_id, sort_order')
     .eq('path_id', path.id)
     .eq('is_active', true)
     .order('sort_order');

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每日自評 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>每日自評</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="index.html">回登入</a>
+    </div>
+
+    <div class="field"><label for="q1">今天完成了哪些工作？</label><textarea id="q1"></textarea></div>
+    <div class="field"><label for="q2">今天哪一項工作做得最好？</label><textarea id="q2"></textarea></div>
+    <div class="field"><label for="q3">今天遇到什麼問題？</label><textarea id="q3"></textarea></div>
+    <div class="field"><label for="q4">今天有什麼需要協助？</label><textarea id="q4"></textarea></div>
+    <div class="field"><label for="q5">明天需要改善什麼？</label><textarea id="q5"></textarea></div>
+
+    <button class="primary" id="submitBtn">送出今日自評</button>
+    <p class="error-msg" id="statusMsg"></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="daily-reflection.js"></script>
+</body>
+</html>

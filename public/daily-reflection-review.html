@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>同仁每日自評 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  .ref-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .ref-card .name { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .ref-card .qa { font-size: 12.5px; margin-bottom: 6px; }
+  .ref-card .qa b { color: var(--ink-soft); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>同仁每日自評</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div class="field" style="max-width:200px;"><label for="dateInput">日期</label><input type="text" id="dateInput"></div>
+
+    <div id="refList"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="daily-reflection-review.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每週目標確認 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>每週目標確認</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="index.html">回登入</a>
+    </div>
+
+    <div id="statusBanner"></div>
+
+    <div class="field"><label for="q1">本週主要工作目標</label><textarea id="q1"></textarea></div>
+    <div class="field"><label for="q2">品質要求</label><textarea id="q2"></textarea></div>
+    <div class="field"><label for="q3">已完成事項</label><textarea id="q3"></textarea></div>
+    <div class="field"><label for="q4">尚未完成事項</label><textarea id="q4"></textarea></div>
+    <div class="field"><label for="q5">需要協助事項</label><textarea id="q5"></textarea></div>
+    <div class="field"><label for="q6">下週改善重點</label><textarea id="q6"></textarea></div>
+
+    <button class="primary" id="submitBtn">儲存本週目標</button>
+    <p class="error-msg" id="statusMsg"></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="weekly-goals.js"></script>
+</body>
+</html>

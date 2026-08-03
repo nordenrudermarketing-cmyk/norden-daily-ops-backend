@@ -41,7 +41,7 @@ async function loadProgress() {
   const listEl = document.getElementById('unitsList');
   listEl.innerHTML = '<p class="empty-state">載入中…</p>';
 
-  const res = await fetch(`${API}/api/training/progress?staff_id=${targetStaffId}&category=${category}`);
+  const res = await fetch(`${API}/api/training/progress?staff_id=${targetStaffId}&category=${category}&branch_id=${staff.branch_id}`);
   const data = await res.json();
   renderUnits(data.units || []);
 
@@ -173,6 +173,7 @@ function renderUnits(units) {
 
     row.innerHTML = `
       <p class="unit-name">${u.item_name}</p>
+      ${u.item_name_id ? `<p class="unit-name" style="font-size:11px;color:var(--ink-soft);margin-top:-6px;">${u.item_name_id}</p>` : ''}
       <div class="unit-fields">
         <input type="text" class="f-trainer" placeholder="培訓員" value="${u.progress?.trainer_name || ''}">
         <input type="date" class="f-date" value="${u.progress?.taught_date || ''}">

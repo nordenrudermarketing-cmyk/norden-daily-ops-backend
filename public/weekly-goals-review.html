@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>同仁每週目標 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  .goal-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .goal-card .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .goal-card .name { font-weight: 600; font-size: 14px; }
+  .goal-card .qa { font-size: 12.5px; margin-bottom: 6px; }
+  .goal-card .qa b { color: var(--ink-soft); font-weight: 500; }
+  .status-badge { font-size: 11px; padding: 3px 10px; border-radius: 8px; }
+  .status-badge.none { background: var(--danger-soft); color: var(--danger); }
+  .status-badge.draft { background: #fff6e0; color: #a67c00; }
+  .status-badge.confirmed { background: var(--accent-soft); color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>同仁每週目標</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div id="goalList"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="weekly-goals-review.js"></script>
+</body>
+</html>
