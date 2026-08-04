@@ -97,10 +97,24 @@ router.get('/today', async (req, res) => {
     reportsByTemplate[r.source_id].push(r);
   });
 
+  // 週輪替檢查重點：依任務名稱＋這週是第幾週，帶出對應的提醒文字
+  const weekOfMonth = Math.min(Math.ceil(dayOfMonth / 7), 5);
+  const taskNames = todayTemplates.map((t) => t.task_name);
+  const { data: focusNotes } = await supabase
+    .from('shift_task_focus_notes')
+    .select('task_name, note')
+    .eq('branch_id', branch_id)
+    .eq('week_number', weekOfMonth)
+    .in('task_name', taskNames.length ? taskNames : ['__none__']);
+
+  const focusNoteByTaskName = {};
+  (focusNotes ?? []).forEach((f) => { focusNoteByTaskName[f.task_name] = f.note; });
+
   const result = todayTemplates.map((t) => ({
     ...t,
     completion: completionByTemplate[t.id] || null,
     reports: reportsByTemplate[t.id] || [],
+    focus_note: focusNoteByTaskName[t.task_name] || null,
   }));
 
   res.json(result);
