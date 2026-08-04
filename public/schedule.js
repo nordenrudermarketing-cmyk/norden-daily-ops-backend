@@ -2,9 +2,9 @@ const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-const SHIFT_CODES = ['', 'A', 'B', 'C', '房', '中', '昼', '特', '1', 'PT1', 'PT2', '管'];
+const SHIFT_CODES = ['', 'A', 'B', 'C', '東', '房', '中', '昼', '特', '1', 'PT1', 'PT2', '管'];
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
-const ON_DUTY_FRONTDESK = ['A', 'B', 'C', '中', '昼', 'PT1', 'PT2', '管'];
+const ON_DUTY_FRONTDESK = ['A', 'B', 'C', '東', '中', '昼', 'PT1', 'PT2', '管'];
 const CATEGORY_LABEL = { frontdesk: '客務', housekeeping: '房務', management: '管理' };
 
 document.getElementById('staffLine').textContent = staff.name;
