@@ -18,14 +18,56 @@ async function init() {
   await loadStaffOptions();
 }
 
+const isManager = staff.roles?.name === '店經理';
+
 async function loadStaffOptions() {
   const category = categorySelect.value;
-  const res = await fetch(`${API}/api/staff/list?branch_id=${staff.branch_id}&category=${category}`);
+  const filterParam = isManager ? '' : '&learning_enabled=true';
+  const res = await fetch(`${API}/api/staff/list?branch_id=${staff.branch_id}&category=${category}${filterParam}`);
   const staffList = await res.json();
 
-  staffSelect.innerHTML = staffList.map((s) => `<option value="${s.id}" ${s.id === staff.id ? 'selected' : ''}>${s.name}</option>`).join('');
+  if (isManager) {
+    renderManagerToggleList(staffList);
+    const enabledList = staffList.filter((s) => s.learning_map_enabled);
+    staffSelect.innerHTML = enabledList.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+    if (enabledList.length === 0) {
+      document.getElementById('unitsList').innerHTML = '<p class="empty-state">目前這個類別沒有已開啟學習地圖的同仁，請在下方先幫新人開啟。</p>';
+      document.getElementById('examSection').style.display = 'none';
+      return;
+    }
+  } else {
+    document.getElementById('managerTogglePanel').innerHTML = '';
+    staffSelect.innerHTML = staffList.map((s) => `<option value="${s.id}" ${s.id === staff.id ? 'selected' : ''}>${s.name}</option>`).join('');
+    if (staffList.length === 0) {
+      document.getElementById('unitsList').innerHTML = '<p class="empty-state">目前還沒有人開啟學習地圖，請聯繫店經理。</p>';
+      document.getElementById('examSection').style.display = 'none';
+      return;
+    }
+  }
+
   document.getElementById('examSection').style.display = category === 'housekeeping' ? 'block' : 'none';
   loadProgress();
+}
+
+function renderManagerToggleList(staffList) {
+  const panel = document.getElementById('managerTogglePanel');
+  if (!panel) return;
+  panel.innerHTML = '<p style="font-weight:500;font-size:13px;margin:0 0 8px;">管理學習地圖開放名單（勾選才會出現在上面的選單）</p>' +
+    staffList.map((s) => `
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <input type="checkbox" data-staff-id="${s.id}" ${s.learning_map_enabled ? 'checked' : ''} style="width:auto;"> ${s.name}
+      </label>`).join('');
+
+  panel.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener('change', async () => {
+      await fetch(`${API}/api/staff/${cb.dataset.staffId}/learning-map-toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: cb.checked }),
+      });
+      loadStaffOptions();
+    });
+  });
 }
 
 const CATEGORIES = ['工作態度', '專業能力', '工作品質', '工作效率', '溝通能力', '團隊合作', '主動性', '責任感', '問題處理', '品牌認同'];
