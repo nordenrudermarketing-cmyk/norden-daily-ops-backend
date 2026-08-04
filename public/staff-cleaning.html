@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>個人清潔配額 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .progress-card { background: var(--accent-soft); border: 1px solid #b9d3c5; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  .cat-title { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 16px 0 8px; }
+  .cleaning-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 6px; }
+  .cleaning-card .who-list { font-size: 11px; color: var(--ink-soft); margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>個人清潔配額</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="shift.html">回任務頁</a>
+    </div>
+
+    <div class="progress-card">
+      <p style="margin:0;font-size:13px;">本月已完成 <strong id="myCount">0</strong> 項（目標4項），涵蓋 <strong id="myCategories">0</strong> 個類別</p>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <div class="overlay" id="photoOverlay" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="overlayTitle" style="margin-bottom:12px;">標記完成</p>
+      <div class="field"><label for="photoInput">照片（選填）</label><input type="file" id="photoInput" accept="image/*"></div>
+      <div class="action-row">
+        <button class="secondary" id="overlayCancel">取消</button>
+        <button class="btn" id="overlaySubmit">確認完成</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="staff-cleaning.js"></script>
+</body>
+</html>

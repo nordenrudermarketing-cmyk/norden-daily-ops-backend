@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>客務每日日誌 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .section-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .section-block h3 { font-size: 15px; margin: 0 0 4px; }
+  .section-block p.hint { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 12px; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .field { flex: 1; }
+  .note-item { border-top: 1px solid var(--line); padding: 8px 0; font-size: 12.5px; }
+  .note-item:first-child { border-top: none; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>客務每日日誌</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="shift.html">回任務頁</a>
+    </div>
+
+    <!-- 掃單記錄 -->
+    <div class="section-block">
+      <h3>掃單記錄</h3>
+      <p class="hint">今日住房訂單數＋昨日新進訂單數，每天填一次即可</p>
+      <div class="row2">
+        <div class="field"><label>今日住房訂單數</label><input type="text" id="checkinCount" inputmode="numeric"></div>
+        <div class="field"><label>有無異常</label><input type="text" id="checkinAnomaly" placeholder="無 / 說明"></div>
+      </div>
+      <div class="field"><label>訂單編號（若有異常）</label><input type="text" id="checkinOrderNo"></div>
+      <div class="row2">
+        <div class="field"><label>昨日新進訂單數</label><input type="text" id="newOrderCount" inputmode="numeric"></div>
+        <div class="field"><label>有無遺漏</label><input type="text" id="newOrderMissing" placeholder="無 / 說明"></div>
+      </div>
+      <div class="field"><label>訂單編號（若有遺漏）</label><input type="text" id="newOrderNo"></div>
+      <button class="primary" id="sweepSaveBtn">儲存掃單記錄</button>
+      <p class="error-msg" id="sweepStatus"></p>
+
+      <div style="margin-top:16px;">
+        <p style="font-weight:500;font-size:13px;margin:0 0 6px;">互相提醒／案例分享</p>
+        <div id="notesList"></div>
+        <div class="field" style="margin-top:8px;"><textarea id="newNote" placeholder="分享案例或提醒（選填訂單編號）"></textarea></div>
+        <input type="text" id="newNoteOrderNo" placeholder="相關訂單編號（選填）" style="margin-bottom:8px;">
+        <button class="secondary" id="addNoteBtn">新增提醒</button>
+      </div>
+    </div>
+
+    <!-- 評論回報 -->
+    <div class="section-block">
+      <h3>評論回報</h3>
+      <p class="hint">四平台每天各自填看到的內容，不確定就寫「無」</p>
+      <div class="field"><label>BK</label><input type="text" id="bkNote"></div>
+      <div class="field"><label>AG</label><input type="text" id="agNote"></div>
+      <div class="field"><label>Ctrip</label><input type="text" id="ctripNote"></div>
+      <div class="field"><label>Google</label><input type="text" id="googleNote"></div>
+      <div class="field"><label>特殊回報（故障/客訴）</label><textarea id="specialReport"></textarea></div>
+      <button class="primary" id="reviewSaveBtn">儲存評論回報</button>
+      <p class="error-msg" id="reviewStatus"></p>
+    </div>
+
+    <!-- NO SHOW -->
+    <div class="section-block">
+      <h3>NO SHOW</h3>
+      <p class="hint">沒有發生就填「無」，一天一筆</p>
+      <div class="field"><label>訂單</label><input type="text" id="nsOrder" placeholder="無"></div>
+      <div class="row2">
+        <div class="field"><label>有收費</label><input type="text" id="nsCharged" placeholder="無"></div>
+        <div class="field"><label>「沒」收費</label><input type="text" id="nsUncharged" placeholder="無"></div>
+      </div>
+      <div class="field"><label>NOTE</label><input type="text" id="nsNote" placeholder="無"></div>
+      <button class="primary" id="noShowSaveBtn">儲存 NO SHOW</button>
+      <p class="error-msg" id="noShowStatus"></p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="daily-frontdesk-log.js"></script>
+</body>
+</html>
