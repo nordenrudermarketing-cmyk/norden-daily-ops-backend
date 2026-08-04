@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
+import { uploadPhotoIfBase64 } from '../lib/uploadPhoto.js';
 
 const router = express.Router();
 
@@ -11,6 +12,8 @@ router.post('/report', async (req, res) => {
   const { branch_id, source_type, source_id, source_label, reported_by, description, photo_url } = req.body;
   if (!description) return res.status(400).json({ error: '請填寫回報說明' });
 
+  const storedPhotoUrl = await uploadPhotoIfBase64(photo_url, 'issue-reports');
+
   const { data, error } = await supabase
     .from('defect_logs')
     .insert({
@@ -19,7 +22,7 @@ router.post('/report', async (req, res) => {
       source_id,
       reported_by,
       description: source_label ? `【${source_label}】${description}` : description,
-      photo_url: photo_url || null,
+      photo_url: storedPhotoUrl,
     })
     .select()
     .single();
