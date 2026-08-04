@@ -94,9 +94,13 @@ async function loadBranchDetail(branchId, container) {
   } else {
     topDefects.forEach((d) => {
       const sourceLabel = { room: '客房', public_area: '公共空間', deep_clean: '細清', shift_task: '客務班別任務' }[d.source_type] || d.source_type;
+      const photoHtml = d.photo_url
+        ? `<img src="${d.photo_url}" style="max-width:160px;max-height:160px;border-radius:8px;margin-top:6px;cursor:pointer;display:block;" onclick="window.open(this.src, '_blank')">`
+        : '';
       html += `<div class="item">
         <strong>${sourceLabel}${d.location_label ? '・' + d.location_label : ''}</strong>　${d.description || ''}
         <div class="meta">${d.staff?.name || ''}・${new Date(d.reported_at).toLocaleString('zh-TW')}</div>
+        ${photoHtml}
         <button data-resolve-defect="${d.id}">標記已處理</button>
       </div>`;
     });
