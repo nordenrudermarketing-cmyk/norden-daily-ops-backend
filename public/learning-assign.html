@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>指派培訓 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  .picker-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .picker-row .field { margin-bottom: 0; min-width: 160px; }
+  .unit-topic-title { font-size: 12px; color: var(--accent); margin: 14px 0 4px; }
+  .unit-group-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 10px 0 6px; }
+  .assign-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 5px; }
+  .assign-row.done { opacity: 0.55; }
+  .assign-row .name { flex: 1; font-size: 12.5px; }
+  .assign-row select { padding: 6px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; width: 130px; }
+  .stage-stepper { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .stage-pill { flex: 1; text-align: center; padding: 10px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; cursor: pointer; }
+  .stage-pill.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .stage-pill.pass { background: var(--accent-soft); border-color: #b9d3c5; }
+  .stage-pill .stage-status { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .rating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .rating-item label { font-size: 12px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .rating-item select { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+  .exam-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>指派培訓</h1>
+        <p>指定新人要學什麼、每個項目由誰教</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div class="picker-row">
+      <div class="field">
+        <label for="categorySelect">職務類別</label>
+        <select id="categorySelect">
+          <option value="housekeeping">房務</option>
+          <option value="frontdesk">客務</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="traineeSelect">新人（要學習的人）</label>
+        <select id="traineeSelect"></select>
+      </div>
+    </div>
+
+    <div id="unitsList"></div>
+
+    <div id="stageSection" style="display:none;">
+      <div class="unit-group-title">四階段考核</div>
+      <div class="stage-stepper" id="stageStepper"></div>
+      <div id="stageForm"></div>
+    </div>
+
+    <div id="examSection" style="display:none;">
+      <div class="unit-group-title">整房實作考核</div>
+      <div id="examList"></div>
+      <div class="exam-card">
+        <p style="font-weight:500;margin:0 0 10px;">新增一筆考核紀錄</p>
+        <div class="field"><label>房間組成</label><input type="text" id="examBreakdown" placeholder="例如：四人房1、雙人房1、雙床房2、背包房2、4人背包房1(含外衛浴)"></div>
+        <div class="field"><label>時間限制（分鐘）</label><input type="text" id="examTimeLimit" value="240" inputmode="numeric"></div>
+        <div class="field"><label>分數</label><input type="text" id="examScore" inputmode="numeric"></div>
+        <div class="field"><label>考核者</label><input type="text" id="examAssessor"></div>
+        <div class="field"><label>備註</label><textarea id="examNotes"></textarea></div>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <input type="checkbox" id="examPassed" style="width:auto;"> 合格
+        </label>
+        <button class="primary" id="examSubmit">新增考核紀錄</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="learning-assign.js"></script>
+</body>
+</html>

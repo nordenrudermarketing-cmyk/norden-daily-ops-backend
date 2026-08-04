@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>我的教學任務 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>我的教學任務</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="index.html">回登入</a>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <div class="overlay" id="completeOverlay" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="overlayTitle" style="margin-bottom:12px;">標記完成教學</p>
+      <div class="field"><label for="resultSelect">驗收結果</label>
+        <select id="resultSelect">
+          <option value="pass">合格</option>
+          <option value="fail">不合格</option>
+        </select>
+      </div>
+      <div class="action-row">
+        <button class="secondary" id="overlayCancel">取消</button>
+        <button class="btn" id="overlaySubmit">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="my-teaching.js"></script>
+</body>
+</html>
