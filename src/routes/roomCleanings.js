@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
+import { uploadPhotoIfBase64 } from '../lib/uploadPhoto.js';
 
 const router = express.Router();
 
@@ -135,6 +136,8 @@ router.post('/:id/inspect', async (req, res) => {
   const { id } = req.params;
   const { checked_by, has_defect, defect_note, defect_photo_url } = req.body;
 
+  const storedPhotoUrl = has_defect ? await uploadPhotoIfBase64(defect_photo_url, 'defects') : null;
+
   const { data, error } = await supabase
     .from('room_cleanings')
     .update({
@@ -142,7 +145,7 @@ router.post('/:id/inspect', async (req, res) => {
       checked_at: new Date().toISOString(),
       has_defect: !!has_defect,
       defect_note: has_defect ? defect_note : null,
-      defect_photo_url: has_defect ? defect_photo_url : null,
+      defect_photo_url: storedPhotoUrl,
     })
     .eq('id', id)
     .select('*, rooms(id, room_number, branch_id)')
@@ -158,7 +161,7 @@ router.post('/:id/inspect', async (req, res) => {
       source_id: id,
       reported_by: checked_by,
       description: defect_note,
-      photo_url: defect_photo_url,
+      photo_url: storedPhotoUrl,
     });
 
     // 檢查這間房最近是不是反覆出問題，是的話自動產生系統異常警示
@@ -247,6 +250,7 @@ router.post('/register-complaint', async (req, res) => {
   const { branch_id, room_id, work_date, description, reported_by, photo_url } = req.body;
   if (!description) return res.status(400).json({ error: '請填寫客訴內容' });
 
+  const storedPhotoUrl = await uploadPhotoIfBase64(photo_url, 'complaints');
   const noteText = `客訴：${description}`;
 
   const { data: existing } = await supabase
@@ -261,7 +265,7 @@ router.post('/register-complaint', async (req, res) => {
     const mergedNote = existing.defect_note ? `${existing.defect_note}；${noteText}` : noteText;
     const { data, error } = await supabase
       .from('room_cleanings')
-      .update({ has_defect: true, defect_note: mergedNote, defect_photo_url: photo_url || null, defect_resolved: false })
+      .update({ has_defect: true, defect_note: mergedNote, defect_photo_url: storedPhotoUrl, defect_resolved: false })
       .eq('id', existing.id)
       .select('*, rooms(id, room_number, branch_id)')
       .single();
@@ -271,7 +275,7 @@ router.post('/register-complaint', async (req, res) => {
     // 那天沒有打掃紀錄（例如沒被分配），建立一筆沒有指定房務同仁的紀錄純粹留存客訴
     const { data, error } = await supabase
       .from('room_cleanings')
-      .insert({ room_id, work_date, status: 'completed', has_defect: true, defect_note: noteText, defect_photo_url: photo_url || null })
+      .insert({ room_id, work_date, status: 'completed', has_defect: true, defect_note: noteText, defect_photo_url: storedPhotoUrl })
       .select('*, rooms(id, room_number, branch_id)')
       .single();
     if (error) return res.status(400).json({ error: error.message });
@@ -284,7 +288,7 @@ router.post('/register-complaint', async (req, res) => {
     source_id: cleaningRow.id,
     reported_by,
     description: noteText,
-    photo_url: photo_url || null,
+    photo_url: storedPhotoUrl,
   });
 
   await checkRoomRepeatAnomaly(cleaningRow.rooms, branch_id ?? cleaningRow.rooms?.branch_id);
