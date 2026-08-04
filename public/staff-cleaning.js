@@ -31,6 +31,7 @@ async function load() {
     }
 
     const myCompletion = it.completions.find((c) => c.staff_id === staff.id);
+    const isDoneByAnyone = it.completions.length > 0;
     const card = document.createElement('div');
     card.className = 'cleaning-card';
 
@@ -38,8 +39,8 @@ async function load() {
       ? `<div class="who-list">本月已完成：${it.completions.map((c) => c.staff?.name).join('、')}</div>`
       : '';
 
-    if (myCompletion) {
-      card.innerHTML = `<div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge">你已完成</span></div>${whoList}`;
+    if (isDoneByAnyone) {
+      card.innerHTML = `<div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge">${myCompletion ? '你已完成' : '本月已完成'}</span></div>${whoList}`;
     } else {
       card.innerHTML = `
         <div class="card-row"><span class="card-title">${it.item_name}</span></div>
