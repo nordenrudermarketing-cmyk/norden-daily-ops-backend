@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
+import { uploadPhotoIfBase64 } from '../lib/uploadPhoto.js';
 
 const router = express.Router();
 
@@ -50,10 +51,11 @@ router.get('/my-progress', async (req, res) => {
 router.post('/:templateId/complete', async (req, res) => {
   const { templateId } = req.params;
   const { staff_id, month, photo_url } = req.body;
+  const storedPhotoUrl = await uploadPhotoIfBase64(photo_url, 'staff-cleaning');
   const { data, error } = await supabase
     .from('staff_cleaning_completions')
     .upsert(
-      { template_id: templateId, staff_id, month, completed_date: new Date().toISOString().slice(0, 10), photo_url },
+      { template_id: templateId, staff_id, month, completed_date: new Date().toISOString().slice(0, 10), photo_url: storedPhotoUrl },
       { onConflict: 'template_id,staff_id,month' }
     )
     .select()
