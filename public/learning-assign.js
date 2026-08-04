@@ -77,19 +77,30 @@ function renderUnits(units) {
       const select = document.createElement('select');
       select.innerHTML = '<option value="">未指派教練</option>' +
         staffOptions.filter((s) => s.id !== traineeSelect.value).map((s) => `<option value="${s.id}" ${s.id === u.assignment?.trainer_id ? 'selected' : ''}>${s.name}</option>`).join('');
-      select.addEventListener('change', () => saveAssignment(u.id, select.value));
+
+      const dueInput = document.createElement('input');
+      dueInput.type = 'text';
+      dueInput.placeholder = '期限 YYYY-MM-DD';
+      dueInput.value = u.assignment?.due_date || '';
+      dueInput.style.cssText = 'width:120px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:12px;';
+
+      const saveFn = () => saveAssignment(u.id, select.value, dueInput.value);
+      select.addEventListener('change', saveFn);
+      dueInput.addEventListener('change', saveFn);
+
       row.appendChild(select);
+      row.appendChild(dueInput);
     }
     listEl.appendChild(row);
   });
 }
 
-async function saveAssignment(unitId, trainerId) {
+async function saveAssignment(unitId, trainerId, dueDate) {
   if (!trainerId) return;
   await fetch(`${API}/api/training/assign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ unit_id: unitId, trainee_id: traineeSelect.value, trainer_id: trainerId, assigned_by: staff.id }),
+    body: JSON.stringify({ unit_id: unitId, trainee_id: traineeSelect.value, trainer_id: trainerId, assigned_by: staff.id, due_date: dueDate || null }),
   });
 }
 
