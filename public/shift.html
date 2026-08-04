@@ -9,6 +9,7 @@
 <body>
   <div class="screen">
     <div id="selfEvalReminder"></div>
+    <div id="teachingReminder"></div>
     <div class="topbar">
       <div>
         <h1>今日班別任務</h1>
@@ -29,7 +30,7 @@
       &nbsp;&nbsp;
       <a href="routine-tasks.html" style="font-size:12px;color:var(--accent);">我的例行事項 →</a>
       &nbsp;&nbsp;
-      <a href="learning-map.html" style="font-size:12px;color:var(--accent);">我的學習地圖 →</a>
+      <a href="learning-map.html" id="learningMapLink" style="font-size:12px;color:var(--accent);display:none;">我的學習地圖 →</a>
       &nbsp;&nbsp;
       <a href="my-teaching.html" style="font-size:12px;color:var(--accent);">我的教學任務 →</a>
       &nbsp;&nbsp;
@@ -70,6 +71,7 @@
 
   <script src="config.js"></script>
   <script src="self-eval-reminder.js"></script>
+  <script src="homepage-reminders.js"></script>
   <script src="shift.js"></script>
 </body>
 </html>
