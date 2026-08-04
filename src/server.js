@@ -27,6 +27,8 @@ import noShowRoutes from './routes/noShow.js';
 import reviewCheckRoutes from './routes/reviewCheck.js';
 import routineTasksRoutes from './routes/routineTasks.js';
 import managerReportsRoutes from './routes/managerReports.js';
+import orderSweepRoutes from './routes/orderSweep.js';
+import staffCleaningRoutes from './routes/staffCleaning.js';
 
 dotenv.config();
 
@@ -61,6 +63,8 @@ app.use('/api/no-show', noShowRoutes);
 app.use('/api/review-checks', reviewCheckRoutes);
 app.use('/api/routine-tasks', routineTasksRoutes);
 app.use('/api/manager-reports', managerReportsRoutes);
+app.use('/api/order-sweep', orderSweepRoutes);
+app.use('/api/staff-cleaning', staffCleaningRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));
