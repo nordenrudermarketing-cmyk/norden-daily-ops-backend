@@ -59,6 +59,9 @@ function renderTasks(tasks) {
     const reportsHtml = (t.reports && t.reports.length > 0)
       ? t.reports.map((r) => `<p class="card-note">已回報：${r.description}（${r.staff?.name || ''}）</p>`).join('')
       : '';
+    const focusHtml = t.focus_note
+      ? `<p class="card-note" style="color:var(--accent);background:var(--accent-soft);padding:6px 8px;border-radius:6px;">本週檢查重點：${t.focus_note}</p>`
+      : '';
 
     if (isDone) {
       card.innerHTML = `
@@ -66,6 +69,7 @@ function renderTasks(tasks) {
           <span class="card-title">${t.task_name}</span>
           <span class="card-meta">${t.completion.staff?.name || ''}・${new Date(t.completion.completed_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+        ${focusHtml}
         ${reportsHtml}
         <div class="action-row">
           <button class="danger-outline">回報異常</button>
@@ -76,6 +80,7 @@ function renderTasks(tasks) {
         <div class="card-row">
           <span class="card-title">${t.task_name}</span>
         </div>
+        ${focusHtml}
         ${reportsHtml}
         <div class="action-row">
           <button class="btn">標記完成</button>
