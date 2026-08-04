@@ -25,10 +25,11 @@ from (values
 ) as t(category, item_name, sort_order);
 
 -- 補入8月已完成的紀錄（用完整姓名比對，暱稱→完整姓名對照：柏翰=曾柏翰／治為=王治為／周敬倫=Allen）
+-- 加上 limit 1 避免項目名稱剛好重複（例如「整理冰箱」在A/B/C/D四類都有）時查詢出錯
 insert into staff_cleaning_completions (template_id, staff_id, month, completed_date)
 select
-  (select id from staff_cleaning_templates where branch_id=(select id from branches where code='TT1') and item_name = t.item_name),
-  (select id from staff where name = t.person_name and branch_id=(select id from branches where code='TT1')),
+  (select id from staff_cleaning_templates where branch_id=(select id from branches where code='TT1') and item_name = t.item_name limit 1),
+  (select id from staff where name = t.person_name and branch_id=(select id from branches where code='TT1') limit 1),
   '2026-08-01',
   t.completed_date::date
 from (values

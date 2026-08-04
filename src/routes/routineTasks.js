@@ -53,4 +53,27 @@ router.post('/:id/progress', async (req, res) => {
   res.json(data);
 });
 
+// POST /api/routine-tasks/bulk-import
+// { branch_id, items: [{ category, item_name, progress_note, due_date, status, assigned_to }] }
+router.post('/bulk-import', async (req, res) => {
+  const { branch_id, items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: '沒有要匯入的項目' });
+  }
+
+  const rows = items.map((it) => ({
+    branch_id,
+    category: it.category,
+    item_name: it.item_name,
+    progress_note: it.progress_note || null,
+    due_date: it.due_date || null,
+    status: it.status || 'pending',
+    assigned_to: it.assigned_to || null,
+  }));
+
+  const { data, error } = await supabase.from('routine_tasks').insert(rows).select();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 export default router;
