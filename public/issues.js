@@ -48,13 +48,17 @@ async function loadList() {
     card.className = 'card' + (i.resolved ? ' done' : '');
     const label = SOURCE_LABEL[i.source_type] || i.source_type;
     const locationText = i.location_label ? `・${i.location_label}` : '';
+    const photoHtml = i.photo_url
+      ? `<img src="${i.photo_url}" style="max-width:180px;max-height:180px;border-radius:8px;margin-top:6px;cursor:pointer;display:block;" onclick="window.open(this.src, '_blank')">`
+      : '';
 
     card.innerHTML = `
       <div class="card-row">
         <span class="badge">${label}${locationText}</span>
         <span class="card-meta">${i.staff?.name || ''}・${new Date(i.reported_at).toLocaleString('zh-TW')}</span>
       </div>
-      <p class="card-note" style="color:var(--ink);">${i.description || ''}</p>`;
+      <p class="card-note" style="color:var(--ink);">${i.description || ''}</p>
+      ${photoHtml}`;
 
     if (!i.resolved) {
       const actionRow = document.createElement('div');
