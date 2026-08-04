@@ -116,19 +116,31 @@ router.get('/assign-list', async (req, res) => {
 });
 
 // POST /api/training/assign
-// { unit_id, trainee_id, trainer_id, assigned_by }
+// { unit_id, trainee_id, trainer_id, assigned_by, due_date }
 router.post('/assign', async (req, res) => {
-  const { unit_id, trainee_id, trainer_id, assigned_by } = req.body;
+  const { unit_id, trainee_id, trainer_id, assigned_by, due_date } = req.body;
   const { data, error } = await supabase
     .from('learning_unit_assignments')
     .upsert(
-      { unit_id, trainee_id, trainer_id, assigned_by, status: 'pending' },
+      { unit_id, trainee_id, trainer_id, assigned_by, due_date, status: 'pending' },
       { onConflict: 'unit_id,trainee_id' }
     )
     .select()
     .single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
+});
+
+// GET /api/training/has-assignments?staff_id=xxx
+// 給打卡頁判斷「這位同仁有沒有被指派過學習項目」，沒有就不顯示學習地圖連結
+router.get('/has-assignments', async (req, res) => {
+  const { staff_id } = req.query;
+  const { count, error } = await supabase
+    .from('learning_unit_assignments')
+    .select('id', { count: 'exact', head: true })
+    .eq('trainee_id', staff_id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ has_assignments: (count ?? 0) > 0 });
 });
 
 // GET /api/training/my-teaching?trainer_id=xxx
