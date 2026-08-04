@@ -5,9 +5,13 @@ if (!staff) window.location.href = 'index.html';
 document.getElementById('monthInput').value = new Date().toISOString().slice(0, 7);
 document.getElementById('fileInput').addEventListener('change', handleFile);
 
+// 這些是已知的「非人員」標籤列，抓到就直接跳過，不放進警示清單裡（避免誤導）
+const KNOWN_NON_PERSON_LABELS = ['房務小隊長', '櫃台', '房務', '實際人數', '共休'];
+
 let staffList = [];
 let parsedEntries = []; // { staff_id, staff_name, days: {dayNum: code} }
 let unmatchedNames = new Set();
+let teamLeadRow = null; // { days: { dayNum: 'nickname' } }
 
 loadStaff();
 
@@ -30,10 +34,36 @@ function handleFile(e) {
   reader.readAsArrayBuffer(file);
 }
 
+// 班別代碼正規化：某些代碼只是多加了註記，實際上還是同一種班別
+// 例如「房(加)」是房務班當天加班、「房/特」是房務班當天部分時段請特休，
+// 這兩種本質上都還是房務班的任務，匯入時統一還原成「房」
+function normalizeShiftCode(raw) {
+  const t = raw.trim();
+  if (t.startsWith('房')) return '房';
+  return t;
+}
+
+// 姓名比對：先完全比對，比對不到再嘗試「這一列前面幾欄合併起來的文字裡有沒有包含姓名的中文部分」
+// （用來抓像實習生那種姓名沒填在姓名欄、而是跟到職日期、外文名混在一起的狀況）
+function matchStaffInRow(row, nameColRange) {
+  for (let c = 0; c < nameColRange; c++) {
+    const cellText = String(row[c] || '').trim();
+    if (!cellText) continue;
+    const exact = staffList.find((s) => s.name.trim() === cellText);
+    if (exact) return exact;
+  }
+
+  const combinedText = Array.from({ length: nameColRange }, (_, c) => String(row[c] || '')).join(' ');
+  for (const s of staffList) {
+    const chineseOnly = s.name.replace(/[a-zA-Z0-9]/g, '').trim();
+    if (chineseOnly.length >= 2 && combinedText.includes(chineseOnly)) return s;
+  }
+  return null;
+}
+
 function parseRows(rows) {
-  // 找出「日期橫列」：某一列裡有連續遞增的數字 1,2,3...
   let headerRowIdx = -1;
-  let dayColumns = []; // [{col, day}]
+  let dayColumns = [];
 
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
@@ -42,7 +72,6 @@ function parseRows(rows) {
       const v = Number(row[c]);
       if (Number.isInteger(v) && v >= 1 && v <= 31) candidates.push({ col: c, day: v });
     }
-    // 檢查是否有一段連續遞增（至少10天）
     let bestRun = [];
     let currentRun = [];
     for (let i = 0; i < candidates.length; i++) {
@@ -67,41 +96,54 @@ function parseRows(rows) {
     return;
   }
 
-  const nameColRange = Math.min(...dayColumns.map((d) => d.col)); // 姓名欄位一定在日期欄位之前
-  const staffByName = {};
-  staffList.forEach((s) => { staffByName[s.name.trim()] = s; });
+  const nameColRange = Math.min(...dayColumns.map((d) => d.col));
+
+  // 每個房務同仁的暱稱＝姓名最後一個字（跟你確認過的規則）
+  const nicknameMap = {};
+  staffList.forEach((s) => {
+    const lastChar = s.name.trim().slice(-1);
+    nicknameMap[lastChar] = s;
+  });
 
   parsedEntries = [];
   unmatchedNames = new Set();
+  teamLeadRow = null;
 
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r];
-    let matchedStaff = null;
-    for (let c = 0; c < nameColRange; c++) {
-      const cellText = String(row[c] || '').trim();
-      if (cellText && staffByName[cellText]) { matchedStaff = staffByName[cellText]; break; }
+
+    // 先檢查是不是「房務小隊長」這種暱稱列
+    const leadingText = Array.from({ length: nameColRange }, (_, c) => String(row[c] || '').trim()).join('');
+    if (leadingText.includes('房務小隊長')) {
+      const days = {};
+      dayColumns.forEach((d) => {
+        const nickname = String(row[d.col] || '').trim();
+        if (nickname && nicknameMap[nickname]) days[d.day] = nicknameMap[nickname].id;
+      });
+      teamLeadRow = { days };
+      continue;
     }
 
-    // 算這列在日期欄位裡有幾個非空值，判斷是不是一列「資料列」
+    const matchedStaff = matchStaffInRow(row, nameColRange);
     const filledDayCells = dayColumns.filter((d) => String(row[d.col] || '').trim() !== '').length;
 
     if (matchedStaff) {
       const days = {};
       dayColumns.forEach((d) => {
-        const code = String(row[d.col] || '').trim();
-        if (code) days[d.day] = code;
+        const raw = String(row[d.col] || '').trim();
+        if (raw) days[d.day] = normalizeShiftCode(raw);
       });
       if (Object.keys(days).length > 0) {
         parsedEntries.push({ staff_id: matchedStaff.id, staff_name: matchedStaff.name, days });
       }
     } else if (filledDayCells >= 3) {
-      // 看起來是資料列但比對不到姓名，抓第一個非空欄位當作猜測姓名
       let guess = '';
       for (let c = 0; c < nameColRange; c++) {
         const t = String(row[c] || '').trim();
         if (t) { guess = t; break; }
       }
-      if (guess) unmatchedNames.add(guess);
+      const isKnownLabel = KNOWN_NON_PERSON_LABELS.some((label) => guess.includes(label));
+      if (guess && !isKnownLabel) unmatchedNames.add(guess);
     }
   }
 
@@ -114,6 +156,10 @@ function renderPreview() {
 
   if (unmatchedNames.size > 0) {
     html += `<div class="warn-box">以下姓名在系統裡找不到對應的同仁，這些人的班表不會被匯入：${Array.from(unmatchedNames).join('、')}</div>`;
+  }
+  if (teamLeadRow) {
+    const count = Object.keys(teamLeadRow.days).length;
+    html += `<div class="ok-box">有偵測到「房務小隊長」列，共 ${count} 天有比對到暱稱，會一併匯入每日房務小隊長設定。</div>`;
   }
   if (parsedEntries.length === 0) {
     html += '<div class="warn-box">沒有解析到任何可以匯入的班表資料。</div>';
@@ -141,7 +187,7 @@ function renderPreview() {
 }
 
 async function confirmImport() {
-  const monthStr = document.getElementById('monthInput').value; // YYYY-MM
+  const monthStr = document.getElementById('monthInput').value;
   if (!monthStr) { alert('請選擇這份班表是哪個月份'); return; }
 
   const entries = [];
@@ -152,6 +198,14 @@ async function confirmImport() {
     });
   });
 
+  const teamLeads = {};
+  if (teamLeadRow) {
+    Object.entries(teamLeadRow.days).forEach(([day, staffId]) => {
+      const workDate = `${monthStr}-${String(day).padStart(2, '0')}`;
+      teamLeads[workDate] = staffId;
+    });
+  }
+
   const btn = document.getElementById('confirmBtn');
   btn.textContent = '匯入中…';
   btn.disabled = true;
@@ -160,10 +214,10 @@ async function confirmImport() {
     const res = await fetch(`${API}/api/schedule/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ branch_id: staff.branch_id, month: `${monthStr}-01`, entries }),
+      body: JSON.stringify({ branch_id: staff.branch_id, month: `${monthStr}-01`, entries, team_leads: teamLeads }),
     });
     if (!res.ok) throw new Error((await res.json()).error || '匯入失敗');
-    alert(`已匯入 ${entries.length} 筆排班紀錄，可以到排班表頁面確認`);
+    alert(`已匯入 ${entries.length} 筆班表紀錄${teamLeadRow ? '，含每日房務小隊長設定' : ''}，可以到排班表頁面確認`);
     window.location.href = 'schedule.html';
   } catch (err) {
     alert(err.message);
