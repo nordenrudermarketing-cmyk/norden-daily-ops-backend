@@ -25,6 +25,7 @@ document.getElementById('ownerSelect').addEventListener('change', saveOwner);
 let housekeepingStaff = [];
 let zoneOwners = {}; // zone -> staff_id
 const isManager = staff.roles?.name === '店經理';
+document.getElementById('backLink').href = isManager ? 'dashboard.html' : 'checklist.html';
 
 init();
 
