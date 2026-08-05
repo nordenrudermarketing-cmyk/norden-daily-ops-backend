@@ -10,12 +10,39 @@
   <div class="center-screen">
     <div class="login-box">
       <h1>路得行旅</h1>
-      <p>每日營運系統・請輸入登入代碼</p>
-      <div class="field">
-        <label for="loginCode">登入代碼</label>
-        <input type="password" id="loginCode" inputmode="numeric" placeholder="輸入代碼" autocomplete="off">
+      <p id="stepHint">每日營運系統・請輸入登入代碼</p>
+
+      <div id="stepCode">
+        <div class="field">
+          <label for="loginCode">登入代碼</label>
+          <input type="text" id="loginCode" inputmode="numeric" placeholder="輸入代碼" autocomplete="off">
+        </div>
+        <button class="primary" id="nextBtn">下一步</button>
       </div>
-      <button class="primary" id="loginBtn">登入</button>
+
+      <div id="stepPassword" style="display:none;">
+        <div class="field">
+          <label for="passwordInput">密碼</label>
+          <input type="password" id="passwordInput" placeholder="輸入密碼" autocomplete="off">
+        </div>
+        <button class="primary" id="loginBtn">登入</button>
+        <button class="secondary" id="backBtn1" style="margin-top:8px;">返回</button>
+      </div>
+
+      <div id="stepSetPassword" style="display:none;">
+        <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 12px;">第一次登入，請先設定你的密碼</p>
+        <div class="field">
+          <label for="newPassword">設定密碼</label>
+          <input type="password" id="newPassword" placeholder="設定密碼" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="confirmPassword">再輸入一次</label>
+          <input type="password" id="confirmPassword" placeholder="再輸入一次確認" autocomplete="off">
+        </div>
+        <button class="primary" id="setPasswordBtn">設定並登入</button>
+        <button class="secondary" id="backBtn2" style="margin-top:8px;">返回</button>
+      </div>
+
       <p class="error-msg" id="errorMsg"></p>
     </div>
   </div>
