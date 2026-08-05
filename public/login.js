@@ -57,8 +57,7 @@ function routeByRole(staff) {
   const code = staff.todayShiftCode;
 
   // 優先依今天實際排班的班別導向
-  if (code === 'A' || code === 'B') { window.location.href = 'shift.html'; return; }
-  if (code === 'C') { window.location.href = 'inspect.html'; return; }
+  if (code === 'A' || code === 'B' || code === 'C') { window.location.href = 'shift.html'; return; }
   if (code === '房') { window.location.href = 'checklist.html'; return; }
   if (code === '1') { window.location.href = 'offday.html'; return; }
 
