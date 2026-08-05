@@ -1,150 +1,56 @@
 const API = window.APP_CONFIG.API_BASE_URL;
 
+const loginForm = document.getElementById('loginForm');
 const loginCodeInput = document.getElementById('loginCode');
-const nextBtn = document.getElementById('nextBtn');
+const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
-const setPasswordBtn = document.getElementById('setPasswordBtn');
-const backBtn1 = document.getElementById('backBtn1');
-const backBtn2 = document.getElementById('backBtn2');
 const errorMsg = document.getElementById('errorMsg');
-const stepHint = document.getElementById('stepHint');
-
-const stepCode = document.getElementById('stepCode');
-const stepPassword = document.getElementById('stepPassword');
-const stepSetPassword = document.getElementById('stepSetPassword');
-
-let currentLoginCode = '';
 
 // 已登入就直接跳轉，不用重新輸入
 const savedStaff = localStorage.getItem('staff');
 if (savedStaff) routeByRole(JSON.parse(savedStaff));
 
-nextBtn.addEventListener('click', checkCode);
-loginCodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkCode(); });
-loginBtn.addEventListener('click', doLogin);
-document.getElementById('passwordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-setPasswordBtn.addEventListener('click', doSetPassword);
-backBtn1.addEventListener('click', backToCode);
-backBtn2.addEventListener('click', backToCode);
-document.getElementById('forgotPasswordLink').addEventListener('click', () => {
-  errorMsg.style.color = 'var(--accent)';
-  errorMsg.textContent = '請聯繫總公司協助重設密碼，重設後即可重新設定新密碼登入。';
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  doLogin();
 });
-
-function backToCode() {
-  errorMsg.textContent = '';
-  stepCode.style.display = 'block';
-  stepPassword.style.display = 'none';
-  stepSetPassword.style.display = 'none';
-  stepHint.textContent = '每日營運系統・請輸入登入代碼';
-}
-
-// 第一步：查這個登入代碼有沒有設定過密碼
-async function checkCode() {
-  errorMsg.textContent = '';
-  const code = loginCodeInput.value.trim();
-  if (!code) { errorMsg.textContent = '請輸入登入代碼'; return; }
-
-  nextBtn.textContent = '查詢中…';
-  nextBtn.disabled = true;
-
-  try {
-    const res = await fetch(`${API}/api/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ login_code: code }),
-    });
-    const result = await res.json();
-
-    if (res.status === 401 && !result.needs_password) {
-      throw new Error(result.error || '登入代碼錯誤');
-    }
-
-    currentLoginCode = code;
-    stepCode.style.display = 'none';
-
-    if (result.needs_password_setup) {
-      stepSetPassword.style.display = 'block';
-      stepHint.textContent = '第一次登入';
-      document.getElementById('newPassword').focus();
-    } else {
-      stepPassword.style.display = 'block';
-      stepHint.textContent = '請輸入密碼';
-      document.getElementById('passwordInput').focus();
-    }
-  } catch (err) {
-    errorMsg.textContent = err.message;
-  } finally {
-    nextBtn.textContent = '下一步';
-    nextBtn.disabled = false;
-  }
-}
-
-async function doSetPassword() {
-  errorMsg.textContent = '';
-  const p1 = document.getElementById('newPassword').value;
-  const p2 = document.getElementById('confirmPassword').value;
-  if (!p1) { errorMsg.textContent = '請設定密碼'; return; }
-  if (p1 !== p2) { errorMsg.textContent = '兩次輸入的密碼不一致'; return; }
-
-  setPasswordBtn.textContent = '設定中…';
-  setPasswordBtn.disabled = true;
-
-  try {
-    const res = await fetch(`${API}/api/set-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ login_code: currentLoginCode, password: p1 }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || '設定失敗');
-
-    // 設定完直接用這組密碼登入
-    await completeLogin(p1);
-  } catch (err) {
-    errorMsg.textContent = err.message;
-    setPasswordBtn.textContent = '設定並登入';
-    setPasswordBtn.disabled = false;
-  }
-}
 
 async function doLogin() {
   errorMsg.textContent = '';
-  const password = document.getElementById('passwordInput').value;
+  const code = loginCodeInput.value.trim();
+  const password = passwordInput.value;
+  if (!code) { errorMsg.textContent = '請輸入登入代碼'; return; }
   if (!password) { errorMsg.textContent = '請輸入密碼'; return; }
 
   loginBtn.textContent = '登入中…';
   loginBtn.disabled = true;
 
   try {
-    await completeLogin(password);
+    const res = await fetch(`${API}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login_code: code, password }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '登入失敗');
+    const staff = await res.json();
+
+    // 查今天實際排班（如果有），優先於固定職務決定要去哪一頁
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const schedRes = await fetch(`${API}/api/schedule/today?staff_id=${staff.id}&date=${today}`);
+      const sched = await schedRes.json();
+      staff.todayShiftCode = sched?.shift_code || null;
+    } catch (e) {
+      staff.todayShiftCode = null;
+    }
+
+    localStorage.setItem('staff', JSON.stringify(staff));
+    routeByRole(staff);
   } catch (err) {
     errorMsg.textContent = err.message;
     loginBtn.textContent = '登入';
     loginBtn.disabled = false;
   }
-}
-
-async function completeLogin(password) {
-  const res = await fetch(`${API}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login_code: currentLoginCode, password }),
-  });
-  if (!res.ok) throw new Error((await res.json()).error || '登入失敗');
-  const staff = await res.json();
-
-  // 查今天實際排班（如果有），優先於固定職務決定要去哪一頁
-  const today = new Date().toISOString().slice(0, 10);
-  try {
-    const schedRes = await fetch(`${API}/api/schedule/today?staff_id=${staff.id}&date=${today}`);
-    const sched = await schedRes.json();
-    staff.todayShiftCode = sched?.shift_code || null;
-  } catch (e) {
-    staff.todayShiftCode = null;
-  }
-
-  localStorage.setItem('staff', JSON.stringify(staff));
-  routeByRole(staff);
 }
 
 function routeByRole(staff) {
