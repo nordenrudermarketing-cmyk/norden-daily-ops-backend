@@ -26,6 +26,10 @@ document.getElementById('passwordInput').addEventListener('keydown', (e) => { if
 setPasswordBtn.addEventListener('click', doSetPassword);
 backBtn1.addEventListener('click', backToCode);
 backBtn2.addEventListener('click', backToCode);
+document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+  errorMsg.style.color = 'var(--accent)';
+  errorMsg.textContent = '請聯繫總公司協助重設密碼，重設後即可重新設定新密碼登入。';
+});
 
 function backToCode() {
   errorMsg.textContent = '';
