@@ -10,42 +10,23 @@
   <div class="center-screen">
     <div class="login-box">
       <h1>路得行旅</h1>
-      <p id="stepHint">每日營運系統・請輸入登入代碼</p>
+      <p>每日營運系統・請輸入登入代碼與密碼</p>
 
-      <div id="stepCode">
+      <form id="loginForm">
         <div class="field">
           <label for="loginCode">登入代碼</label>
-          <input type="text" id="loginCode" inputmode="numeric" placeholder="輸入代碼" autocomplete="off">
+          <input type="text" id="loginCode" name="username" inputmode="numeric" placeholder="輸入代碼" autocomplete="username">
         </div>
-        <button class="primary" id="nextBtn">下一步</button>
-      </div>
-
-      <div id="stepPassword" style="display:none;">
         <div class="field">
           <label for="passwordInput">密碼</label>
-          <input type="password" id="passwordInput" placeholder="輸入密碼" autocomplete="off">
+          <input type="password" id="passwordInput" name="password" placeholder="輸入密碼" autocomplete="current-password">
         </div>
-        <button class="primary" id="loginBtn">登入</button>
-        <button class="secondary" id="backBtn1" style="margin-top:8px;">返回</button>
-        <p style="text-align:center;margin-top:12px;">
-          <a href="javascript:void(0)" id="forgotPasswordLink" style="font-size:12.5px;color:var(--ink-soft);text-decoration:underline;">忘記密碼？</a>
-        </p>
-      </div>
+        <button class="primary" type="submit" id="loginBtn">登入</button>
+      </form>
 
-      <div id="stepSetPassword" style="display:none;">
-        <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 12px;">第一次登入，請先設定你的密碼</p>
-        <div class="field">
-          <label for="newPassword">設定密碼</label>
-          <input type="password" id="newPassword" placeholder="設定密碼" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="confirmPassword">再輸入一次</label>
-          <input type="password" id="confirmPassword" placeholder="再輸入一次確認" autocomplete="off">
-        </div>
-        <button class="primary" id="setPasswordBtn">設定並登入</button>
-        <button class="secondary" id="backBtn2" style="margin-top:8px;">返回</button>
-      </div>
-
+      <p style="font-size:11.5px;color:var(--ink-soft);margin-top:10px;">
+        第一次登入的同仁：輸入登入代碼後，這次輸入的密碼就會成為你的新密碼，之後每次都用這組密碼登入。
+      </p>
       <p class="error-msg" id="errorMsg"></p>
     </div>
   </div>
