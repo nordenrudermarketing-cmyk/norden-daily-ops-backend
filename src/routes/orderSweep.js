@@ -3,25 +3,25 @@ import { supabase } from '../supabaseClient.js';
 
 const router = express.Router();
 
-// GET /api/order-sweep/today?branch_id=xxx&date=2026-08-04
-router.get('/today', async (req, res) => {
+// GET /api/order-sweep/list?branch_id=xxx&date=2026-08-04
+router.get('/list', async (req, res) => {
   const { branch_id, date } = req.query;
   const { data, error } = await supabase
     .from('order_sweep_logs')
-    .select('*')
+    .select('*, staff:updated_by(name)')
     .eq('branch_id', branch_id)
     .eq('work_date', date)
-    .maybeSingle();
+    .order('updated_at', { ascending: false });
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
 
-// POST /api/order-sweep/today
-router.post('/today', async (req, res) => {
+// POST /api/order-sweep  （每次都是新增一筆，不是覆蓋當天資料）
+router.post('/', async (req, res) => {
   const payload = { ...req.body, updated_at: new Date().toISOString() };
   const { data, error } = await supabase
     .from('order_sweep_logs')
-    .upsert(payload, { onConflict: 'branch_id,work_date' })
+    .insert(payload)
     .select()
     .single();
   if (error) return res.status(400).json({ error: error.message });
