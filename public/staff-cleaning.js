@@ -31,25 +31,49 @@ async function load() {
     }
 
     const myCompletion = it.completions.find((c) => c.staff_id === staff.id);
-    const isDoneByAnyone = it.completions.length > 0;
+    const isDoneByAnyone = it.completions.some((c) => c.status === 'completed');
+    const inProgressByOther = it.completions.find((c) => c.status === 'in_progress' && c.staff_id !== staff.id);
+    const myInProgress = it.completions.find((c) => c.status === 'in_progress' && c.staff_id === staff.id);
     const card = document.createElement('div');
     card.className = 'cleaning-card';
 
-    const whoList = it.completions.length > 0
-      ? `<div class="who-list">本月已完成：${it.completions.map((c) => c.staff?.name).join('、')}</div>`
+    const doneCompletions = it.completions.filter((c) => c.status === 'completed');
+    const whoList = doneCompletions.length > 0
+      ? `<div class="who-list">本月已完成：${doneCompletions.map((c) => c.staff?.name).join('、')}</div>`
       : '';
 
     if (isDoneByAnyone) {
-      card.innerHTML = `<div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge">${myCompletion ? '你已完成' : '本月已完成'}</span></div>${whoList}`;
+      card.innerHTML = `<div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge">${myCompletion?.status === 'completed' ? '你已完成' : '本月已完成'}</span></div>${whoList}`;
+    } else if (inProgressByOther) {
+      card.innerHTML = `<div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge" style="background:#fff6e0;color:#8a6d00;">${inProgressByOther.staff?.name || ''} 處理中</span></div>`;
+    } else if (myInProgress) {
+      card.innerHTML = `
+        <div class="card-row"><span class="card-title">${it.item_name}</span><span class="badge" style="background:#fff6e0;color:#8a6d00;">你正在處理中</span></div>
+        <div class="action-row" style="margin-top:8px;"><button class="btn">標記我完成了</button></div>`;
+      card.querySelector('button').addEventListener('click', () => openOverlay(it.id, it.item_name));
     } else {
       card.innerHTML = `
         <div class="card-row"><span class="card-title">${it.item_name}</span></div>
         ${whoList}
-        <div class="action-row" style="margin-top:8px;"><button class="btn">標記我完成了</button></div>`;
-      card.querySelector('button').addEventListener('click', () => openOverlay(it.id, it.item_name));
+        <div class="action-row" style="margin-top:8px;">
+          <button class="secondary">開始處理</button>
+          <button class="btn">標記我完成了</button>
+        </div>`;
+      const [startBtn, completeBtn] = card.querySelectorAll('button');
+      startBtn.addEventListener('click', () => startItem(it.id));
+      completeBtn.addEventListener('click', () => openOverlay(it.id, it.item_name));
     }
     listEl.appendChild(card);
   });
+}
+
+async function startItem(templateId) {
+  await fetch(`${API}/api/staff-cleaning/${templateId}/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ staff_id: staff.id, month: monthStr }),
+  });
+  load();
 }
 
 async function loadMyProgress() {

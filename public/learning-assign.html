@@ -74,6 +74,26 @@
         <button class="primary" id="examSubmit">新增考核紀錄</button>
       </div>
     </div>
+
+    <div id="writtenExamSection" style="display:none;">
+      <div class="unit-group-title">櫃檯加給考核筆試</div>
+      <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 10px;">題庫僅供列印/線上出題參考，這裡不會自動改考卷，考完後把分數跟結果記錄下方</p>
+      <button class="secondary" id="toggleQuestionsBtn" style="margin-bottom:10px;">顯示／隱藏完整題目</button>
+      <div id="questionBank" style="display:none;"></div>
+
+      <div id="writtenExamHistory"></div>
+      <div class="exam-card">
+        <p style="font-weight:500;margin:0 0 10px;">新增一筆筆試紀錄</p>
+        <div class="field"><label>考試日期</label><input type="text" id="weDate" placeholder="YYYY-MM-DD"></div>
+        <div class="field"><label>分數</label><input type="text" id="weScore" inputmode="numeric"></div>
+        <div class="field"><label>考核者</label><input type="text" id="weExaminer"></div>
+        <div class="field"><label>備註</label><textarea id="weNotes"></textarea></div>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <input type="checkbox" id="wePassed" style="width:auto;"> 合格
+        </label>
+        <button class="primary" id="weSubmit">新增筆試紀錄</button>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>

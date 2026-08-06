@@ -1,5 +1,17 @@
 const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
+
+// 交班表目前只有台中館在用，台東1館用責任區制（zones 有資料）就代表不是台中館，隱藏這個連結
+(async () => {
+  try {
+    const res = await fetch(`${API}/api/room-maintenance/zones?branch_id=${staff.branch_id}`);
+    const zones = await res.json();
+    if (zones && zones.length > 0) {
+      const link = document.getElementById('handoverLink');
+      if (link) link.style.display = 'none';
+    }
+  } catch (e) { /* 查不到就不處理，維持顯示 */ }
+})();
 if (!staff) window.location.href = 'index.html';
 
 const today = new Date().toISOString().slice(0, 10);

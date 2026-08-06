@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>獎金申覆 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">獎金申覆</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" id="backLink" href="checklist.html">回打卡頁</a>
+    </div>
+
+    <div id="staffForm">
+      <div class="field"><label for="workDate">申覆日期</label><input type="text" id="workDate" placeholder="YYYY-MM-DD"></div>
+      <div class="field"><label for="reason">申覆理由</label><textarea id="reason" placeholder="例如：15:01才按完成，因為臨時處理客訴延誤"></textarea></div>
+      <button class="primary" id="submitBtn">送出申覆</button>
+    </div>
+
+    <div class="section-title" style="font-weight:600;margin:20px 0 8px;">我的申覆紀錄</div>
+    <div id="myList"></div>
+
+    <div id="managerSection" style="display:none;">
+      <div class="section-title" style="font-weight:600;margin:20px 0 8px;">待審核申覆（店經理）</div>
+      <div id="pendingList"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="bonus-appeals.js"></script>
+</body>
+</html>

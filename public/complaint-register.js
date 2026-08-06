@@ -47,6 +47,7 @@ async function submit() {
         branch_id: staff.branch_id,
         room_id: document.getElementById('roomSelect').value,
         work_date: dateInput.value,
+        complaint_category: document.getElementById('categorySelect').value,
         description,
         reported_by: staff.id,
         photo_url: photoDataUrl,

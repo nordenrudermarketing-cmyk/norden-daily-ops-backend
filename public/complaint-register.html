@@ -18,6 +18,12 @@
 
     <div class="field"><label for="dateInput">發生日期</label><input type="text" id="dateInput"></div>
     <div class="field"><label for="roomSelect">房號</label><select id="roomSelect"></select></div>
+    <div class="field"><label for="categorySelect">問題分類</label>
+      <select id="categorySelect">
+        <option value="housekeeping">房務缺失（會影響該同仁當日獎金）</option>
+        <option value="uncontrollable">不可控（例如設備故障，不影響獎金）</option>
+      </select>
+    </div>
     <div class="field"><label for="descInput">客訴內容</label><textarea id="descInput" placeholder="例如：客人反映浴室有異味"></textarea></div>
     <div class="field"><label for="photoInput">照片（選填）</label><input type="file" id="photoInput" accept="image/*"></div>
 

@@ -33,9 +33,14 @@ async function loadAssignments() {
 
   document.getElementById('stageSection').style.display = category === 'housekeeping' ? 'block' : 'none';
   document.getElementById('examSection').style.display = category === 'housekeeping' ? 'block' : 'none';
+  document.getElementById('writtenExamSection').style.display = category === 'frontdesk' ? 'block' : 'none';
   if (category === 'housekeeping') {
     loadStages();
     loadExams();
+  }
+  if (category === 'frontdesk') {
+    loadQuestionBank();
+    loadWrittenExamHistory();
   }
 }
 
@@ -224,4 +229,78 @@ async function submitExam() {
   document.getElementById('examNotes').value = '';
   document.getElementById('examPassed').checked = false;
   loadExams();
+}
+
+// ---------- 櫃檯加給考核筆試 ----------
+document.getElementById('toggleQuestionsBtn').addEventListener('click', () => {
+  const el = document.getElementById('questionBank');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('weSubmit').addEventListener('click', submitWrittenExam);
+
+const SECTION_ORDER = ['是非題', '選擇題', '問答題'];
+
+async function loadQuestionBank() {
+  const res = await fetch(`${API}/api/written-exam/questions?branch_id=${staff.branch_id}`);
+  const questions = await res.json();
+  const el = document.getElementById('questionBank');
+
+  if (questions.length === 0) {
+    el.innerHTML = '<p class="empty-state">這個館別還沒有建立筆試題庫。</p>';
+    return;
+  }
+
+  const sorted = [...questions].sort((a, b) => SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section) || a.sort_order - b.sort_order);
+
+  let html = '';
+  let lastSection = null;
+  sorted.forEach((q) => {
+    if (q.section !== lastSection) {
+      html += `<div class="unit-group-title" style="margin-top:14px;">${q.section}</div>`;
+      lastSection = q.section;
+    }
+    html += `<div class="exam-card" style="margin-bottom:6px;">
+      <p style="margin:0 0 6px;font-size:13px;"><strong>${q.question_number}.</strong> ${q.question_text.replace(/\n/g, '<br>')}</p>
+      ${q.options_text ? `<p style="margin:0;font-size:12.5px;color:var(--ink-soft);white-space:pre-line;">${q.options_text}</p>` : ''}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function loadWrittenExamHistory() {
+  const res = await fetch(`${API}/api/written-exam/results?staff_id=${traineeSelect.value}`);
+  const results = await res.json();
+  const el = document.getElementById('writtenExamHistory');
+  if (results.length === 0) { el.innerHTML = '<p class="empty-state">目前沒有筆試紀錄。</p>'; return; }
+  el.innerHTML = results.map((r) => `
+    <div class="exam-card">
+      <div class="card-row">
+        <span class="card-title">${r.exam_date}</span>
+        <span class="badge" style="background:${r.passed ? 'var(--accent-soft)' : 'var(--danger-soft)'};color:${r.passed ? 'var(--accent)' : 'var(--danger)'};">${r.passed ? '合格' : '不合格'}</span>
+      </div>
+      <p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">分數 ${r.score ?? '—'}・考核者 ${r.examiner || ''}</p>
+      ${r.notes ? `<p style="font-size:12px;margin:4px 0 0;">${r.notes}</p>` : ''}
+    </div>`).join('');
+}
+
+async function submitWrittenExam() {
+  const payload = {
+    staff_id: traineeSelect.value,
+    branch_id: staff.branch_id,
+    exam_date: document.getElementById('weDate').value || new Date().toISOString().slice(0, 10),
+    score: Number(document.getElementById('weScore').value) || null,
+    passed: document.getElementById('wePassed').checked,
+    examiner: document.getElementById('weExaminer').value,
+    notes: document.getElementById('weNotes').value,
+  };
+  await fetch(`${API}/api/written-exam/results`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  document.getElementById('weDate').value = '';
+  document.getElementById('weScore').value = '';
+  document.getElementById('weNotes').value = '';
+  document.getElementById('wePassed').checked = false;
+  loadWrittenExamHistory();
 }

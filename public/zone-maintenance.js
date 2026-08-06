@@ -174,8 +174,12 @@ function renderTable(data) {
       td.className = 'cell' + (comp?.status === 'completed' ? ' done' : '');
       td.textContent = comp?.status === 'completed' ? '✓' : '';
       if (comp) {
+        td.style.cursor = 'pointer';
         td.addEventListener('click', () => {
-          if (comp.status === 'completed') return; // 已完成的不重複點
+          if (comp.status === 'completed') {
+            if (confirm('這格已經標記完成，要取消嗎？')) undoCell(comp.id, td);
+            return;
+          }
           completeCell(comp.id, td);
         });
       }
@@ -195,6 +199,12 @@ async function completeCell(completionId, td) {
   });
   td.textContent = '✓';
   td.classList.add('done');
+}
+
+async function undoCell(completionId, td) {
+  await fetch(`${API}/api/room-maintenance/${completionId}/undo`, { method: 'POST' });
+  td.textContent = '';
+  td.classList.remove('done');
 }
 
 async function loadPaint() {
