@@ -48,6 +48,23 @@ router.get('/my-progress', async (req, res) => {
 
 // POST /api/staff-cleaning/:templateId/complete
 // { staff_id, month, photo_url }
+// POST /api/staff-cleaning/:templateId/start
+// 標記「處理中」，讓其他人看到有人在做，避免重複認領
+router.post('/:templateId/start', async (req, res) => {
+  const { templateId } = req.params;
+  const { staff_id, month } = req.body;
+  const { data, error } = await supabase
+    .from('staff_cleaning_completions')
+    .upsert(
+      { template_id: templateId, staff_id, month, status: 'in_progress' },
+      { onConflict: 'template_id,staff_id,month' }
+    )
+    .select()
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 router.post('/:templateId/complete', async (req, res) => {
   const { templateId } = req.params;
   const { staff_id, month, photo_url } = req.body;
@@ -55,7 +72,7 @@ router.post('/:templateId/complete', async (req, res) => {
   const { data, error } = await supabase
     .from('staff_cleaning_completions')
     .upsert(
-      { template_id: templateId, staff_id, month, completed_date: new Date().toISOString().slice(0, 10), photo_url: storedPhotoUrl },
+      { template_id: templateId, staff_id, month, completed_date: new Date().toISOString().slice(0, 10), photo_url: storedPhotoUrl, status: 'completed' },
       { onConflict: 'template_id,staff_id,month' }
     )
     .select()

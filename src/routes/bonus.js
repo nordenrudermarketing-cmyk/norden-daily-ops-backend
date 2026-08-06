@@ -48,13 +48,25 @@ router.get('/daily', async (req, res) => {
     // 避免經理看到的獎金總表包含還沒被確認過的房間
     const completedRows = cleanings?.filter((c) => c.status === 'completed' && c.checked_by) ?? [];
     const roomsCompleted = completedRows.length;
-    const completedBeforeDeadlineCount = completedRows.filter((c) => c.completed_before_deadline).length;
-    const defectCount = completedRows.filter((c) => c.has_defect).length;
+    const beforeDeadlineRows = completedRows.filter((c) => c.completed_before_deadline);
+    const completedBeforeDeadlineCount = beforeDeadlineRows.length;
+    // 缺失只算「期限內完成」那批房間裡有問題的，跟門檻／淨間數用同一個基準比較公平
+    const defectCount = beforeDeadlineRows.filter((c) => c.has_defect).length;
+
+    // 查有沒有已核准的獎金申覆（豁免當天達標門檻）
+    const { data: appeal } = await supabase
+      .from('bonus_appeals')
+      .select('status')
+      .eq('staff_id', staff.id)
+      .eq('work_date', date)
+      .eq('status', 'approved')
+      .maybeSingle();
 
     const { bonus_amount, net_rooms, disqualified } = calculateBonus(settings || {}, {
       assignedCount,
       completedBeforeDeadlineCount,
       defectCount,
+      overrideWaiveGate: !!appeal,
     });
 
     await supabase

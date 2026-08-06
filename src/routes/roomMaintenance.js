@@ -157,6 +157,20 @@ router.post('/:id/complete', async (req, res) => {
   res.json(data);
 });
 
+// POST /api/room-maintenance/:id/undo
+// 取消完成（誤觸救援用），改回待處理
+router.post('/:id/undo', async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from('room_maintenance_completions')
+    .update({ status: 'pending', completed_date: null, completed_by: null })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 // GET /api/room-maintenance/paint?branch_id=xxx&zone=A
 router.get('/paint', async (req, res) => {
   const { branch_id, zone } = req.query;

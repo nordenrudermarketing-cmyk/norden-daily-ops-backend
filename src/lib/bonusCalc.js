@@ -3,15 +3,17 @@
 //
 // 門檻邏輯（require_full_completion=true 時）：
 //   實際門檻 = min(min_rooms_for_bonus, 當天分配間數)
-//   例如門檻設12間：當天只分配7間，掃完7間就算過關（不用衝到12）；
-//   當天分配15間，只要15:00前完成12間以上就算過關（不用15間全做完）
-export function calculateBonus(settings, { assignedCount, completedBeforeDeadlineCount, defectCount }) {
+//   門檻比的是「扣掉缺失後的淨間數」，不是原始完成間數——
+//   例如分配14間，15:00前完成13間但其中2間有缺失，淨間數只有11間，
+//   門檻是min(12,14)=12，11 < 12，一樣算沒達標，整天不算獎金
+//   （如果沒有缺失，淨間數就等於完成間數，效果不變）
+export function calculateBonus(settings, { assignedCount, completedBeforeDeadlineCount, defectCount, overrideWaiveGate }) {
   const netRooms = Math.max(completedBeforeDeadlineCount - defectCount, 0);
 
-  if (settings.require_full_completion) {
+  if (settings.require_full_completion && !overrideWaiveGate) {
     const fixedThreshold = settings.min_rooms_for_bonus ?? assignedCount;
     const threshold = Math.min(fixedThreshold, assignedCount);
-    if (completedBeforeDeadlineCount < threshold) {
+    if (netRooms < threshold) {
       return { bonus_amount: 0, net_rooms: netRooms, disqualified: true };
     }
   }

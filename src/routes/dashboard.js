@@ -53,13 +53,23 @@ router.get('/summary', async (req, res) => {
       // 只算客務已經巡房檢查過的房間，還沒確認的不列入獎金
       const completedRows = ownCleanings?.filter((c) => c.status === 'completed' && c.checked_by) ?? [];
       const roomsCompleted = completedRows.length;
-      const completedBeforeDeadlineCount = completedRows.filter((c) => c.completed_before_deadline).length;
-      const defectCount = completedRows.filter((c) => c.has_defect).length;
+      const beforeDeadlineRows = completedRows.filter((c) => c.completed_before_deadline);
+      const completedBeforeDeadlineCount = beforeDeadlineRows.length;
+      const defectCount = beforeDeadlineRows.filter((c) => c.has_defect).length;
+
+      const { data: appeal } = await supabase
+        .from('bonus_appeals')
+        .select('status')
+        .eq('staff_id', s.id)
+        .eq('work_date', date)
+        .eq('status', 'approved')
+        .maybeSingle();
 
       const { bonus_amount, net_rooms, disqualified } = calculateBonus(settings || {}, {
         assignedCount,
         completedBeforeDeadlineCount,
         defectCount,
+        overrideWaiveGate: !!appeal,
       });
 
       bonusTable.push({

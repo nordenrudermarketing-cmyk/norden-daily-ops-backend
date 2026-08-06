@@ -247,11 +247,15 @@ router.post('/:id/resolve-defect', async (req, res) => {
 // 如果那天那間房根本沒有打掃紀錄（例如沒被分配到），會建立一筆沒有指定房務同仁的紀錄，
 // 純粹留下客訴紀錄，不會影響任何人的獎金
 router.post('/register-complaint', async (req, res) => {
-  const { branch_id, room_id, work_date, description, reported_by, photo_url } = req.body;
+  const { branch_id, room_id, work_date, description, reported_by, photo_url, complaint_category } = req.body;
   if (!description) return res.status(400).json({ error: '請填寫客訴內容' });
 
   const storedPhotoUrl = await uploadPhotoIfBase64(photo_url, 'complaints');
-  const noteText = `客訴：${description}`;
+  const category = complaint_category === 'uncontrollable' ? 'uncontrollable' : 'housekeeping';
+  const categoryLabel = category === 'uncontrollable' ? '不可控' : '房務缺失';
+  const noteText = `客訴（${categoryLabel}）：${description}`;
+  // 只有「房務缺失」才會影響獎金；「不可控」（例如設備故障）只留紀錄，不算進 has_defect
+  const affectsBonus = category === 'housekeeping';
 
   const { data: existing } = await supabase
     .from('room_cleanings')
@@ -263,9 +267,11 @@ router.post('/register-complaint', async (req, res) => {
   let cleaningRow;
   if (existing) {
     const mergedNote = existing.defect_note ? `${existing.defect_note}；${noteText}` : noteText;
+    const updatePayload = { defect_note: mergedNote, defect_photo_url: storedPhotoUrl, complaint_category: category };
+    if (affectsBonus) { updatePayload.has_defect = true; updatePayload.defect_resolved = false; }
     const { data, error } = await supabase
       .from('room_cleanings')
-      .update({ has_defect: true, defect_note: mergedNote, defect_photo_url: storedPhotoUrl, defect_resolved: false })
+      .update(updatePayload)
       .eq('id', existing.id)
       .select('*, rooms(id, room_number, branch_id)')
       .single();
@@ -275,7 +281,7 @@ router.post('/register-complaint', async (req, res) => {
     // 那天沒有打掃紀錄（例如沒被分配），建立一筆沒有指定房務同仁的紀錄純粹留存客訴
     const { data, error } = await supabase
       .from('room_cleanings')
-      .insert({ room_id, work_date, status: 'completed', has_defect: true, defect_note: noteText, defect_photo_url: storedPhotoUrl })
+      .insert({ room_id, work_date, status: 'completed', has_defect: affectsBonus, defect_note: noteText, defect_photo_url: storedPhotoUrl, complaint_category: category })
       .select('*, rooms(id, room_number, branch_id)')
       .single();
     if (error) return res.status(400).json({ error: error.message });
