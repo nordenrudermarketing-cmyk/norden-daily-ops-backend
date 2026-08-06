@@ -28,7 +28,7 @@
     <!-- 掃單記錄 -->
     <div class="section-block">
       <h3>掃單記錄</h3>
-      <p class="hint">今日住房訂單數＋昨日新進訂單數，每天填一次即可</p>
+      <p class="hint">今日住房訂單數＋昨日新進訂單數，可以多次新增（例如上午一筆、下午一筆）</p>
       <div class="row2">
         <div class="field"><label>今日住房訂單數</label><input type="text" id="checkinCount" inputmode="numeric"></div>
         <div class="field"><label>有無異常</label><input type="text" id="checkinAnomaly" placeholder="無 / 說明"></div>
@@ -39,8 +39,13 @@
         <div class="field"><label>有無遺漏</label><input type="text" id="newOrderMissing" placeholder="無 / 說明"></div>
       </div>
       <div class="field"><label>訂單編號（若有遺漏）</label><input type="text" id="newOrderNo"></div>
-      <button class="primary" id="sweepSaveBtn">儲存掃單記錄</button>
+      <button class="primary" id="sweepSaveBtn">新增一筆掃單記錄</button>
       <p class="error-msg" id="sweepStatus"></p>
+
+      <div style="margin-top:16px;">
+        <p style="font-weight:500;font-size:13px;margin:0 0 6px;">今日已新增的紀錄</p>
+        <div id="sweepList"></div>
+      </div>
 
       <div style="margin-top:16px;">
         <p style="font-weight:500;font-size:13px;margin:0 0 6px;">互相提醒／案例分享</p>
@@ -54,12 +59,16 @@
     <!-- 評論回報 -->
     <div class="section-block">
       <h3>評論回報</h3>
-      <p class="hint">四平台每天各自填看到的內容，不確定就寫「無」</p>
-      <div class="field"><label>BK</label><input type="text" id="bkNote"></div>
-      <div class="field"><label>AG</label><input type="text" id="agNote"></div>
-      <div class="field"><label>Ctrip</label><input type="text" id="ctripNote"></div>
-      <div class="field"><label>Google</label><input type="text" id="googleNote"></div>
-      <div class="field"><label>特殊回報（故障/客訴）</label><textarea id="specialReport"></textarea></div>
+      <p class="hint">四平台每天巡查，各自回報看到的最新進度編號（例如「已看到995號」），不確定就寫「無新增」</p>
+      <div class="field"><label>BK（回報看到的進度編號）</label><input type="text" id="bkNote" placeholder="例如：995"></div>
+      <div class="field"><label>AG（回報看到的進度編號）</label><input type="text" id="agNote" placeholder="例如：995"></div>
+      <div class="field"><label>Ctrip（回報看到的進度編號）</label><input type="text" id="ctripNote" placeholder="例如：995"></div>
+      <div class="field"><label>Google（回報看到的進度編號）</label><input type="text" id="googleNote" placeholder="例如：995"></div>
+      <div class="field">
+        <label>特殊事項（很重要，店經理會看到）</label>
+        <p style="font-size:11px;color:var(--danger);margin:-2px 0 6px;">格式：訂單編號＋平台：事件（評論內容）　例如：#12345 Google：客訴清潔不佳（評論寫「房間有異味」）</p>
+        <textarea id="specialReport" placeholder="訂單編號＋平台：事件（評論內容）"></textarea>
+      </div>
       <button class="primary" id="reviewSaveBtn">儲存評論回報</button>
       <p class="error-msg" id="reviewStatus"></p>
     </div>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>評論回報紀錄 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 800px; }
+  .log-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .log-card.has-special { border-color: #e3bfae; background: var(--danger-soft); }
+  .platform-row { display: flex; gap: 16px; font-size: 12.5px; margin: 6px 0; flex-wrap: wrap; }
+  .special-text { background: var(--surface); border-radius: 8px; padding: 8px; font-size: 12.5px; color: var(--danger); margin-top: 8px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>評論回報紀錄</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="review-logs-review.js"></script>
+</body>
+</html>

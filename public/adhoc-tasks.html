@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>臨時任務 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; padding: 20px; }
+  .top-controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+  .top-controls .field { margin-bottom: 0; }
+  .new-task-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 20px; }
+  table.rooms { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  table.rooms th, table.rooms td { border-bottom: 1px solid var(--line); padding: 8px; font-size: 12.5px; text-align: left; }
+  table.rooms th { background: var(--accent-soft); font-weight: 500; }
+  table.rooms tr.done td { background: var(--accent-soft); }
+  table.rooms select { padding: 5px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; width: 110px; }
+  table.rooms button { font-size: 12px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>臨時任務</h1>
+        <p>店經理發起、小隊長分配、大家都能代做的全房任務</p>
+      </div>
+      <a class="logout-link" id="backLink" href="checklist.html">回打卡頁</a>
+    </div>
+
+    <div id="managerCreate" style="display:none;" class="new-task-form">
+      <p style="font-weight:500;margin:0 0 10px;">新增臨時任務</p>
+      <div class="field"><label>任務標題</label><input type="text" id="newTitle" placeholder="例如：全館貼門上貼紙"></div>
+      <div class="field"><label>說明</label><textarea id="newDesc"></textarea></div>
+      <div class="field"><label>期限</label><input type="text" id="newDue" placeholder="YYYY-MM-DD"></div>
+      <button class="primary" id="createBtn">建立任務（自動帶入全館房號）</button>
+    </div>
+
+    <div class="top-controls">
+      <div class="field" style="min-width:240px;"><label for="taskSelect">選擇任務</label><select id="taskSelect"></select></div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="rooms" id="roomsTable"></table>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="adhoc-tasks.js"></script>
+</body>
+</html>

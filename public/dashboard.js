@@ -15,6 +15,27 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 loadSummary();
 loadAnomalies();
 loadHqTasks();
+loadReviewSpecial();
+
+async function loadReviewSpecial() {
+  const el = document.getElementById('reviewSpecialAlert');
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const res = await fetch(`${API}/api/review-checks/today?branch_id=${staff.branch_id}&date=${today}`);
+    const data = await res.json();
+    if (data && data.special_report) {
+      el.innerHTML = `<div class="hq-banner" style="background:var(--danger-soft);border-color:#e3bfae;">
+        <p class="hq-title" style="color:var(--danger);">⚠ 今日評論特殊事項</p>
+        <p style="margin:0;font-size:13px;white-space:pre-wrap;">${data.special_report}</p>
+        <a href="review-logs-review.html" style="font-size:12px;">查看完整紀錄 →</a>
+      </div>`;
+    } else {
+      el.innerHTML = '';
+    }
+  } catch (e) {
+    el.innerHTML = '';
+  }
+}
 
 // 依館別是否使用「A-E責任區」制度，決定顯示樓層版（台中館）還是責任區版（台東1館）的保養排程連結
 (async () => {

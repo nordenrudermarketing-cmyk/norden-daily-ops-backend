@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>各館週報 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  .branch-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .count-row { display: flex; gap: 16px; margin: 10px 0; }
+  .count-pill { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--surface-1); }
+  .count-pill .num { font-size: 20px; font-weight: 600; }
+  .item-line { font-size: 12.5px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .item-line:first-child { border-top: none; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>各館週報</h1>
+        <p>店經理工作備忘清單的每週彙整</p>
+      </div>
+      <a class="logout-link" href="hq-dashboard.html">回總覽</a>
+    </div>
+
+    <div class="field" style="max-width:220px;"><label for="weekInput">週次（選任一天，系統會抓那一週的週一到週日）</label><input type="text" id="weekInput"></div>
+
+    <div id="list"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="weekly-report.js"></script>
+</body>
+</html>

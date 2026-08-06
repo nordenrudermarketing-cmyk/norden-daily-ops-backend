@@ -21,13 +21,23 @@
     <button class="primary" id="openBtn">送出開班紀錄</button>
     <p id="openedInfo" style="font-size:12px;color:var(--ink-soft);margin-top:6px;"></p>
 
-    <div class="section-title" style="font-weight:600;margin:24px 0 8px;">收班</div>
-    <div class="field"><label for="completedItems">完成事項</label><textarea id="completedItems"></textarea></div>
-    <div class="field"><label for="pendingItems">未完成待追蹤</label><textarea id="pendingItems"></textarea></div>
-    <div class="field"><label for="spotChecks">各項抽檢</label><textarea id="spotChecks"></textarea></div>
-    <div class="field"><label for="hqNotes">總公司反應事項</label><textarea id="hqNotes"></textarea></div>
-    <button class="primary" id="closeBtn">送出收班紀錄</button>
-    <p id="closedInfo" style="font-size:12px;color:var(--ink-soft);margin-top:6px;"></p>
+    <div class="section-title" style="font-weight:600;margin:24px 0 8px;">工作備忘清單</div>
+    <p style="font-size:11.5px;color:var(--ink-soft);margin:-4px 0 12px;">
+      條列式，持續累積不會每天重來——沒完成的項目會一直留著提醒你，不用手動延續昨天的內容
+    </p>
+    <div class="field"><label for="newMemoContent">新增一則</label><textarea id="newMemoContent" placeholder="例如：跟總公司確認8月盤點時間"></textarea></div>
+    <div class="field" style="max-width:160px;"><label for="newMemoStatus">狀態</label>
+      <select id="newMemoStatus">
+        <option value="todo">待辦</option>
+        <option value="in_progress">追蹤中</option>
+        <option value="done">已完成</option>
+      </select>
+    </div>
+    <button class="primary" id="addMemoBtn">新增</button>
+
+    <div id="memoActiveList" style="margin-top:16px;"></div>
+    <div class="section-title" style="font-weight:600;margin:20px 0 8px;font-size:13px;color:var(--ink-soft);">已完成</div>
+    <div id="memoDoneList"></div>
   </div>
 
   <script src="config.js"></script>

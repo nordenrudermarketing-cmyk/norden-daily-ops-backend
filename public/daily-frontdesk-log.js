@@ -17,19 +17,20 @@ loadNoShow();
 
 // ---------- 掃單 ----------
 async function loadSweep() {
-  const res = await fetch(`${API}/api/order-sweep/today?branch_id=${staff.branch_id}&date=${today}`);
-  const data = await res.json();
-  if (!data) return;
-  document.getElementById('checkinCount').value = data.checkin_count ?? '';
-  document.getElementById('checkinAnomaly').value = data.checkin_anomaly || '';
-  document.getElementById('checkinOrderNo').value = data.checkin_order_no || '';
-  document.getElementById('newOrderCount').value = data.new_order_count ?? '';
-  document.getElementById('newOrderMissing').value = data.new_order_missing || '';
-  document.getElementById('newOrderNo').value = data.new_order_no || '';
+  const res = await fetch(`${API}/api/order-sweep/list?branch_id=${staff.branch_id}&date=${today}`);
+  const list = await res.json();
+  const el = document.getElementById('sweepList');
+  if (!list || list.length === 0) { el.innerHTML = '<p class="empty-state">今天還沒有新增紀錄。</p>'; return; }
+
+  el.innerHTML = list.map((r) => `
+    <div class="note-item">
+      <strong>${r.staff?.name || ''}</strong>　${new Date(r.updated_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}
+      <div style="color:var(--ink-soft);">今日住房：${r.checkin_count ?? '—'}（${r.checkin_anomaly || '無異常'}）　昨日新單：${r.new_order_count ?? '—'}（${r.new_order_missing || '無遺漏'}）</div>
+    </div>`).join('');
 }
 
 async function saveSweep() {
-  await fetch(`${API}/api/order-sweep/today`, {
+  await fetch(`${API}/api/order-sweep`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -44,7 +45,14 @@ async function saveSweep() {
       updated_by: staff.id,
     }),
   });
-  showStatus('sweepStatus', '已儲存');
+  document.getElementById('checkinCount').value = '';
+  document.getElementById('checkinAnomaly').value = '';
+  document.getElementById('checkinOrderNo').value = '';
+  document.getElementById('newOrderCount').value = '';
+  document.getElementById('newOrderMissing').value = '';
+  document.getElementById('newOrderNo').value = '';
+  showStatus('sweepStatus', '已新增');
+  loadSweep();
 }
 
 async function loadNotes() {
