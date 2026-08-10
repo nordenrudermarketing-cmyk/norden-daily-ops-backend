@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>櫃檯加給考核筆試 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .timer-bar { position: sticky; top: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; text-align: center; z-index: 10; }
+  .timer-bar .time { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .timer-bar.warning .time { color: var(--danger); }
+  .q-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .q-card .section-label { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .q-text { font-size: 14px; margin: 4px 0 10px; white-space: pre-wrap; }
+  .options-text { font-size: 13px; white-space: pre-wrap; color: var(--ink-soft); margin-bottom: 8px; }
+  .mc-options { display: flex; gap: 12px; margin-bottom: 4px; }
+  .mc-options label { font-size: 14px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .result-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; text-align: center; }
+  .result-box .big { font-size: 32px; font-weight: 700; margin: 10px 0; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>櫃檯加給考核筆試</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="checklist.html">回打卡頁</a>
+    </div>
+
+    <div id="startScreen">
+      <p style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">
+        限時40分鐘，開始後不能暫停，時間到會自動送出目前的作答內容。選擇題會自動計分，
+        是非題跟問答題由店經理事後人工評分，作答完不會告訴你答案，由店經理跟你確認。
+      </p>
+      <button class="primary" id="startBtn">開始測驗</button>
+    </div>
+
+    <div id="examArea" style="display:none;">
+      <div class="timer-bar" id="timerBar"><span class="time" id="timeDisplay">40:00</span></div>
+      <div id="questionsList"></div>
+      <button class="primary" id="submitBtn">送出測驗</button>
+    </div>
+
+    <div id="resultScreen" style="display:none;">
+      <div class="result-box">
+        <p style="font-size:14px;color:var(--ink-soft);">選擇題結果</p>
+        <p class="big" id="resultScore"></p>
+        <p id="resultPass" style="font-size:16px;font-weight:600;"></p>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:10px;">是非題跟問答題已經記錄，等店經理評分後會一起確認結果</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="written-exam-take.js"></script>
+</body>
+</html>

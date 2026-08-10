@@ -41,7 +41,52 @@ async function loadAssignments() {
   if (category === 'frontdesk') {
     loadQuestionBank();
     loadWrittenExamHistory();
+    loadOnlineExamHistory();
   }
+}
+
+// ---------- 線上測驗紀錄（含正確答案，供經理審閱） ----------
+async function loadOnlineExamHistory() {
+  const res = await fetch(`${API}/api/written-exam/attempts?staff_id=${traineeSelect.value}`);
+  const attempts = await res.json();
+  const el = document.getElementById('onlineExamHistory');
+  document.getElementById('onlineExamDetail').innerHTML = '';
+
+  if (attempts.length === 0) { el.innerHTML = '<p class="empty-state">目前沒有線上測驗紀錄。</p>'; return; }
+
+  el.innerHTML = attempts.map((a) => `
+    <div class="assign-row" data-attempt-id="${a.id}" style="cursor:pointer;">
+      <span class="name">${new Date(a.submitted_at).toLocaleString('zh-TW')}・答對 ${a.correct_count}/${a.total_scored}</span>
+      <span style="font-size:12px;color:${a.passed ? 'var(--accent)' : 'var(--danger)'};">${a.passed ? '通過' : '未通過'}</span>
+    </div>`).join('');
+
+  el.querySelectorAll('[data-attempt-id]').forEach((row) => {
+    row.addEventListener('click', () => showAttemptDetail(row.dataset.attemptId));
+  });
+}
+
+async function showAttemptDetail(attemptId) {
+  const res = await fetch(`${API}/api/written-exam/attempts/${attemptId}/detail`);
+  const { attempt, answers } = await res.json();
+  const el = document.getElementById('onlineExamDetail');
+
+  const sorted = [...answers].sort((a, b) => (a.question?.question_number ?? 0) - (b.question?.question_number ?? 0));
+  el.innerHTML = `<div class="exam-card"><p style="font-weight:500;margin:0 0 10px;">${attempt.staff?.name || ''} 的作答詳情</p>` +
+    sorted.map((a) => {
+      const q = a.question;
+      let resultHtml = '';
+      if (q.correct_answer) {
+        resultHtml = `<p style="font-size:12px;margin:4px 0 0;color:${a.is_correct ? 'var(--accent)' : 'var(--danger)'};">作答：${a.answer_text || '（未作答）'}　正確答案：${q.correct_answer}${a.is_correct ? '　✓' : '　✗'}</p>`;
+      } else if (q.reference_answer) {
+        resultHtml = `<p style="font-size:12px;margin:4px 0 0;">作答：${a.answer_text || '（未作答）'}</p><p style="font-size:11.5px;color:var(--ink-soft);margin:4px 0 0;">參考答案：${q.reference_answer}</p>`;
+      } else {
+        resultHtml = `<p style="font-size:12px;margin:4px 0 0;">作答：${a.answer_text || '（未作答）'}</p>`;
+      }
+      return `<div style="border-top:1px solid var(--line);padding:8px 0;">
+        <p style="font-size:12.5px;margin:0;font-weight:500;">${q.section}第${q.question_number}題：${q.question_text}</p>
+        ${resultHtml}
+      </div>`;
+    }).join('') + '</div>';
 }
 
 function renderUnits(units) {
