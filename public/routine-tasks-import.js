@@ -20,12 +20,9 @@ function handleFile(e) {
   const isCsv = file.name.toLowerCase().endsWith('.csv');
   const reader = new FileReader();
   reader.onload = (evt) => {
-    let workbook;
-    if (isCsv) {
-      workbook = XLSX.read(evt.target.result, { type: 'string' });
-    } else {
-      workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-    }
+    const workbook = isCsv
+      ? XLSX.read(evt.target.result, { type: 'string' })
+      : XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
     parseRows(rows);
@@ -38,7 +35,7 @@ function normalizeCategory(raw) {
   if (t.includes('採購')) return '採購';
   if (t.includes('銀行')) return '銀行';
   if (t.includes('總務')) return '總務';
-  return t;
+  return t || '其他';
 }
 
 function parseDate(raw, yearMonthInput) {
@@ -46,9 +43,7 @@ function parseDate(raw, yearMonthInput) {
   const m = t.match(/(\d{1,2})\/(\d{1,2})/);
   if (!m) return null;
   const year = yearMonthInput.split('-')[0];
-  const month = m[1].padStart(2, '0');
-  const day = m[2].padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return `${year}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
 }
 
 function matchStaff(personName) {
@@ -60,6 +55,7 @@ function matchStaff(personName) {
 }
 
 function parseRows(rows) {
+  // 找表頭列：這一列裡要同時有「人員」「項目」這兩個字
   let headerRowIdx = -1;
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r].map((c) => String(c).trim());
@@ -67,47 +63,36 @@ function parseRows(rows) {
   }
 
   if (headerRowIdx === -1) {
-    document.getElementById('resultArea').innerHTML = '<div class="warn-box">找不到「人員」「項目」這樣的表頭，可能不是預期的例行事項表格格式。請確認檔案內容或跟我說一聲。</div>';
+    document.getElementById('resultArea').innerHTML = '<div class="warn-box">找不到「人員」「項目」這樣的表頭列，請確認檔案格式，或跟我說一聲。</div>';
     return;
   }
 
   const yearMonth = document.getElementById('yearMonthInput').value;
   parsedItems = [];
-  let category = '';
-  let person = '';
-  let blankStreak = 0;
 
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r];
-    const c0 = String(row[0] || '').trim();
-    const c1 = String(row[1] || '').trim();
-    const c2 = String(row[2] || '').trim();
-    const c3 = String(row[3] || '').trim();
-    const c4 = String(row[4] || '').trim();
-    const c5 = String(row[5] || '').trim();
-    const c6 = String(row[6] || '').trim();
+    const person = String(row[0] || '').trim();
+    const categoryRaw = String(row[1] || '').trim();
+    const item = String(row[2] || '').trim();
+    const progress = String(row[3] || '').trim();
+    const due = String(row[4] || '').trim();
+    const actual = String(row[5] || '').trim();
+    const note = String(row[6] || '').trim();
 
-    if (c0) category = normalizeCategory(c0);
-    if (c1) person = c1;
-
-    if (!c2) {
-      blankStreak++;
-      if (blankStreak > 3) break;
-      continue;
-    }
-    blankStreak = 0;
+    if (!item) continue; // 沒有項目內容的列跳過
 
     const matchedStaff = matchStaff(person);
-    const noteParts = [c3, c6].filter(Boolean);
+    const noteParts = [progress, note].filter(Boolean);
 
     parsedItems.push({
-      category,
+      category: normalizeCategory(categoryRaw),
       person_name: person,
       matched_staff: matchedStaff,
-      item_name: c2,
+      item_name: item,
       progress_note: noteParts.join('；'),
-      due_date: parseDate(c4, yearMonth),
-      status: c5 ? 'completed' : 'pending',
+      due_date: parseDate(due, yearMonth),
+      status: actual ? 'completed' : 'pending',
     });
   }
 
@@ -128,7 +113,7 @@ function renderPreview() {
   }
 
   html += '<table class="preview"><thead><tr><th>類別</th><th>項目</th><th>負責人</th><th>進度說明</th><th>預計完成</th><th>狀態</th></tr></thead><tbody>';
-  parsedItems.forEach((it, i) => {
+  parsedItems.forEach((it) => {
     html += `<tr>
       <td>${it.category}</td>
       <td>${it.item_name}</td>
