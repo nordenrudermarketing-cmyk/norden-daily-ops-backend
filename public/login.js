@@ -55,13 +55,17 @@ async function doLogin() {
 
 function routeByRole(staff) {
   const code = staff.todayShiftCode;
+  const roleName = staff.roles?.name || '';
+
+  // 房務：新的左側分類選單外殼頁（試行版），跟排班班別代碼無關，只看職務
+  if (roleName.includes('房務')) {
+    window.location.href = 'housekeeping-home.html';
+    return;
+  }
 
   // 優先依今天實際排班的班別導向
   if (code === 'A' || code === 'B' || code === 'C') { window.location.href = 'shift.html'; return; }
-  if (code === '房') { window.location.href = 'checklist.html'; return; }
   if (code === '1') { window.location.href = 'offday.html'; return; }
-
-  const roleName = staff.roles?.name || '';
 
   // 店經理、總公司不是靠排班表運作的角色，維持照固定職務導向
   if (roleName === '總公司') {
@@ -70,12 +74,6 @@ function routeByRole(staff) {
   }
   if (roleName === '店經理') {
     window.location.href = 'dashboard.html';
-    return;
-  }
-
-  // 房務的房號是小隊長另外分配的，跟排班表是兩件事，沒有排班紀錄也照樣能用打卡頁
-  if (roleName.includes('房務')) {
-    window.location.href = 'checklist.html';
     return;
   }
 
