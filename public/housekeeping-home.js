@@ -43,7 +43,6 @@ const catButtonsEl = document.getElementById('catButtons');
 const submenuEl = document.getElementById('submenu');
 const submenuTitleEl = document.getElementById('submenuTitle');
 const submenuItemsEl = document.getElementById('submenuItems');
-const frame = document.getElementById('contentFrame');
 
 document.getElementById('userFoot').textContent = staff.name;
 
@@ -65,13 +64,6 @@ function selectCategory(key) {
 
   document.querySelectorAll('.cat-btn').forEach((b) => b.classList.toggle('active', b.dataset.key === key));
 
-  if (cat.items.length === 1) {
-    // 分類底下只有一個功能，直接開，不用顯示子選單
-    submenuEl.style.display = 'none';
-    loadContent(cat.items[0].url);
-    return;
-  }
-
   submenuEl.style.display = 'block';
   submenuTitleEl.textContent = cat.label;
   submenuItemsEl.innerHTML = '';
@@ -88,12 +80,12 @@ function selectCategory(key) {
     submenuItemsEl.appendChild(btn);
   });
   // 預設打開第一項
-  submenuItemsEl.firstElementChild.click();
+  // 不自動點第一項，避免剛進頁面就被導走，讓使用者自己選
 }
 
 function loadContent(url) {
   activeUrl = url;
-  frame.src = url;
+  window.location.href = url;
 }
 
 // 預設進來就開「今日任務」
