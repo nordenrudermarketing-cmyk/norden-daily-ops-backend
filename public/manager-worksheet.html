@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主管每日工作表 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 760px; }
+  .section-title { font-size: 14px; font-weight: 600; margin: 20px 0 8px; color: var(--accent); }
+  .check-item { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; }
+  .check-item input { width: auto; margin-top: 3px; }
+  .check-item label { font-size: 13px; line-height: 1.4; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>主管每日工作日報表</h1>
+        <p id="staffLine">—</p>
+      </div>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
+    </div>
+
+    <div id="statusBanner"></div>
+
+    <div class="field"><label for="shiftType">今日班別</label>
+      <select id="shiftType">
+        <option value="主管班">主管班</option>
+        <option value="櫃台班">櫃台班</option>
+        <option value="房務班">房務班</option>
+      </select>
+    </div>
+    <div class="field"><label for="checkinTime">上班時間</label><input type="text" id="checkinTime" placeholder="例如 08:30"></div>
+
+    <div id="checklistArea"></div>
+
+    <div class="field"><label>抽查項目</label><textarea id="inspectionItems"></textarea></div>
+    <div class="field"><label>抽查結果</label><textarea id="inspectionResult"></textarea></div>
+
+    <div class="section-title">二、每日計畫／待辦事項執行追蹤與回覆</div>
+    <div class="field"><label>1. 昨日未完成或交接事項說明</label><textarea id="yesterdayPending"></textarea></div>
+    <div class="field"><label>2. 今日已完成事項</label><textarea id="todayCompleted"></textarea></div>
+    <div class="field"><label>3. 未完成交接事項</label><textarea id="todayPending"></textarea></div>
+
+    <div class="section-title">補充欄位</div>
+    <div class="field"><label>現金營收抽查核對（抽查日期與班別）</label><input type="text" id="cashCheckNote"></div>
+    <div class="field"><label>抽查三張手工單單號</label><input type="text" id="orderNumbers" placeholder="單號1、單號2、單號3"></div>
+    <div class="field"><label>與櫃台檢討作業流程改善說明</label><textarea id="processImprovement"></textarea></div>
+    <div class="field"><label>服務品質異常之狀況、人員說明與後續處理方式</label><textarea id="serviceIssueNote"></textarea></div>
+    <div class="field"><label>其他主管值勤異常說明</label><textarea id="otherNotes"></textarea></div>
+
+    <button class="primary" id="saveBtn">送出工作日報表</button>
+    <p class="error-msg" id="statusMsg"></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="manager-worksheet.js"></script>
+</body>
+</html>
