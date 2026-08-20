@@ -33,6 +33,7 @@ import writtenExamRoutes from './routes/writtenExam.js';
 import bonusAppealsRoutes from './routes/bonusAppeals.js';
 import adhocTasksRoutes from './routes/adhocTasks.js';
 import managerMemoRoutes from './routes/managerMemo.js';
+import managerWorksheetRoutes from './routes/managerWorksheet.js';
 
 dotenv.config();
 
