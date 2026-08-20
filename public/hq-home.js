@@ -28,7 +28,6 @@ const catButtonsEl = document.getElementById('catButtons');
 const submenuEl = document.getElementById('submenu');
 const submenuTitleEl = document.getElementById('submenuTitle');
 const submenuItemsEl = document.getElementById('submenuItems');
-const frame = document.getElementById('contentFrame');
 
 document.getElementById('userFoot').textContent = staff.name;
 
@@ -45,12 +44,6 @@ function selectCategory(key) {
   const cat = CATEGORIES.find((c) => c.key === key);
   document.querySelectorAll('.cat-btn').forEach((b) => b.classList.toggle('active', b.dataset.key === key));
 
-  if (cat.items.length === 1) {
-    submenuEl.style.display = 'none';
-    frame.src = cat.items[0].url;
-    return;
-  }
-
   submenuEl.style.display = 'block';
   submenuTitleEl.textContent = cat.label;
   submenuItemsEl.innerHTML = '';
@@ -61,11 +54,11 @@ function selectCategory(key) {
     btn.addEventListener('click', () => {
       submenuItemsEl.querySelectorAll('.submenu-item').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      frame.src = item.url;
+      window.location.href = item.url;
     });
     submenuItemsEl.appendChild(btn);
   });
-  submenuItemsEl.firstElementChild.click();
+  // 不自動點第一項，避免剛進頁面就被導走，讓使用者自己選
 }
 
 selectCategory('overview');
