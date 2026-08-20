@@ -75,5 +75,14 @@
   <script src="config.js"></script>
   <script src="self-eval-reminder.js"></script>
   <script src="hq-dashboard.js"></script>
+<script>
+  if (window.self !== window.top) {
+    document.addEventListener('DOMContentLoaded', () => {
+      ['self-eval-templates.html','self-eval-hq-flagged.html','weekly-report.html',
+       'manager-worksheet-hq.html','manage-passwords.html'
+      ].forEach((href) => document.querySelectorAll(`a[href="${href}"]`).forEach((a) => a.style.display = 'none'));
+    });
+  }
+</script>
 </body>
 </html>
