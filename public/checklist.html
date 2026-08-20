@@ -60,5 +60,20 @@
   <script src="self-eval-reminder.js"></script>
   <script src="homepage-reminders.js"></script>
   <script src="checklist.js"></script>
+<script>
+  // 如果是被左側選單外殼（housekeeping-home.html）包起來顯示的，
+  // 就把頁面裡原本那排重複的橫向連結隱藏掉，避免跟側邊選單重複
+  if (window.self !== window.top) {
+    document.addEventListener('DOMContentLoaded', () => {
+      const hrefsToHide = [
+        'zone-maintenance.html', 'deep-clean.html', 'public-area.html',
+        'my-teaching.html', 'self-eval.html', 'bonus-appeals.html', 'adhoc-tasks.html'
+      ];
+      hrefsToHide.forEach((href) => {
+        document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
+      });
+    });
+  }
+</script>
 </body>
 </html>
