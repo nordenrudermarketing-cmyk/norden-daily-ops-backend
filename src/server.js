@@ -74,6 +74,7 @@ app.use('/api/written-exam', writtenExamRoutes);
 app.use('/api/bonus-appeals', bonusAppealsRoutes);
 app.use('/api/adhoc-tasks', adhocTasksRoutes);
 app.use('/api/manager-memo', managerMemoRoutes);
+app.use('/api/manager-worksheet', managerWorksheetRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));
