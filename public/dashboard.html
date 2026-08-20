@@ -116,5 +116,16 @@
   <script src="config.js"></script>
   <script src="self-eval-reminder.js"></script>
   <script src="dashboard.js"></script>
+<script>
+  if (window.self !== window.top) {
+    document.addEventListener('DOMContentLoaded', () => {
+      ['schedule.html','schedule-import.html','bonus-appeals.html','zone-maintenance.html',
+       'public-area-assign.html','routine-tasks-manage.html','adhoc-tasks.html','manager-checklist.html',
+       'learning-assign.html','issues.html','review-logs-review.html','manager-daily-report.html',
+       'manager-worksheet.html'
+      ].forEach((href) => document.querySelectorAll(`a[href="${href}"]`).forEach((a) => a.style.display = 'none'));
+    });
+  }
+</script>
 </body>
 </html>
