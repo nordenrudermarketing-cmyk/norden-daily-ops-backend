@@ -57,36 +57,17 @@ function routeByRole(staff) {
   const code = staff.todayShiftCode;
   const roleName = staff.roles?.name || '';
 
-  // 房務：新的左側分類選單外殼頁（試行版），跟排班班別代碼無關，只看職務
-  if (roleName.includes('房務')) {
-    window.location.href = 'housekeeping-home.html';
-    return;
-  }
+  if (roleName === '總公司') { window.location.href = 'hq-home.html'; return; }
+  if (roleName === '店經理') { window.location.href = 'manager-home.html'; return; }
+  if (roleName.includes('房務')) { window.location.href = 'housekeeping-home.html'; return; }
 
-  // 優先依今天實際排班的班別導向
-  if (code === 'A' || code === 'B' || code === 'C') { window.location.href = 'shift.html'; return; }
-  if (code === '1') { window.location.href = 'offday.html'; return; }
-
-  // 店經理、總公司不是靠排班表運作的角色，維持照固定職務導向
-  if (roleName === '總公司') {
-    window.location.href = 'hq-dashboard.html';
-    return;
-  }
-  if (roleName === '店經理') {
-    window.location.href = 'dashboard.html';
-    return;
-  }
-
-  // 客務（不分A/B/C，統一是「客務人員」職務）的任務內容跟著排班表走，
-  // 沒有排班紀錄就不能猜今天是哪一班，導向提醒頁
   if (roleName === '客務人員') {
+    // 客務跟著排班表走，沒排班就不能猜今天是哪一班
+    if (code === 'A' || code === 'B' || code === 'C') { window.location.href = 'frontdesk-home.html'; return; }
+    if (code === '1') { window.location.href = 'offday.html'; return; }
     window.location.href = 'unscheduled.html';
     return;
   }
 
-  if (code) {
-    alert(`今天班別代碼「${code}」尚未有對應頁面，之後會陸續加上。`);
-  } else {
-    alert(`目前尚未有對應「${roleName}」的頁面，之後會陸續加上。`);
-  }
+  alert(`目前尚未有對應「${roleName}」的頁面，之後會陸續加上。`);
 }
