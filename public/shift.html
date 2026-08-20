@@ -77,5 +77,15 @@
   <script src="self-eval-reminder.js"></script>
   <script src="homepage-reminders.js"></script>
   <script src="shift.js"></script>
+<script>
+  if (window.self !== window.top) {
+    document.addEventListener('DOMContentLoaded', () => {
+      ['inspect.html','daily-frontdesk-log.html','complaint-register.html','learning-map.html',
+       'my-teaching.html','written-exam-take.html','self-eval.html','routine-tasks.html',
+       'staff-cleaning.html','bonus-appeals.html','adhoc-tasks.html','handover.html'
+      ].forEach((href) => document.querySelectorAll(`a[href="${href}"]`).forEach((a) => a.style.display = 'none'));
+    });
+  }
+</script>
 </body>
 </html>
