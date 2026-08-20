@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>各館主管工作日報表 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  .branch-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .sub-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .sub-row:first-of-type { border-top: none; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>各館主管工作日報表</h1>
+        <p>當天各館主管有沒有交表，一目了然</p>
+      </div>
+      <a class="logout-link" href="hq-dashboard.html">回總覽</a>
+    </div>
+
+    <div class="field" style="max-width:200px;"><label for="dateInput">日期</label><input type="text" id="dateInput"></div>
+    <div id="list"></div>
+    <div id="detail"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="manager-worksheet-hq.js"></script>
+</body>
+</html>
