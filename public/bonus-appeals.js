@@ -8,12 +8,16 @@ document.getElementById('workDate').value = new Date().toISOString().slice(0, 10
 document.getElementById('submitBtn').addEventListener('click', submitAppeal);
 
 if (isManager) {
+  // 店經理：只看審核區塊，不顯示自己提交申覆的表單跟自己的申覆紀錄
+  document.getElementById('staffForm').style.display = 'none';
+  document.getElementById('myList').previousElementSibling.style.display = 'none'; // 「我的申覆紀錄」標題
+  document.getElementById('myList').style.display = 'none';
+  document.getElementById('pageTitle').textContent = '獎金申覆審核';
   document.getElementById('managerSection').style.display = 'block';
-  document.getElementById('backLink').href = 'dashboard.html';
   loadPending();
+} else {
+  loadMine();
 }
-
-loadMine();
 
 async function submitAppeal() {
   const workDate = document.getElementById('workDate').value;
