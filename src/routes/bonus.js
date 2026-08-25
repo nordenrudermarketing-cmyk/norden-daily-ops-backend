@@ -54,9 +54,9 @@ router.get('/daily', async (req, res) => {
     const defectCount = beforeDeadlineRows.filter((c) => c.has_defect).length;
 
     // 查有沒有已核准的獎金申覆（豁免當天達標門檻）
-    const { data: appeal } = await supabase
+       const { data: appeal } = await supabase
       .from('bonus_appeals')
-      .select('status')
+      .select('status, requested_rooms')
       .eq('staff_id', staff.id)
       .eq('work_date', date)
       .eq('status', 'approved')
@@ -66,7 +66,7 @@ router.get('/daily', async (req, res) => {
       assignedCount,
       completedBeforeDeadlineCount,
       defectCount,
-      overrideWaiveGate: !!appeal,
+      overrideNetRooms: appeal ? appeal.requested_rooms : null,
     });
 
     await supabase
