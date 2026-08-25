@@ -75,6 +75,7 @@
         { label: '例行事項管理', url: 'routine-tasks-manage.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
         { label: '店經理巡館', url: 'manager-checklist.html' },
+        { label: '客務任務範本管理', url: 'templates.html' },
       ] },
       { label: '培訓考核', icon: 'book', items: [{ label: '指派培訓', url: 'learning-assign.html' }] },
       { label: '異常巡查', icon: 'alert', items: [
