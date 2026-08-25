@@ -158,8 +158,19 @@
 
   const foot = document.createElement('div');
   foot.className = 'ld-foot';
-  foot.textContent = staff.name;
+  foot.innerHTML = `
+    <button id="ldLogoutBtn" style="background:none;border:none;color:var(--ink-soft, #6B6F63);font-size:11px;text-decoration:underline;cursor:pointer;padding:0 0 6px;display:block;width:100%;">登出</button>
+    <div>${staff.name}</div>`;
   sidebar.appendChild(foot);
+  document.getElementById && setTimeout(() => {
+    const btn = document.getElementById('ldLogoutBtn');
+    if (btn) btn.addEventListener('click', () => {
+      if (confirm('確定要登出嗎？')) {
+        localStorage.removeItem('staff');
+        window.location.href = 'index.html';
+      }
+    });
+  }, 0);
 
   function renderSubmenu(idx) {
     sidebar.querySelectorAll('.ld-cat-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
@@ -182,4 +193,35 @@
   allUrls.forEach((href) => {
     document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
   });
+
+  // ---------- 店經理專用：一登入就提醒有沒有待處理的申覆／異常 ----------
+  if (navKey === 'manager') {
+    const API = window.APP_CONFIG?.API_BASE_URL;
+    if (API) {
+      (async () => {
+        const alerts = [];
+        try {
+          const res = await fetch(`${API}/api/bonus-appeals/pending?branch_id=${staff.branch_id}`);
+          const list = await res.json();
+          const pendingCount = (list || []).filter((a) => a.status === 'pending').length;
+          if (pendingCount > 0) alerts.push({ text: `有 ${pendingCount} 筆獎金申覆待審核`, url: 'bonus-appeals.html' });
+        } catch (e) { /* 查不到就跳過 */ }
+
+        try {
+          const res = await fetch(`${API}/api/issues/list?branch_id=${staff.branch_id}`);
+          const list = await res.json();
+          const unresolvedCount = (list || []).filter((i) => !i.resolved).length;
+          if (unresolvedCount > 0) alerts.push({ text: `有 ${unresolvedCount} 筆異常尚未處理`, url: 'issues.html' });
+        } catch (e) { /* 查不到就跳過 */ }
+
+        if (alerts.length === 0) return;
+
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:226px;right:0;z-index:9998;background:#fdecea;border-bottom:1px solid #e3bfae;padding:10px 20px;font-size:13px;color:#b3462c;display:flex;gap:16px;flex-wrap:wrap;align-items:center;';
+        banner.innerHTML = alerts.map((a) => `⚠ ${a.text} <a href="${a.url}" style="color:#b3462c;text-decoration:underline;margin-right:12px;">前往處理 →</a>`).join('');
+        document.body.prepend(banner);
+        document.body.style.paddingTop = '48px';
+      })();
+    }
+  }
 })();
