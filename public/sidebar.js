@@ -85,6 +85,10 @@
         { label: '開班收班日報', url: 'manager-daily-report.html' },
         { label: '主管每日工作表', url: 'manager-worksheet.html' },
       ] },
+      { label: '自評', icon: 'dots', items: [
+        { label: '我的每月自評表', url: 'self-eval.html' },
+        { label: '審閱同仁自評表', url: 'self-eval-review.html' },
+      ] },
     ],
     hq: [
       { label: '總覽', icon: 'home', items: [{ label: '總公司儀表板', url: 'hq-dashboard.html' }] },
