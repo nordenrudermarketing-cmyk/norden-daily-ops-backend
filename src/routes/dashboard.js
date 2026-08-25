@@ -57,20 +57,20 @@ router.get('/summary', async (req, res) => {
       const completedBeforeDeadlineCount = beforeDeadlineRows.length;
       const defectCount = beforeDeadlineRows.filter((c) => c.has_defect).length;
 
-      const { data: appeal } = await supabase
-        .from('bonus_appeals')
-        .select('status')
-        .eq('staff_id', s.id)
-        .eq('work_date', date)
-        .eq('status', 'approved')
-        .maybeSingle();
+          const { data: appeal } = await supabase
+      .from('bonus_appeals')
+      .select('status, requested_rooms')
+      .eq('staff_id', staff.id)
+      .eq('work_date', date)
+      .eq('status', 'approved')
+      .maybeSingle();
 
-      const { bonus_amount, net_rooms, disqualified } = calculateBonus(settings || {}, {
-        assignedCount,
-        completedBeforeDeadlineCount,
-        defectCount,
-        overrideWaiveGate: !!appeal,
-      });
+    const { bonus_amount, net_rooms, disqualified } = calculateBonus(settings || {}, {
+      assignedCount,
+      completedBeforeDeadlineCount,
+      defectCount,
+      overrideNetRooms: appeal ? appeal.requested_rooms : null,
+    });
 
       bonusTable.push({
         name: s.name,
