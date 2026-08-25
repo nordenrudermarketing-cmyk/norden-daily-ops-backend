@@ -13,11 +13,15 @@
         <h1 id="pageTitle">獎金申覆</h1>
         <p id="staffLine">—</p>
       </div>
-      <a class="logout-link" id="backLink" href="checklist.html">回打卡頁</a>
+      <a class="logout-link" href="checklist.html">回打卡頁</a>
     </div>
 
     <div id="staffForm">
       <div class="field"><label for="workDate">申覆日期</label><input type="text" id="workDate" placeholder="YYYY-MM-DD"></div>
+
+      <div id="dayStatsBox" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
+
+      <div class="field"><label for="requestedRooms">申覆想要被算成幾間</label><input type="text" id="requestedRooms" inputmode="numeric" placeholder="例如：10"></div>
       <div class="field"><label for="reason">申覆理由</label><textarea id="reason" placeholder="例如：15:01才按完成，因為臨時處理客訴延誤"></textarea></div>
       <button class="primary" id="submitBtn">送出申覆</button>
     </div>
@@ -31,7 +35,19 @@
     </div>
   </div>
 
+  <div class="overlay" id="rejectOverlay" style="display:none;">
+    <div class="card">
+      <p class="card-title" style="margin-bottom:12px;">駁回申覆</p>
+      <div class="field"><label for="rejectReasonInput">駁回原因</label><textarea id="rejectReasonInput"></textarea></div>
+      <div class="action-row">
+        <button class="secondary" id="rejectCancel">取消</button>
+        <button class="danger-outline" id="rejectConfirm">確認駁回</button>
+      </div>
+    </div>
+  </div>
+
   <script src="config.js"></script>
   <script src="bonus-appeals.js"></script>
-<script src="sidebar.js"></script></body>
+  <script src="sidebar.js"></script>
+</body>
 </html>
