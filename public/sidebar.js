@@ -195,9 +195,18 @@
   wrap.appendChild(submenu);
   document.body.prepend(wrap);
 
-  allUrls.forEach((href) => {
-    document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
-  });
+  function hideKnownLinks() {
+    allUrls.forEach((href) => {
+      document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
+    });
+  }
+  hideKnownLinks();
+
+  // 有些連結是頁面載入後才用 JS 動態產生的（例如「責任區保養排程」那種），
+  // 剛剛那次隱藏跑的時候可能它還沒出現，所以持續監看 DOM 變化，
+  // 只要之後有新連結冒出來，一樣會被抓到隱藏
+  const observer = new MutationObserver(hideKnownLinks);
+  observer.observe(document.body, { childList: true, subtree: true });
 
   // ---------- 店經理專用：一登入就提醒有沒有待處理的申覆／異常 ----------
   if (navKey === 'manager') {
