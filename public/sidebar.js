@@ -2,7 +2,7 @@
 // 使用方式：任何頁面在 </body> 前加一行 <script src="sidebar.js"></script> 就會自動運作
 // 不需要 iframe，是真的把選單「畫」在每一頁上，所以 Safari 也完全沒問題
 
-(function () {
+(async function () {
   const staff = JSON.parse(localStorage.getItem('staff') || 'null');
   if (!staff) return; // 沒登入的頁面（例如 index.html）不顯示側邊選單
 
@@ -111,6 +111,24 @@
   if (!navKey) return;
 
   const categories = NAV_SETS[navKey];
+
+  // 交班表、店經理巡館只有台中館在用，其他館別要拿掉
+  const API_BASE = window.APP_CONFIG?.API_BASE_URL;
+  let branchName = null;
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/api/staff/password-status?branch_id=${staff.branch_id}`);
+      const list = await res.json();
+      branchName = list?.[0]?.branch_name || null;
+    } catch (e) { /* 查不到就保守顯示全部，不隱藏 */ }
+  }
+
+  if (branchName && branchName !== '台中館') {
+    const tcOnlyUrls = ['handover.html', 'manager-checklist.html'];
+    categories.forEach((cat) => {
+      cat.items = cat.items.filter((it) => !tcOnlyUrls.includes(it.url));
+    });
+  }
 
   const allUrls = new Set();
   categories.forEach((c) => c.items.forEach((it) => allUrls.add(it.url)));
