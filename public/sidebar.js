@@ -168,7 +168,7 @@
     #ldSidebarWrap .ld-cat-btn svg { width: 20px; height: 20px; }
     #ldSidebarWrap .ld-cat-btn span { font-size: 9px; }
     #ldSidebarWrap .ld-cat-btn.active { background: var(--accent-soft, #E4EDE9); color: var(--accent, #2F5D4F); }
-    #ldSidebarWrap .ld-submenu { width: 150px; background: var(--surface, #fff); border-right: 1px solid var(--line, #e3e0d8); padding: 16px 10px; height: 100%; overflow-y: auto; }
+    #ldSidebarWrap .ld-submenu { width: 150px; background: var(--surface, #fff); border-right: 1px solid var(--line, #e3e0d8); padding: 16px 10px; height: 100%; overflow-y: auto; position: relative; }
     #ldSidebarWrap .ld-submenu h3 { font-size: 11.5px; color: var(--ink-soft, #6B6F63); margin: 0 0 10px; font-weight: 600; }
     #ldSidebarWrap .ld-sub-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 9px; border: none; background: transparent; font-size: 12.5px; color: var(--ink, #23291F); cursor: pointer; margin-bottom: 4px; }
     #ldSidebarWrap .ld-sub-item.active { background: var(--accent, #2F5D4F); color: #fff; }
@@ -176,10 +176,14 @@
     @media (max-width: 700px) {
       body { margin-left: 0 !important; padding-top: 60px !important; }
       #ldSidebarWrap { top: 0; left: 0; right: 0; bottom: auto; flex-direction: column; }
-      #ldSidebarWrap .ld-sidebar { width: 100%; flex-direction: row; height: auto; padding: 6px; overflow-x: auto; }
-      #ldSidebarWrap .ld-logo, #ldSidebarWrap .ld-foot { display: none; }
-      #ldSidebarWrap .ld-submenu { position: fixed; top: 56px; left: 0; right: 0; width: 100%; height: auto; max-height: 50vh; }
+      #ldSidebarWrap .ld-sidebar { width: 100%; flex-direction: row; height: auto; padding: 6px; overflow-x: auto; align-items: center; }
+      #ldSidebarWrap .ld-logo { display: none; }
+      #ldSidebarWrap .ld-foot { margin-top: 0; margin-left: auto; padding-top: 0; flex-shrink: 0; display: flex; align-items: center; }
+      #ldSidebarWrap .ld-foot > div:last-child { display: none; } /* 手機版隱藏姓名文字，省空間，只留登出鍵 */
+      #ldSidebarWrap .ld-submenu { position: fixed; top: 56px; left: 0; right: 0; width: 100%; height: auto; max-height: 60vh; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+      #ldSidebarWrap .ld-submenu-close { display: block !important; }
     }
+    .ld-submenu-close { display: none; background: none; border: none; color: var(--ink-soft, #6B6F63); font-size: 20px; cursor: pointer; position: absolute; top: 8px; right: 10px; padding: 4px; }
   `;
   document.head.appendChild(style);
 
@@ -193,11 +197,20 @@
   const submenu = document.createElement('div');
   submenu.className = 'ld-submenu';
 
+  let openIdx = defaultCategoryIdx;
+
   categories.forEach((cat, idx) => {
     const btn = document.createElement('button');
     btn.className = 'ld-cat-btn' + (idx === defaultCategoryIdx ? ' active' : '');
     btn.innerHTML = `${ICONS[cat.icon]}<span>${cat.label}</span>`;
-    btn.addEventListener('click', () => renderSubmenu(idx));
+    btn.addEventListener('click', () => {
+      // 手機版：再點一次目前開著的分類，就收合子選單
+      if (window.innerWidth <= 700 && openIdx === idx && submenu.style.display !== 'none') {
+        closeSubmenu();
+        return;
+      }
+      renderSubmenu(idx);
+    });
     sidebar.appendChild(btn);
   });
 
@@ -217,10 +230,18 @@
     });
   }, 0);
 
+  function closeSubmenu() {
+    submenu.style.display = 'none';
+    sidebar.querySelectorAll('.ld-cat-btn').forEach((b) => b.classList.remove('active'));
+  }
+
   function renderSubmenu(idx) {
+    openIdx = idx;
+    submenu.style.display = 'block';
     sidebar.querySelectorAll('.ld-cat-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
     const cat = categories[idx];
-    submenu.innerHTML = `<h3>${cat.label}</h3>`;
+    submenu.innerHTML = `<button class="ld-submenu-close" aria-label="收合">✕</button><h3>${cat.label}</h3>`;
+    submenu.querySelector('.ld-submenu-close').addEventListener('click', closeSubmenu);
     cat.items.forEach((item) => {
       const btn = document.createElement('button');
       btn.className = 'ld-sub-item' + (item.url === currentPage ? ' active' : '');
