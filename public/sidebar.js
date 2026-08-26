@@ -24,7 +24,11 @@
 
   const NAV_SETS = {
     housekeeping: [
-      { label: '今日任務', icon: 'home', items: [{ label: '今日房號打卡', url: 'checklist.html' }] },
+      { label: '今日任務', icon: 'home', items: [
+        { label: '今日房號打卡', url: 'checklist.html' },
+        { label: '今日房號分配（小隊長）', url: 'assign.html' },
+        { label: '公區任務分配（小隊長）', url: 'public-area-assign.html' },
+      ] },
       { label: '保養', icon: 'leaf', items: [
         { label: '責任區／保養排程', url: 'zone-maintenance.html' },
         { label: '公區保養', url: 'public-area.html' },
@@ -128,6 +132,24 @@
     categories.forEach((cat) => {
       cat.items = cat.items.filter((it) => !tcOnlyUrls.includes(it.url));
     });
+  }
+
+  // 房務：只有「今天排班表指定的小隊長」才看得到房號分配／公區任務分配這兩項
+  if (navKey === 'housekeeping' && API_BASE) {
+    let isTeamLeadToday = false;
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`${API_BASE}/api/schedule/team-lead-today?branch_id=${staff.branch_id}&date=${todayStr}`);
+      const result = await res.json();
+      isTeamLeadToday = result.staff_id === staff.id;
+    } catch (e) { /* 查不到就保守隱藏，不顯示分配功能 */ }
+
+    if (!isTeamLeadToday) {
+      const leadOnlyUrls = ['assign.html', 'public-area-assign.html'];
+      categories.forEach((cat) => {
+        cat.items = cat.items.filter((it) => !leadOnlyUrls.includes(it.url));
+      });
+    }
   }
 
   const allUrls = new Set();
