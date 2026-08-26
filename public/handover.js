@@ -9,7 +9,7 @@ const myShift = staff.todayShiftCode;
 document.getElementById('dateLine').textContent = today;
 if (['A', 'B', 'C'].includes(myShift)) document.getElementById('shiftCode').value = myShift;
 
-document.getElementById('shiftCode').addEventListener('change', loadExisting);
+document.getElementById('shiftCode').addEventListener('change', () => { loadExisting(); autoFillNames(); });
 document.getElementById('addFieldBtn').addEventListener('click', () => addCustomFieldRow('', ''));
 document.getElementById('submitBtn').addEventListener('click', submit);
 
@@ -18,6 +18,29 @@ init();
 async function init() {
   await prefillFacilityNote();
   await loadExisting();
+  // 只有這一班還沒填過的時候才自動帶入，避免覆蓋掉已經送出、之後回來編輯的內容
+  if (!document.getElementById('handoverStaff').value) {
+    await autoFillNames();
+  }
+}
+
+// 交班人員＝目前登入的這個人；接班確認人員＝查排班表，抓下一班實際排班的人
+async function autoFillNames() {
+  document.getElementById('handoverStaff').value = staff.name;
+
+  const shiftCode = document.getElementById('shiftCode').value;
+  try {
+    const res = await fetch(`${API}/api/handover/next-shift-staff?branch_id=${staff.branch_id}&date=${today}&current_shift=${shiftCode}`);
+    const data = await res.json();
+    document.getElementById('nextShiftStaff').value = (data.names && data.names.length > 0)
+      ? data.names.join('、')
+      : '';
+    if (!data.names || data.names.length === 0) {
+      document.getElementById('nextShiftStaff').placeholder = '排班表查無下一班人員，請手動填寫';
+    }
+  } catch (err) {
+    // 查不到就留空白讓同仁自己填，不擋住整個表單
+  }
 }
 
 // 抓今天所有任務回報的異常，組成參考文字帶入公區/客房設備異常回報欄位
@@ -38,7 +61,7 @@ async function prefillFacilityNote() {
   }
 }
 
-// 如果今天這一班已經填過，載入既有內容讓同仁編輯（不會覆蓋掉剛剛自動帶入的異常回報，除非已存檔過）
+// 如果今天這一班已經填過，載入既有內容讓同仁編輯
 async function loadExisting() {
   const shiftCode = document.getElementById('shiftCode').value;
   const res = await fetch(`${API}/api/handover/today?branch_id=${staff.branch_id}&date=${today}&shift_code=${shiftCode}`);
