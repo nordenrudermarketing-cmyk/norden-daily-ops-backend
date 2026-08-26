@@ -70,5 +70,28 @@ router.post('/', async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
+// GET /api/handover/next-shift-staff?branch_id=xxx&date=2026-08-25&current_shift=A
+// 依台中館的班別時間順序（A→C→B）找出「下一班」實際有排班的人
+router.get('/next-shift-staff', async (req, res) => {
+  const { branch_id, date, current_shift } = req.query;
+  const SHIFT_ORDER = ['A', 'C', 'B'];
 
+  const { data: schedules } = await supabase
+    .from('staff_schedule')
+    .select('shift_code, staff:staff_id(name)')
+    .eq('branch_id', branch_id)
+    .eq('work_date', date);
+
+  const currentIdx = SHIFT_ORDER.indexOf(current_shift);
+  let nextNames = [];
+  for (let i = currentIdx + 1; i < SHIFT_ORDER.length; i++) {
+    const matched = (schedules ?? []).filter((s) => s.shift_code === SHIFT_ORDER[i]);
+    if (matched.length > 0) {
+      nextNames = matched.map((s) => s.staff?.name).filter(Boolean);
+      break;
+    }
+  }
+
+  res.json({ names: nextNames });
+});
 export default router;
