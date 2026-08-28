@@ -2,13 +2,27 @@ const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-const today = new Date().toISOString().slice(0, 10);
+// 用「當地時間」算今天的日期，不要用 toISOString()（那個算的是UTC時間，
+// 在台灣時間凌晨0點到早上8點之間會算成「昨天」，導致抓不到今天分配的房間）
+function getLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const today = getLocalDateString();
 
 document.getElementById('staffLine').textContent = `${staff.name}・${today}`;
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.removeItem('staff');
-  window.location.href = 'index.html';
-});
+// 登出功能已經移到左側選單（sidebar.js）處理，這裡加個保護避免萬一頁面上還留著舊按鈕
+const oldLogoutBtn = document.getElementById('logoutBtn');
+if (oldLogoutBtn) {
+  oldLogoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('staff');
+    window.location.href = 'index.html';
+  });
+}
 
 // 依館別是否使用「A-E責任區」制度，決定顯示樓層版（台中館）還是責任區版（台東1館）的保養排程連結
 (async () => {
