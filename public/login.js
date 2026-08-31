@@ -51,20 +51,35 @@ async function doLogin() {
   }
 }
 
-function routeByRole(staff) {
+// 依角色決定要去哪一頁；如果那一頁的功能被總公司關掉了，就改導到自評表
+async function routeByRole(staff) {
+  const target = landingPageFor(staff);
+  if (!target) return; // 沒有對應頁面的角色，landingPageFor 已經跳過提示
+
+  let disabledPages = [];
+  try {
+    const res = await fetch(`${API}/api/features`);
+    const data = await res.json();
+    disabledPages = data?.disabled_pages || [];
+  } catch (e) { /* 查不到就照原本的導頁走 */ }
+
+  window.location.href = disabledPages.includes(target) ? 'self-eval.html' : target;
+}
+
+function landingPageFor(staff) {
   const code = staff.todayShiftCode;
   const roleName = staff.roles?.name || '';
 
-  if (roleName === '總公司') { window.location.href = 'hq-dashboard.html'; return; }
-  if (roleName === '店經理') { window.location.href = 'dashboard.html'; return; }
-  if (roleName.includes('房務')) { window.location.href = 'checklist.html'; return; }
+  if (roleName === '總公司') return 'hq-dashboard.html';
+  if (roleName === '店經理') return 'dashboard.html';
+  if (roleName.includes('房務')) return 'checklist.html';
 
   if (roleName === '客務人員') {
-    if (code === 'A' || code === 'B' || code === 'C') { window.location.href = 'shift.html'; return; }
-    if (code === '1') { window.location.href = 'offday.html'; return; }
-    window.location.href = 'unscheduled.html';
-    return;
+    if (code === 'A' || code === 'B' || code === 'C') return 'shift.html';
+    if (code === '1') return 'offday.html';
+    return 'unscheduled.html';
   }
 
   alert(`目前尚未有對應「${roleName}」的頁面，之後會陸續加上。`);
+  return null;
 }

@@ -34,6 +34,8 @@ import bonusAppealsRoutes from './routes/bonusAppeals.js';
 import adhocTasksRoutes from './routes/adhocTasks.js';
 import managerMemoRoutes from './routes/managerMemo.js';
 import managerWorksheetRoutes from './routes/managerWorksheet.js';
+import featuresRoutes from './routes/features.js';
+import { featureGuard } from './lib/featureGuard.js';
 
 dotenv.config();
 
@@ -45,6 +47,10 @@ app.use(express.json({ limit: '5mb' })); // 缺失照片用 base64 傳，稍微�
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'norden-daily-ops-backend' }));
 
+// 功能開關：總公司關掉的功能，對應 API 一律擋在這裡（沒對應到的路徑照常放行）
+app.use('/api', featureGuard);
+
+app.use('/api/features', featuresRoutes);
 app.use('/api', staffRoutes);
 app.use('/api/room-cleanings', roomCleaningRoutes);
 app.use('/api/bonus', bonusRoutes);
