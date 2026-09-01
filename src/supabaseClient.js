@@ -12,21 +12,49 @@ dotenv.config();
 //   印出來會直接留在 Railway 的日誌裡。
 // ============================================================
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const DB_SCHEMA = process.env.SUPABASE_DB_SCHEMA || 'public';
+// 從 Railway 的介面貼值進來時，很容易多帶到前後空白或換行，一律先清掉
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim();
+const SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const DB_SCHEMA = (process.env.SUPABASE_DB_SCHEMA || 'public').trim();
+
+// 出錯時要幫忙指出「哪一格有問題」，但只講長度、不講內容
+function describe(name) {
+  const raw = process.env[name];
+  if (raw === undefined) return `${name}：這個服務裡完全沒有這個變數`;
+  if (raw.trim() === '') return `${name}：有這個變數，但值是空的`;
+  const extra = raw !== raw.trim() ? '，而且前後有多餘的空白或換行' : '';
+  return `${name}：長度 ${raw.trim().length} 字元${extra}`;
+}
+
+// 只列出「變數名稱」，不列值——用來抓名稱打錯字的情況
+function envNames() {
+  const names = Object.keys(process.env).filter((k) => /supabase/i.test(k)).sort();
+  return names.length ? names.join('、') : '（一個都沒有）';
+}
+
+function envReport() {
+  return (
+    '\n---- 目前這個服務的設定狀況（只顯示長度，不會顯示內容）----\n' +
+    `${describe('SUPABASE_URL')}\n` +
+    `${describe('SUPABASE_SERVICE_ROLE_KEY')}\n` +
+    `${describe('SUPABASE_DB_SCHEMA')}\n` +
+    `名稱含 SUPABASE 的變數有：${envNames()}`
+  );
+}
 
 if (!/^https?:\/\/\S+$/i.test(SUPABASE_URL)) {
   throw new Error(
     'SUPABASE_URL 不是有效的網址。它應該長得像 https://xxxxx.supabase.co\n' +
-    '（Supabase → Settings → API → Project URL）。請檢查 Railway 的環境變數是不是貼錯格了。'
+    '（Supabase → Settings → API → Project URL）。請檢查 Railway 的環境變數是不是貼錯格了。' +
+    envReport()
   );
 }
 
 if (!SERVICE_ROLE_KEY) {
   throw new Error(
     '缺少 SUPABASE_SERVICE_ROLE_KEY。\n' +
-    '（Supabase → Settings → API → service_role key）'
+    '（Supabase → Settings → API → service_role key）' +
+    envReport()
   );
 }
 
@@ -36,7 +64,8 @@ if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(DB_SCHEMA)) {
   throw new Error(
     'SUPABASE_DB_SCHEMA 的值看起來不是 schema 名稱。\n' +
     '它應該是 public（正式）或 staging（測試），就這幾個字而已。\n' +
-    '請檢查 Railway 的環境變數是不是把金鑰貼到這一格了。'
+    '請檢查 Railway 的環境變數是不是把金鑰貼到這一格了。' +
+    envReport()
   );
 }
 
