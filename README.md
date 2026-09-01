@@ -685,11 +685,27 @@ const DB_SCHEMA = process.env.SUPABASE_DB_SCHEMA || 'public';
 測試帳號：`T-HQ`（總公司）、`T-MGR`（店經理）、`T-HK`（房務）、`T-FD`（客務）。
 密碼欄位是空的，第一次登入輸入什麼就會變成密碼。
 
+### 以後有新的 SQL 要怎麼跑
+
+**一份新的 `schema_v*.sql` 要跑兩次**：一次進 staging（先測），一次進 public（正式）。
+
+先在 staging 測：把這一行加在 SQL 的**最前面**，其餘內容原封不動貼在後面，一起執行——
+
+```sql
+set search_path to staging, public;
+```
+
+`search_path` 的第一個是 staging，所以 `create table xxx` 會建在 staging；
+後面接 public 是為了萬一 SQL 裡有查到既有資料的地方也不會出錯。
+
+測沒問題之後，**把那一行刪掉**，一模一樣的 SQL 再跑一次，就會進 public（正式）。
+
+> ⚠ 兩邊結構不同步的話測試結果就不準了，這是這個做法最主要的維護成本。
+> 忘記哪些表沒同步時，重跑 `staging_01_setup.sql` 就會自動補上缺的表、跳過已經有的。
+
 ### 兩個要記得的限制
 
-- **兩邊 schema 要自己保持同步**：以後每一份新的 `schema_v*.sql`，在 public 跑完之後，
-  要把 `create table` 的部分對 staging 再跑一次（或直接重跑 `staging_01_setup.sql`，
-  它會自動補上新表、跳過舊的）。**沒同步的話測試結果就不準了**，這是這個做法最主要的維護成本。
+- **每份新 SQL 都要記得跑兩次**（見上一段），漏跑 staging 就會測到假的結果。
 - **Storage 的 `photos` bucket 是共用的**，測試上傳的缺失照片會跟正式照片放在同一個
   bucket。不影響功能，只是會多幾張用不到的圖。
 
