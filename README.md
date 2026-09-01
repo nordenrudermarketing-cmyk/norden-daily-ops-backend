@@ -642,6 +642,81 @@ W1-W5週次項目），因為這個區塊格式規律；**上半段的「一次�
 
 **部署前要跑兩份 SQL，依序執行**：`schema_v30_written_exam.sql` → `schema_v30_seed.sql`。
 
+## 測試環境（staging schema）
+
+以前沒有地方可以安全試改動：只有一個 Supabase 專案、免費方案的 2 個專案名額也用完了，
+所以每次改完都是直接在正式環境驗證。
+
+現在改成**在同一個 Supabase 專案裡開第二個 schema**：
+
+```
+norden-daily-ops（同一個 Supabase 專案，同一組金鑰）
+├── public   schema  ← 正式 Railway service（真實資料）
+└── staging  schema  ← 測試 Railway service（假資料，隨便玩）
+```
+
+程式碼裡所有資料存取都是 `supabase.from('表名')`，沒有任何地方寫死 schema，
+所以 `src/supabaseClient.js` 指定預設 schema，整個系統就會整組切換：
+
+```js
+const DB_SCHEMA = process.env.SUPABASE_DB_SCHEMA || 'public';
+```
+
+**正式環境不要設這個環境變數**，預設就是 `public`，行為跟以前完全一樣。
+測試用的 Railway service 設 `SUPABASE_DB_SCHEMA=staging` 就好。
+
+打開 `/api/health` 可以確認目前連的是哪一邊：
+
+```json
+{ "status": "ok", "service": "norden-daily-ops-backend", "db_schema": "staging" }
+```
+
+### 建立測試環境
+
+1. Supabase SQL Editor 執行 `staging_01_setup.sql`
+   （複製 public 的**結構**到 staging，不複製任何資料；含重建外鍵）
+2. Supabase SQL Editor 執行 `staging_02_seed.sql`
+   （複製館別／職務／房號／各種題目範本，並建立 4 個假帳號）
+3. Supabase → **Settings → API → Exposed schemas** 把 `staging` 加進去
+   （沒做這步 PostgREST 讀不到 staging，API 會回錯誤）
+4. Railway 新增第二個 service，指向同一個 repo、**Branch 選要測的 branch**，
+   環境變數除了原本兩個之外多加 `SUPABASE_DB_SCHEMA=staging`
+
+測試帳號：`T-HQ`（總公司）、`T-MGR`（店經理）、`T-HK`（房務）、`T-FD`（客務）。
+密碼欄位是空的，第一次登入輸入什麼就會變成密碼。
+
+### 以後有新的 SQL 要怎麼跑
+
+**一份新的 `schema_v*.sql` 要跑兩次**：一次進 staging（先測），一次進 public（正式）。
+
+先在 staging 測：把這一行加在 SQL 的**最前面**，其餘內容原封不動貼在後面，一起執行——
+
+```sql
+set search_path to staging, public;
+```
+
+`search_path` 的第一個是 staging，所以 `create table xxx` 會建在 staging；
+後面接 public 是為了萬一 SQL 裡有查到既有資料的地方也不會出錯。
+
+測沒問題之後，**把那一行刪掉**，一模一樣的 SQL 再跑一次，就會進 public（正式）。
+
+> ⚠ 兩邊結構不同步的話測試結果就不準了，這是這個做法最主要的維護成本。
+> 忘記哪些表沒同步時，重跑 `staging_01_setup.sql` 就會自動補上缺的表、跳過已經有的。
+
+### 兩個要記得的限制
+
+- **每份新 SQL 都要記得跑兩次**（見上一段），漏跑 staging 就會測到假的結果。
+- **Storage 的 `photos` bucket 是共用的**，測試上傳的缺失照片會跟正式照片放在同一個
+  bucket。不影響功能，只是會多幾張用不到的圖。
+
+### 為什麼不是用 Supabase Branching
+
+Supabase Branching 是照著 repo 裡 `supabase/migrations/` 的檔案**重建一個空資料庫**，
+而這個專案的 SQL 是歷史流水帳、不是 migrations 格式；更關鍵的是**最初建表的
+`schema_v2.sql` 根本不在 repo 裡**，所以「重跑 SQL 檔重建資料庫」這條路本來就走不通。
+從現有的 public 動態複製結構才是可靠的做法。
+（Branching 另外還需要 Pro 方案。）
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時
