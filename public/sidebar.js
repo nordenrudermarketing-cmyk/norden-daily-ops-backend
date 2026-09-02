@@ -8,6 +8,24 @@
 
   const roleName = staff.roles?.name || '';
   const currentPage = window.location.pathname.split('/').pop();
+  const API_BASE = window.APP_CONFIG?.API_BASE_URL;
+
+  // ---------- 功能開關（總公司後台設定的） ----------
+  // 被關掉的功能：① 選單不顯示 ② 直接打網址會被導回自評表
+  let disabledPages = [];
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/api/features`);
+      const data = await res.json();
+      disabledPages = data?.disabled_pages || [];
+    } catch (e) { /* 查不到就當作全部開啟，不要因為這裡壞掉就整個系統不能用 */ }
+  }
+
+  if (disabledPages.includes(currentPage)) {
+    document.body.innerHTML = '<div style="max-width:420px;margin:80px auto;padding:0 20px;font-family:-apple-system,\'PingFang TC\',\'Noto Sans TC\',sans-serif;color:#6b6f63;font-size:14px;line-height:1.8;text-align:center;">這項功能目前已由總公司關閉，正在帶你回自評表…</div>';
+    window.location.replace('self-eval.html');
+    return;
+  }
 
   const ICONS = {
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>',
@@ -103,7 +121,10 @@
         { label: '各館週報', url: 'weekly-report.html' },
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
       ] },
-      { label: '帳號管理', icon: 'lock', items: [{ label: '密碼管理', url: 'manage-passwords.html' }] },
+      { label: '帳號管理', icon: 'lock', items: [
+        { label: '密碼管理', url: 'manage-passwords.html' },
+        { label: '功能開關', url: 'feature-toggles.html' },
+      ] },
     ],
   };
 
@@ -114,10 +135,16 @@
   else if (roleName === '總公司') navKey = 'hq';
   if (!navKey) return;
 
-  const categories = NAV_SETS[navKey];
+  let categories = NAV_SETS[navKey];
+
+  // 被總公司關掉的功能，直接從選單拿掉
+  if (disabledPages.length > 0) {
+    categories.forEach((cat) => {
+      cat.items = cat.items.filter((it) => !disabledPages.includes(it.url));
+    });
+  }
 
   // 交班表、店經理巡館只有台中館在用，其他館別要拿掉
-  const API_BASE = window.APP_CONFIG?.API_BASE_URL;
   let branchName = null;
   if (API_BASE) {
     try {
@@ -151,6 +178,10 @@
       });
     }
   }
+
+  // 整個分類的項目都被過濾光的話，那個分類按鈕也不要留
+  categories = categories.filter((c) => c.items.length > 0);
+  if (categories.length === 0) return;
 
   const allUrls = new Set();
   categories.forEach((c) => c.items.forEach((it) => allUrls.add(it.url)));
@@ -276,6 +307,7 @@
       (async () => {
         const alerts = [];
         try {
+          if (disabledPages.includes('bonus-appeals.html')) throw new Error('功能已關閉');
           const res = await fetch(`${API}/api/bonus-appeals/pending?branch_id=${staff.branch_id}`);
           const list = await res.json();
           const pendingCount = (list || []).filter((a) => a.status === 'pending').length;
@@ -283,6 +315,7 @@
         } catch (e) { /* 查不到就跳過 */ }
 
         try {
+          if (disabledPages.includes('issues.html')) throw new Error('功能已關閉');
           const res = await fetch(`${API}/api/issues/list?branch_id=${staff.branch_id}`);
           const list = await res.json();
           const unresolvedCount = (list || []).filter((i) => !i.resolved).length;

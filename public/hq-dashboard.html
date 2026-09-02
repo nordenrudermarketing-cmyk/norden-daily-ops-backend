@@ -49,6 +49,8 @@
       <a href="manage-passwords.html" style="font-size:12px;color:var(--accent);">密碼管理 →</a>
       &nbsp;&nbsp;
       <a href="weekly-report.html" style="font-size:12px;color:var(--accent);">各館週報 →</a>
+      &nbsp;&nbsp;
+      <a href="feature-toggles.html" style="font-size:12px;color:var(--accent);">功能開關 →</a>
     </div>
 
     <div class="branch-grid" id="branchGrid"></div>
@@ -79,7 +81,7 @@
   if (window.self !== window.top) {
     document.addEventListener('DOMContentLoaded', () => {
       ['self-eval-templates.html','self-eval-hq-flagged.html','weekly-report.html',
-       'manager-worksheet-hq.html','manage-passwords.html'
+       'manager-worksheet-hq.html','manage-passwords.html','feature-toggles.html'
       ].forEach((href) => document.querySelectorAll(`a[href="${href}"]`).forEach((a) => a.style.display = 'none'));
     });
   }

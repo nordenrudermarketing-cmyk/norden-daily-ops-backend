@@ -642,6 +642,119 @@ W1-W5週次項目），因為這個區塊格式規律；**上半段的「一次�
 
 **部署前要跑兩份 SQL，依序執行**：`schema_v30_written_exam.sql` → `schema_v30_seed.sql`。
 
+## 功能開關（總公司後台）
+
+系統功能一直在長，但不是每一項都準備好正式上線。這個功能讓**總公司**可以整組開啟／隱藏
+功能，例如目前的階段：**只開放每月自評表，其他功能全部先關起來**。
+
+- `feature-toggles.html`（總公司側邊選單「帳號管理 → 功能開關」，總公司總覽頁上方也有連結）
+  - 上方兩顆快速按鈕：**只開放自評表**（一鍵關閉其餘全部）、**全部開啟**（回到完整狀態）
+  - 下方是逐項開關，依房務／客務／共用／主管分組，可以只關掉其中幾項
+  - 設定是**全公司共用**（不分館別），存好之後同仁重新整理頁面就生效
+- 對應 API：`GET /api/features`、`PUT /api/features/:key`、`POST /api/features/bulk`、
+  `POST /api/features/preset/self-eval-only`、`POST /api/features/preset/enable-all`
+
+**關掉一個功能之後會發生三件事**（三層都擋，不是只把選單藏起來）：
+
+1. **選單不顯示**——`sidebar.js` 會過濾掉那些頁面，整個分類都空了連分類按鈕也會消失
+2. **直接打網址沒用**——進到被關閉的頁面會顯示提示並自動導回自評表；登入時如果原本
+   該去的頁面（例如房務的 `checklist.html`）被關了，也會直接導到自評表
+3. **API 回 403**——`src/lib/featureGuard.js` 掛在所有 `/api` 之前，就算有人自己打 API
+   也會被擋下來
+
+**兩個永遠關不掉的保留項目**（避免整個系統被鎖死到沒人能開回來）：
+
+- `self_eval` 每月自評表（含主管審閱、總公司題目管理與異常彙總）
+- `system_admin` 總公司儀表板、功能開關、密碼管理
+
+登入、同仁清單、以及登入時查當日班別用的 `GET /api/schedule/today` 這幾支也一律放行，
+不然排班表關掉之後連登入導頁都會壞掉。
+
+**功能清單寫在哪**：`src/lib/featureCatalog.js`（一個功能包含哪些網頁、哪些 API 前綴）。
+資料庫的 `feature_toggles` 表只存「哪個功能被關掉」，所以之後新增功能只要在 catalog 加一筆
+就好，不用再改資料庫；catalog 有但資料表沒有的項目一律視為**開啟**。
+
+**容錯**：`feature_toggles` 表還沒建立、或 Supabase 查詢失敗時，一律當作「全部開啟」，
+不會因為開關系統自己出問題就讓整個系統不能用（所以先上程式碼、之後再跑 SQL 也不會壞）。
+
+**部署前多一步**：先到 Supabase SQL Editor 執行 `schema_v37_feature_toggles.sql`
+（預設全部開啟，跟現在行為完全一致，跑完不會有任何改變，要關再到後台按）。
+
+## 測試環境（staging schema）
+
+以前沒有地方可以安全試改動：只有一個 Supabase 專案、免費方案的 2 個專案名額也用完了，
+所以每次改完都是直接在正式環境驗證。
+
+現在改成**在同一個 Supabase 專案裡開第二個 schema**：
+
+```
+norden-daily-ops（同一個 Supabase 專案，同一組金鑰）
+├── public   schema  ← 正式 Railway service（真實資料）
+└── staging  schema  ← 測試 Railway service（假資料，隨便玩）
+```
+
+程式碼裡所有資料存取都是 `supabase.from('表名')`，沒有任何地方寫死 schema，
+所以 `src/supabaseClient.js` 指定預設 schema，整個系統就會整組切換：
+
+```js
+const DB_SCHEMA = process.env.SUPABASE_DB_SCHEMA || 'public';
+```
+
+**正式環境不要設這個環境變數**，預設就是 `public`，行為跟以前完全一樣。
+測試用的 Railway service 設 `SUPABASE_DB_SCHEMA=staging` 就好。
+
+打開 `/api/health` 可以確認目前連的是哪一邊：
+
+```json
+{ "status": "ok", "service": "norden-daily-ops-backend", "db_schema": "staging" }
+```
+
+### 建立測試環境
+
+1. Supabase SQL Editor 執行 `staging_01_setup.sql`
+   （複製 public 的**結構**到 staging，不複製任何資料；含重建外鍵）
+2. Supabase SQL Editor 執行 `staging_02_seed.sql`
+   （複製館別／職務／房號／各種題目範本，並建立 4 個假帳號）
+3. Supabase → **Settings → API → Exposed schemas** 把 `staging` 加進去
+   （沒做這步 PostgREST 讀不到 staging，API 會回錯誤）
+4. Railway 新增第二個 service，指向同一個 repo、**Branch 選要測的 branch**，
+   環境變數除了原本兩個之外多加 `SUPABASE_DB_SCHEMA=staging`
+
+測試帳號：`T-HQ`（總公司）、`T-MGR`（店經理）、`T-HK`（房務）、`T-FD`（客務）。
+密碼欄位是空的，第一次登入輸入什麼就會變成密碼。
+
+### 以後有新的 SQL 要怎麼跑
+
+**一份新的 `schema_v*.sql` 要跑兩次**：一次進 staging（先測），一次進 public（正式）。
+
+先在 staging 測：把這一行加在 SQL 的**最前面**，其餘內容原封不動貼在後面，一起執行——
+
+```sql
+set search_path to staging, public;
+```
+
+`search_path` 的第一個是 staging，所以 `create table xxx` 會建在 staging；
+後面接 public 是為了萬一 SQL 裡有查到既有資料的地方也不會出錯。
+
+測沒問題之後，**把那一行刪掉**，一模一樣的 SQL 再跑一次，就會進 public（正式）。
+
+> ⚠ 兩邊結構不同步的話測試結果就不準了，這是這個做法最主要的維護成本。
+> 忘記哪些表沒同步時，重跑 `staging_01_setup.sql` 就會自動補上缺的表、跳過已經有的。
+
+### 兩個要記得的限制
+
+- **每份新 SQL 都要記得跑兩次**（見上一段），漏跑 staging 就會測到假的結果。
+- **Storage 的 `photos` bucket 是共用的**，測試上傳的缺失照片會跟正式照片放在同一個
+  bucket。不影響功能，只是會多幾張用不到的圖。
+
+### 為什麼不是用 Supabase Branching
+
+Supabase Branching 是照著 repo 裡 `supabase/migrations/` 的檔案**重建一個空資料庫**，
+而這個專案的 SQL 是歷史流水帳、不是 migrations 格式；更關鍵的是**最初建表的
+`schema_v2.sql` 根本不在 repo 裡**，所以「重跑 SQL 檔重建資料庫」這條路本來就走不通。
+從現有的 public 動態複製結構才是可靠的做法。
+（Branching 另外還需要 Pro 方案。）
+
 ## 已知限制 / 下一步
 
 - **缺失照片**是用瀏覽器直接轉成 base64 存進資料庫的文字欄位，量大或照片解析度高時

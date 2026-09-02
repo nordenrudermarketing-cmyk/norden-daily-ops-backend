@@ -67,9 +67,12 @@ async function loadOverview() {
 async function loadBranchDetail(branchId, container) {
   container.innerHTML = '<p class="empty-state" style="padding:10px 0;">載入中…</p>';
 
+  // 「異常處理」功能被總公司關掉時 API 會回 403（不是陣列），這裡一律當成沒有資料，
+  // 才不會讓整個明細區塊掛掉
+  const asList = (r) => r.json().then((d) => (Array.isArray(d) ? d : []));
   const [anomaliesRes, defectsRes] = await Promise.all([
-    fetch(`${API}/api/issues/anomalies?branch_id=${branchId}`).then((r) => r.json()),
-    fetch(`${API}/api/issues/list?branch_id=${branchId}&resolved=false`).then((r) => r.json()),
+    fetch(`${API}/api/issues/anomalies?branch_id=${branchId}`).then(asList),
+    fetch(`${API}/api/issues/list?branch_id=${branchId}&resolved=false`).then(asList),
   ]);
 
   let html = '';

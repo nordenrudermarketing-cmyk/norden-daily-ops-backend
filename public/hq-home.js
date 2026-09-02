@@ -20,7 +20,10 @@ const CATEGORIES = [
   {
     key: 'account', label: '帳號管理',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-    items: [{ label: '密碼管理', url: 'manage-passwords.html' }],
+    items: [
+      { label: '密碼管理', url: 'manage-passwords.html' },
+      { label: '功能開關', url: 'feature-toggles.html' },
+    ],
   },
 ];
 
@@ -62,3 +65,29 @@ function selectCategory(key) {
 }
 
 selectCategory('overview');
+
+// ---------- 功能開關：總公司關掉的功能不要出現在這個選單 ----------
+(async function applyFeatureToggles() {
+  const API = window.APP_CONFIG?.API_BASE_URL;
+  if (!API) return;
+
+  let disabledPages = [];
+  try {
+    const res = await fetch(`${API}/api/features`);
+    disabledPages = (await res.json())?.disabled_pages || [];
+  } catch (e) { return; } // 查不到就維持全部顯示
+  if (disabledPages.length === 0) return;
+
+  CATEGORIES.forEach((c) => { c.items = c.items.filter((it) => !disabledPages.includes(it.url)); });
+
+  const emptyKeys = CATEGORIES.filter((c) => c.items.length === 0).map((c) => c.key);
+  catButtonsEl.querySelectorAll('.cat-btn').forEach((b) => {
+    if (emptyKeys.includes(b.dataset.key)) b.remove();
+  });
+
+  const stillActive = catButtonsEl.querySelector('.cat-btn.active');
+  const firstLeft = catButtonsEl.querySelector('.cat-btn');
+  if (stillActive) selectCategory(stillActive.dataset.key);
+  else if (firstLeft) selectCategory(firstLeft.dataset.key);
+  else submenuEl.style.display = 'none';
+})();
