@@ -3,32 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>自評異常彙總 | 路得行旅</title>
+<title>各館自評進度 | 路得行旅</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .wide-screen { max-width: 900px; }
-  .flag-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
-  .flag-card .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .flag-card .who { font-size: 13px; font-weight: 600; }
-  .flag-card .month { font-size: 11px; color: var(--ink-soft); }
-  .flag-card .q { font-size: 13px; margin: 0 0 8px; }
-  .flag-card .ans-box { background: var(--surface-1); border-radius: 8px; padding: 8px; font-size: 12px; margin-bottom: 6px; }
-  .flag-card .ans-box.no { background: var(--danger-soft); color: var(--danger); }
+  /* 檔名沿用 self-eval-hq-flagged（原本的「自評異常彙總」），舊連結才不會壞 */
+  .wide-screen { max-width: 960px; }
+  .subtitle { font-size: 12px; color: var(--ink-soft); margin: 2px 0 0; }
+
+  .toolbar { margin-bottom: 8px; }
+  .toolbar label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .toolbar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--ink); min-width: 200px; }
+
+  .schedule-line { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin: 0 0 16px; }
+  .schedule-line .passed { color: var(--danger); }
+
+  .overall { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .overall-item { flex: 1; min-width: 200px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .overall-item .label { font-size: 12px; color: var(--ink-soft); }
+  .overall-item .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .overall-item .value small { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
+
+  .branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .branch-card { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-family: inherit; color: var(--ink); cursor: pointer; }
+  .branch-card:hover { border-color: var(--accent); }
+  .branch-card.attention { border-color: #e3bfae; }
+  .branch-card.empty { cursor: default; opacity: 0.6; }
+  .branch-card.empty:hover { border-color: var(--line); }
+  .branch-card h3 { margin: 0 0 2px; font-size: 16px; }
+  .branch-card .headcount { font-size: 12px; color: var(--ink-soft); margin: 0 0 8px; }
+  .stage { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .stage .counts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .card-foot { font-size: 11px; color: var(--accent); margin: 6px 0 0; }
+
+  .pill { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.done { background: var(--accent-soft); color: var(--accent); }
+  .pill.todo { background: #efece5; color: var(--ink-soft); }
+  .pill.late { background: var(--danger-soft); color: var(--danger); }
+
+  .back-btn { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; padding: 0; margin: 0 0 10px; font-family: inherit; }
+  .detail-title { font-size: 17px; margin: 0 0 4px; }
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-row button { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: inherit; }
+  .filter-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  table.staff-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; }
+  .staff-table th, .staff-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .staff-table th { font-size: 12px; font-weight: 500; color: var(--ink-soft); background: #faf9f6; }
+  .staff-table tr:last-child td { border-bottom: none; }
+  .sub { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
+  .sub.warn { color: var(--danger); }
 </style>
 </head>
 <body>
   <div class="screen wide-screen">
     <div class="topbar">
       <div>
-        <h1>自評異常彙總</h1>
-        <p>所有館別已審閱完成的自評表中，被勾「否」的項目</p>
+        <h1>各館自評進度</h1>
+        <p class="subtitle">每月 1 號發布上個月的自評表・10 號前同仁完成填寫・20 號前主管完成面談</p>
       </div>
-      <a class="logout-link" href="hq-dashboard.html">回總覽</a>
     </div>
 
-    <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+    <div class="toolbar">
+      <label for="monthSelect">評核月份</label>
+      <select id="monthSelect"></select>
+    </div>
+    <p class="schedule-line" id="scheduleLine"></p>
 
-    <div id="flagList"></div>
+    <p class="empty-state" id="loading">載入中…</p>
+
+    <div id="overviewView" style="display:none;">
+      <div class="overall" id="overall"></div>
+      <div class="branch-grid" id="branchGrid"></div>
+    </div>
+
+    <div id="detailView" style="display:none;">
+      <button class="back-btn" id="backBtn">← 回各館列表</button>
+      <h2 class="detail-title" id="detailTitle"></h2>
+      <p class="schedule-line" id="detailSummary" style="margin-bottom:10px;"></p>
+      <div class="filter-row" id="filterRow">
+        <button data-filter="all" class="active">全部</button>
+        <button data-filter="fill_todo">未完成填寫</button>
+        <button data-filter="interview_todo">未完成面談</button>
+      </div>
+      <div class="table-wrap">
+        <table class="staff-table">
+          <thead><tr><th>同仁</th><th>同仁填寫</th><th>主管面談</th></tr></thead>
+          <tbody id="staffBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>

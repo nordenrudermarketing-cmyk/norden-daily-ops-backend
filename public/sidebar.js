@@ -8,6 +8,23 @@
 
   const roleName = staff.roles?.name || '';
   const currentPage = window.location.pathname.split('/').pop();
+  // 部署時 API_BASE_URL 是空字串（前後端同網域），空字串也是有效設定，不能拿來當 if 判斷
+  const API_BASE = window.APP_CONFIG?.API_BASE_URL ?? '';
+
+  // ---------- 功能開關（總公司後台設定的） ----------
+  // 被關掉的功能：① 選單不顯示 ② 直接打網址會被導回自評表
+  let disabledPages = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/features`);
+    const data = await res.json();
+    disabledPages = data?.disabled_pages || [];
+  } catch (e) { /* 查不到就當作全部開啟，不要因為這裡壞掉就整個系統不能用 */ }
+
+  if (disabledPages.includes(currentPage)) {
+    document.body.innerHTML = '<div style="max-width:420px;margin:80px auto;padding:0 20px;font-family:-apple-system,\'PingFang TC\',\'Noto Sans TC\',sans-serif;color:#6b6f63;font-size:14px;line-height:1.8;text-align:center;">這項功能目前已由總公司關閉，正在帶你回自評表…</div>';
+    window.location.replace('self-eval.html');
+    return;
+  }
 
   const ICONS = {
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>',
@@ -94,16 +111,20 @@
         { label: '我的每月自評表', url: 'self-eval.html' },
         { label: '審閱同仁自評表', url: 'self-eval-review.html' },
       ] },
+      { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     hq: [
       { label: '總覽', icon: 'home', items: [{ label: '總公司儀表板', url: 'hq-dashboard.html' }] },
       { label: '各館管理', icon: 'branch', items: [
         { label: '自評題目管理', url: 'self-eval-templates.html' },
-        { label: '自評異常彙總', url: 'self-eval-hq-flagged.html' },
+        { label: '各館自評進度', url: 'self-eval-hq-flagged.html' },
         { label: '各館週報', url: 'weekly-report.html' },
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
       ] },
-      { label: '帳號管理', icon: 'lock', items: [{ label: '密碼管理', url: 'manage-passwords.html' }] },
+      { label: '帳號管理', icon: 'lock', items: [
+        { label: '帳號管理', url: 'manage-passwords.html' },
+        { label: '功能開關', url: 'feature-toggles.html' },
+      ] },
     ],
   };
 
@@ -114,10 +135,16 @@
   else if (roleName === '總公司') navKey = 'hq';
   if (!navKey) return;
 
-  const categories = NAV_SETS[navKey];
+  let categories = NAV_SETS[navKey];
+
+  // 被總公司關掉的功能，直接從選單拿掉
+  if (disabledPages.length > 0) {
+    categories.forEach((cat) => {
+      cat.items = cat.items.filter((it) => !disabledPages.includes(it.url));
+    });
+  }
 
   // 交班表、店經理巡館只有台中館在用，其他館別要拿掉
-  const API_BASE = window.APP_CONFIG?.API_BASE_URL;
   let branchName = null;
   if (API_BASE) {
     try {
@@ -151,6 +178,10 @@
       });
     }
   }
+
+  // 整個分類的項目都被過濾光的話，那個分類按鈕也不要留
+  categories = categories.filter((c) => c.items.length > 0);
+  if (categories.length === 0) return;
 
   const allUrls = new Set();
   categories.forEach((c) => c.items.forEach((it) => allUrls.add(it.url)));
@@ -256,8 +287,11 @@
   wrap.appendChild(submenu);
   document.body.prepend(wrap);
 
+  // 側邊選單已經有的連結不用在頁面裡重複出現；
+  // 被總公司關掉的功能，頁面裡指向它的連結也一併藏起來（例如「回總覽」指向已關閉的儀表板）
+  const hiddenHrefs = new Set([...allUrls, ...disabledPages]);
   function hideKnownLinks() {
-    allUrls.forEach((href) => {
+    hiddenHrefs.forEach((href) => {
       document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
     });
   }
@@ -276,6 +310,7 @@
       (async () => {
         const alerts = [];
         try {
+          if (disabledPages.includes('bonus-appeals.html')) throw new Error('功能已關閉');
           const res = await fetch(`${API}/api/bonus-appeals/pending?branch_id=${staff.branch_id}`);
           const list = await res.json();
           const pendingCount = (list || []).filter((a) => a.status === 'pending').length;
@@ -283,6 +318,7 @@
         } catch (e) { /* 查不到就跳過 */ }
 
         try {
+          if (disabledPages.includes('issues.html')) throw new Error('功能已關閉');
           const res = await fetch(`${API}/api/issues/list?branch_id=${staff.branch_id}`);
           const list = await res.json();
           const unresolvedCount = (list || []).filter((i) => !i.resolved).length;

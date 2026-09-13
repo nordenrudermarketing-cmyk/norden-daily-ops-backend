@@ -7,15 +7,20 @@
 <link rel="stylesheet" href="style.css">
 <style>
   .wide-screen { max-width: 800px; }
-  .staff-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
-  .staff-row .status { font-size: 12px; padding: 3px 10px; border-radius: 8px; }
+  .staff-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .staff-row .status { font-size: 12px; padding: 3px 10px; border-radius: 8px; white-space: nowrap; }
   .status.none { background: var(--danger-soft); color: var(--danger); }
   .status.draft { background: #fff6e0; color: #a67c00; }
   .status.submitted { background: var(--accent-soft); color: var(--accent); }
-  .status.reviewed { background: var(--surface-1); color: var(--ink-soft); }
+  .status.reviewed { background: #efece5; color: var(--ink-soft); }
+  .row-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .late-tag { font-size: 11px; color: var(--danger); white-space: nowrap; }
+  .schedule-banner { background: var(--accent-soft); border: 1px solid #b9d3c5; border-radius: 12px; padding: 10px 14px; margin: 0 0 14px; font-size: 13px; color: var(--accent); line-height: 1.7; }
+  .schedule-banner.overdue { background: var(--danger-soft); border-color: #e3bfae; color: var(--danger); }
+  .back-btn { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; padding: 0; margin: 0 0 12px; font-family: inherit; }
   .q-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
   .q-text { font-size: 14px; margin: 0 0 8px; line-height: 1.5; }
-  .staff-answer-box { background: var(--surface-1); border-radius: 8px; padding: 8px; font-size: 12.5px; margin-bottom: 10px; }
+  .staff-answer-box { background: #f3f1ec; border-radius: 8px; padding: 8px; font-size: 12.5px; margin-bottom: 10px; }
   .q-yesno { display: flex; gap: 10px; margin-bottom: 8px; }
   .q-yesno label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
   .q-note { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 44px; }
@@ -28,15 +33,20 @@
         <h1 id="pageTitle">審閱自評表</h1>
         <p id="staffLine">—</p>
       </div>
-      <a class="logout-link" id="backLink" href="dashboard.html">回總覽</a>
+      <a class="logout-link" href="dashboard.html">回總覽</a>
     </div>
 
     <div id="listView">
       <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+      <div id="scheduleBanner"></div>
       <div id="staffList"></div>
     </div>
 
-    <div id="detailView" style="display:none;"></div>
+    <!-- 「回列表」獨立成按鈕：功能開關會藏掉指向已關閉頁面（dashboard.html）的連結，不能共用上面那個 -->
+    <div id="detailWrap" style="display:none;">
+      <button class="back-btn" id="backToList">← 回列表</button>
+      <div id="detailView"></div>
+    </div>
   </div>
 
   <script src="config.js"></script>

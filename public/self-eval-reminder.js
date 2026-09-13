@@ -15,7 +15,8 @@
     const isSubmitted = data.submission?.status === 'submitted' || data.submission?.status === 'reviewed';
     if (isSubmitted) return; // 已經送出，不用提醒
 
-    const today = new Date().toISOString().slice(0, 10);
+    // 今天的日期用伺服器依台灣時間回傳的；瀏覽器的 toISOString 是 UTC，半夜會差一天
+    const today = data.today || new Date().toISOString().slice(0, 10);
     const overdue = today > data.due_date;
 
     slot.innerHTML = `
