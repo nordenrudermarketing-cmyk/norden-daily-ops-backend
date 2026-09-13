@@ -126,7 +126,7 @@ function render() {
       <div class="acct-actions">
         ${a.can_edit ? '<button data-act="edit">編輯</button>' : ''}
         ${a.can_set_password ? '<button data-act="password">設定密碼</button>' : ''}
-        ${a.can_edit && a.has_password ? '<button data-act="reset">清空密碼</button>' : ''}
+        ${a.can_edit && a.has_password && !a.is_self ? '<button data-act="reset">清空密碼</button>' : ''}
         ${a.can_deactivate && a.is_active ? '<button data-act="deactivate" class="danger">停用</button>' : ''}
         ${a.can_deactivate && !a.is_active ? '<button data-act="activate">重新啟用</button>' : ''}
         ${a.can_hard_delete ? '<button data-act="delete" class="danger">永久刪除</button>' : ''}
