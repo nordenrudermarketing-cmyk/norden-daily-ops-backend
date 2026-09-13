@@ -50,7 +50,11 @@ async function load(evalMonth) {
     if (!res.ok) throw new Error(json.error || '載入失敗');
     data = json;
   } catch (err) {
-    $('loading').textContent = err.message;
+    // Supabase 免費方案偶爾會查詢逾時（回傳 Gateway Timeout），重試通常就好了
+    $('loading').innerHTML =
+      `載入失敗，請稍後再試（${escapeHtml(err.message)}）<br>` +
+      '<button id="retryBtn" style="margin-top:10px;padding:6px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-family:inherit;">重試</button>';
+    $('retryBtn').addEventListener('click', () => load(evalMonth || $('monthSelect').value || undefined));
     return;
   }
 
