@@ -8,18 +8,17 @@
 
   const roleName = staff.roles?.name || '';
   const currentPage = window.location.pathname.split('/').pop();
-  const API_BASE = window.APP_CONFIG?.API_BASE_URL;
+  // 部署時 API_BASE_URL 是空字串（前後端同網域），空字串也是有效設定，不能拿來當 if 判斷
+  const API_BASE = window.APP_CONFIG?.API_BASE_URL ?? '';
 
   // ---------- 功能開關（總公司後台設定的） ----------
   // 被關掉的功能：① 選單不顯示 ② 直接打網址會被導回自評表
   let disabledPages = [];
-  if (API_BASE) {
-    try {
-      const res = await fetch(`${API_BASE}/api/features`);
-      const data = await res.json();
-      disabledPages = data?.disabled_pages || [];
-    } catch (e) { /* 查不到就當作全部開啟，不要因為這裡壞掉就整個系統不能用 */ }
-  }
+  try {
+    const res = await fetch(`${API_BASE}/api/features`);
+    const data = await res.json();
+    disabledPages = data?.disabled_pages || [];
+  } catch (e) { /* 查不到就當作全部開啟，不要因為這裡壞掉就整個系統不能用 */ }
 
   if (disabledPages.includes(currentPage)) {
     document.body.innerHTML = '<div style="max-width:420px;margin:80px auto;padding:0 20px;font-family:-apple-system,\'PingFang TC\',\'Noto Sans TC\',sans-serif;color:#6b6f63;font-size:14px;line-height:1.8;text-align:center;">這項功能目前已由總公司關閉，正在帶你回自評表…</div>';

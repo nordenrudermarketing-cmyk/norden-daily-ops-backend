@@ -93,8 +93,8 @@ selectCategory('today');
 
 // ---------- 功能開關：總公司關掉的功能不要出現在這個選單 ----------
 (async function applyFeatureToggles() {
-  const API = window.APP_CONFIG?.API_BASE_URL;
-  if (!API) return;
+  // 部署時 API_BASE_URL 是空字串（前後端同網域），空字串也是有效設定，不能拿來當 if 判斷
+  const API = window.APP_CONFIG?.API_BASE_URL ?? '';
 
   let disabledPages = [];
   try {
