@@ -1,4 +1,5 @@
-const API = window.APP_CONFIG.API_BASE_URL;
+// 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
+const API = window.APP_CONFIG?.API_BASE_URL ?? '';
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
@@ -9,7 +10,13 @@ document.getElementById('submitBtn').addEventListener('click', () => save(true))
 
 let formData = null;
 
-load();
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+if (staff) load();
 
 async function load() {
   const res = await fetch(`${API}/api/self-eval/form?staff_id=${staff.id}`);
@@ -17,16 +24,25 @@ async function load() {
 
   document.getElementById('staffLine').textContent = `${formData.staff.name}・評核月份：${formData.eval_month.slice(0, 7)}`;
 
-  const isSubmitted = formData.submission?.status === 'submitted' || formData.submission?.status === 'reviewed';
-  const today = new Date().toISOString().slice(0, 10);
-  const overdue = today > formData.due_date && !isSubmitted;
+  const status = formData.submission?.status;
+  const isSubmitted = status === 'submitted' || status === 'reviewed';
+  const staffDue = formData.staff_due_date || formData.due_date;
+  // 今天的日期用伺服器依台灣時間回傳的，瀏覽器的 toISOString 是 UTC，半夜會差一天
+  const today = formData.today || new Date().toISOString().slice(0, 10);
+  const overdue = today > staffDue && !isSubmitted;
 
-  const dueBanner = document.getElementById('dueBanner');
-  dueBanner.innerHTML = `<div class="due-banner${overdue ? ' overdue' : ''}">請於 ${formData.due_date} 前完成並送出（評核上個月 ${formData.eval_month.slice(0, 7)} 的工作表現）${overdue ? '・已逾期，請儘速送出' : ''}</div>`;
+  const interviewNote = formData.interview_due_date
+    ? `，主管會在 ${formData.interview_due_date} 前與你完成面談`
+    : '';
+  document.getElementById('dueBanner').innerHTML =
+    `<div class="due-banner${overdue ? ' overdue' : ''}">請於 ${staffDue} 前完成並送出（評核上個月 ${formData.eval_month.slice(0, 7)} 的工作表現）${interviewNote}${overdue ? '・已逾期，請儘速送出' : ''}</div>`;
 
   const statusBanner = document.getElementById('statusBanner');
-  if (isSubmitted) {
-    statusBanner.innerHTML = `<div class="due-banner">已送出（${formData.submission.status === 'reviewed' ? '主管已審閱' : '等待主管審閱'}），以下內容僅供查看</div>`;
+  if (status === 'reviewed') {
+    const interviewDate = formData.submission.interview_date ? `（面談日期 ${formData.submission.interview_date}）` : '';
+    statusBanner.innerHTML = `<div class="due-banner">主管已完成面談${escapeHtml(interviewDate)}，以下內容僅供查看</div>`;
+  } else if (status === 'submitted') {
+    statusBanner.innerHTML = '<div class="due-banner">已送出，等待主管面談，以下內容僅供查看</div>';
   } else {
     statusBanner.innerHTML = '';
   }
@@ -54,24 +70,23 @@ function renderQuestions(readonly) {
     card.className = 'q-card';
     card.dataset.templateId = q.id;
 
-    const bilingual = q.question_id ? `<p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;">${q.question_id}</p>` : '';
+    const bilingual = q.question_id ? `<p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;">${escapeHtml(q.question_id)}</p>` : '';
+    const ans = q.answer;
 
     if (readonly) {
-      const ans = q.answer;
       card.innerHTML = `
-        <p class="q-text">${q.question_zh}</p>
+        <p class="q-text">${escapeHtml(q.question_zh)}</p>
         ${bilingual}
-        <div class="locked-note">人員自檢：${ans?.staff_answer === 'yes' ? '是' : ans?.staff_answer === 'no' ? '否' : '—'}${ans?.staff_note ? '　說明：' + ans.staff_note : ''}</div>`;
+        <div class="locked-note">人員自檢：${ans?.staff_answer === 'yes' ? '是' : ans?.staff_answer === 'no' ? '否' : '—'}${ans?.staff_note ? '　說明：' + escapeHtml(ans.staff_note) : ''}</div>`;
     } else {
-      const ans = q.answer;
       card.innerHTML = `
-        <p class="q-text">${q.question_zh}</p>
+        <p class="q-text">${escapeHtml(q.question_zh)}</p>
         ${bilingual}
         <div class="q-yesno">
           <label><input type="radio" name="ans-${q.id}" value="yes" ${ans?.staff_answer === 'yes' ? 'checked' : ''}> 是</label>
           <label><input type="radio" name="ans-${q.id}" value="no" ${ans?.staff_answer === 'no' ? 'checked' : ''}> 否</label>
         </div>
-        <textarea class="q-note" placeholder="勾選「否」時請簡要說明原因、改善方式或需要的協助">${ans?.staff_note || ''}</textarea>`;
+        <textarea class="q-note" placeholder="勾選「否」時請簡要說明原因、改善方式或需要的協助">${escapeHtml(ans?.staff_note || '')}</textarea>`;
     }
     listEl.appendChild(card);
   });

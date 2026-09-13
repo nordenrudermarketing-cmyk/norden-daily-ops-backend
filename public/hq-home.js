@@ -12,7 +12,7 @@ const CATEGORIES = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>',
     items: [
       { label: '自評題目管理', url: 'self-eval-templates.html' },
-      { label: '自評異常彙總', url: 'self-eval-hq-flagged.html' },
+      { label: '各館自評進度', url: 'self-eval-hq-flagged.html' },
       { label: '各館週報', url: 'weekly-report.html' },
       { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
     ],

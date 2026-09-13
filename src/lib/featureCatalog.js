@@ -23,7 +23,7 @@ export const FEATURE_CATALOG = [
     key: 'self_eval',
     label: '每月自評表',
     group: '保留（不可關閉）',
-    description: '同仁填寫、主管審閱、總公司題目管理與異常彙總',
+    description: '同仁填寫、主管面談、總公司題目管理與各館自評進度',
     locked: true,
     pages: ['self-eval.html', 'self-eval-review.html', 'self-eval-templates.html', 'self-eval-hq-flagged.html'],
     apis: ['/api/self-eval'],
