@@ -21,7 +21,7 @@ const CATEGORIES = [
     key: 'account', label: '帳號管理',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     items: [
-      { label: '密碼管理', url: 'manage-passwords.html' },
+      { label: '帳號管理', url: 'manage-passwords.html' },
       { label: '功能開關', url: 'feature-toggles.html' },
     ],
   },

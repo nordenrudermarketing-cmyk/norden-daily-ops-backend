@@ -3,9 +3,12 @@
 //
 // 這裡定義系統裡「一個功能」是由哪些網頁 + 哪些 API 組成的。
 // 總公司在「功能開關」頁面關掉某個功能之後：
-//   1. 所有人的側邊選單不會出現這些網頁
-//   2. 直接打網址進去會被踢回自評表
+//   1. 所有人的側邊選單不會出現這些網頁，頁面裡指向它們的連結也會藏起來
+//   2. 直接打網址會被踢回自評表
 //   3. 對應的 API 會回 403，所以就算繞過前端也沒用
+//
+// pages 是空陣列的功能，代表它是某個頁面裡的「區塊」（例如總公司儀表板上的營運卡片），
+// 由那個頁面自己讀 /api/features 決定要不要顯示。
 //
 // locked: true 代表不能關（自評表本身、以及總公司要用來開關功能的後台），
 //         避免整個系統被鎖死到沒人能開回來。
@@ -29,11 +32,10 @@ export const FEATURE_CATALOG = [
     key: 'system_admin',
     label: '系統與帳號管理',
     group: '保留（不可關閉）',
-    description: '總公司儀表板、功能開關、密碼管理',
+    description: '總公司儀表板（頁面本身）、功能開關、帳號管理',
     locked: true,
     pages: ['hq-dashboard.html', 'feature-toggles.html', 'manage-passwords.html'],
-    // /api/hq 是總公司交辦任務，總公司儀表板自己就靠它，跟著後台一起保留
-    apis: ['/api/features', '/api/hq'],
+    apis: ['/api/features', '/api/accounts'],
   },
 
   // ---------- 房務 ----------
@@ -83,8 +85,8 @@ export const FEATURE_CATALOG = [
     key: 'frontdesk_shift',
     label: '客務班別任務與巡房檢查',
     group: '客務',
-    description: 'A／B班今日任務打卡、C班巡房檢查',
-    pages: ['shift.html', 'inspect.html'],
+    description: 'A／B班今日任務打卡、C班巡房檢查，以及依排班導向的「今天休假」「尚未排班」頁面',
+    pages: ['shift.html', 'inspect.html', 'offday.html', 'unscheduled.html'],
     apis: ['/api/shift-tasks'],
   },
   {
@@ -170,7 +172,7 @@ export const FEATURE_CATALOG = [
     apis: ['/api/reflections'],
   },
 
-  // ---------- 主管／總公司 ----------
+  // ---------- 主管 ----------
   {
     key: 'manager_dashboard',
     label: '店經理儀表板',
@@ -211,10 +213,28 @@ export const FEATURE_CATALOG = [
     pages: ['manager-daily-report.html', 'manager-worksheet.html', 'manager-worksheet-hq.html'],
     apis: ['/api/manager-reports', '/api/manager-memo', '/api/manager-worksheet'],
   },
+
+  // ---------- 總公司 ----------
+  {
+    key: 'hq_overview',
+    label: '各館營運總覽',
+    group: '總公司',
+    description: '總公司儀表板上的各館卡片：今日房務完成、未處理異常與缺失、巡館進度',
+    pages: [],
+    apis: ['/api/hq/overview'],
+  },
+  {
+    key: 'hq_tasks',
+    label: '總公司交辦任務',
+    group: '總公司',
+    description: '總公司儀表板的交辦新任務與任務列表（店經理儀表板也會用到）',
+    pages: [],
+    apis: ['/api/hq/tasks'],
+  },
   {
     key: 'weekly_report',
     label: '各館週報',
-    group: '主管',
+    group: '總公司',
     description: '總公司看的各館週報',
     pages: ['weekly-report.html'],
     apis: [],

@@ -12,15 +12,45 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 document.getElementById('taskSubmit').addEventListener('click', submitTask);
 
 let branchList = [];
+let disabledKeys = [];
 
 init();
 
 async function init() {
-  await loadOverview();
-  await loadTasks();
+  // 被總公司關掉的區塊（各館營運總覽、交辦任務）直接藏起來，也不去打對應的 API
+  try {
+    const res = await fetch(`${API}/api/features`);
+    disabledKeys = (await res.json())?.disabled_keys || [];
+  } catch (e) { /* 查不到就全部顯示 */ }
+
+  const showOverview = !disabledKeys.includes('hq_overview');
+  const showTasks = !disabledKeys.includes('hq_tasks');
+  // .branch-grid 在 CSS 裡有 display:grid，hidden 屬性會被蓋掉，所以直接改 style
+  document.getElementById('branchGrid').style.display = showOverview ? '' : 'none';
+  document.getElementById('hqTasksSection').style.display = showTasks ? '' : 'none';
+  document.getElementById('hqEmptyHint').style.display = showOverview || showTasks ? 'none' : '';
+
+  if (showOverview) await loadOverview();
+  if (showTasks) {
+    if (!showOverview) await loadBranchOptions();
+    await loadTasks();
+  }
+}
+
+// 營運總覽關掉、交辦任務還開著的時候，「目標館別」下拉選單改從帳號管理的館別清單拿
+async function loadBranchOptions() {
+  try {
+    const res = await fetch(`${API}/api/accounts/meta?actor_id=${staff.id}`);
+    const meta = await res.json();
+    branchList = (meta.branches || []).filter((b) => b.code !== 'HQ').map((b) => ({ id: b.id, name: b.name }));
+  } catch (e) {
+    branchList = [];
+  }
+  document.getElementById('taskBranch').innerHTML = branchList.map((b) => `<option value="${b.id}">${b.name}</option>`).join('');
 }
 
 async function loadOverview() {
+  if (disabledKeys.includes('hq_overview')) return; // 送出任務後也會呼叫這裡
   const grid = document.getElementById('branchGrid');
   grid.innerHTML = '<p class="empty-state">載入中…</p>';
 

@@ -111,6 +111,7 @@
         { label: '我的每月自評表', url: 'self-eval.html' },
         { label: '審閱同仁自評表', url: 'self-eval-review.html' },
       ] },
+      { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     hq: [
       { label: '總覽', icon: 'home', items: [{ label: '總公司儀表板', url: 'hq-dashboard.html' }] },
@@ -121,7 +122,7 @@
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
       ] },
       { label: '帳號管理', icon: 'lock', items: [
-        { label: '密碼管理', url: 'manage-passwords.html' },
+        { label: '帳號管理', url: 'manage-passwords.html' },
         { label: '功能開關', url: 'feature-toggles.html' },
       ] },
     ],
@@ -286,8 +287,11 @@
   wrap.appendChild(submenu);
   document.body.prepend(wrap);
 
+  // 側邊選單已經有的連結不用在頁面裡重複出現；
+  // 被總公司關掉的功能，頁面裡指向它的連結也一併藏起來（例如「回總覽」指向已關閉的儀表板）
+  const hiddenHrefs = new Set([...allUrls, ...disabledPages]);
   function hideKnownLinks() {
-    allUrls.forEach((href) => {
+    hiddenHrefs.forEach((href) => {
       document.querySelectorAll(`a[href="${href}"]`).forEach((a) => { a.style.display = 'none'; });
     });
   }

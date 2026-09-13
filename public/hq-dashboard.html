@@ -46,15 +46,20 @@
       &nbsp;&nbsp;
       <a href="self-eval-hq-flagged.html" style="font-size:12px;color:var(--accent);">自評異常彙總 →</a>
       &nbsp;&nbsp;
-      <a href="manage-passwords.html" style="font-size:12px;color:var(--accent);">密碼管理 →</a>
+      <a href="manage-passwords.html" style="font-size:12px;color:var(--accent);">帳號管理 →</a>
       &nbsp;&nbsp;
       <a href="weekly-report.html" style="font-size:12px;color:var(--accent);">各館週報 →</a>
       &nbsp;&nbsp;
       <a href="feature-toggles.html" style="font-size:12px;color:var(--accent);">功能開關 →</a>
     </div>
 
+    <!-- 各館營運總覽（功能開關 hq_overview），關閉時由 hq-dashboard.js 藏起來 -->
     <div class="branch-grid" id="branchGrid"></div>
 
+    <p class="empty-state" id="hqEmptyHint" style="display:none;">目前只開放自評表相關功能，請從左側選單進入。</p>
+
+    <!-- 總公司交辦任務（功能開關 hq_tasks），關閉時由 hq-dashboard.js 藏起來 -->
+    <div id="hqTasksSection">
     <div class="task-form">
       <p style="font-weight:500;margin:0 0 12px;">交辦新任務</p>
       <div class="row">
@@ -72,6 +77,7 @@
       <thead><tr><th>館別</th><th>標題</th><th>期限</th><th>狀態</th><th>回報</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 
   <script src="config.js"></script>

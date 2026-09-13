@@ -20,8 +20,9 @@ router.get('/', async (req, res) => {
     res.json({
       mode: modeOf(features),
       features,
-      // 方便前端直接查：被關掉的網頁清單
+      // 方便前端直接查：被關掉的網頁清單、被關掉的功能代碼（頁面裡的區塊用這個判斷）
       disabled_pages: features.filter((f) => !f.enabled).flatMap((f) => f.pages),
+      disabled_keys: features.filter((f) => !f.enabled).map((f) => f.key),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

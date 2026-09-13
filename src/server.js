@@ -35,6 +35,7 @@ import adhocTasksRoutes from './routes/adhocTasks.js';
 import managerMemoRoutes from './routes/managerMemo.js';
 import managerWorksheetRoutes from './routes/managerWorksheet.js';
 import featuresRoutes from './routes/features.js';
+import accountsRoutes from './routes/accounts.js';
 import { featureGuard } from './lib/featureGuard.js';
 import { CURRENT_DB_SCHEMA } from './supabaseClient.js';
 
@@ -55,6 +56,7 @@ app.get('/api/health', (req, res) =>
 app.use('/api', featureGuard);
 
 app.use('/api/features', featuresRoutes);
+app.use('/api/accounts', accountsRoutes);
 app.use('/api', staffRoutes);
 app.use('/api/room-cleanings', roomCleaningRoutes);
 app.use('/api/bonus', bonusRoutes);

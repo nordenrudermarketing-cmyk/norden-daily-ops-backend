@@ -37,7 +37,9 @@ insert into feature_toggles (feature_key, enabled) values
   ('issues',                true),
   ('manager_checklist',     true),
   ('manager_reports',       true),
-  ('weekly_report',         true)
+  ('weekly_report',         true),
+  ('hq_overview',           true),
+  ('hq_tasks',              true)
 on conflict (feature_key) do nothing;
 
 -- 自評表（self_eval）與系統後台（system_admin）是程式碼裡鎖定的保留項目，
