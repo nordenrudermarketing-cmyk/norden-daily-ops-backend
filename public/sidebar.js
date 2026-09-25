@@ -131,7 +131,7 @@
   let navKey = null;
   if (roleName.includes('房務')) navKey = 'housekeeping';
   else if (roleName === '客務人員') navKey = 'frontdesk';
-  else if (roleName === '店經理') navKey = 'manager';
+  else if (roleName === '店經理' || roleName === '店副理') navKey = 'manager'; // 店副理跟店經理同一組選單
   else if (roleName === '總公司') navKey = 'hq';
   if (!navKey) return;
 

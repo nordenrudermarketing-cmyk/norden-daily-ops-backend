@@ -73,7 +73,7 @@ async function loadList() {
   try {
     const [sched, res] = await Promise.all([
       fetchSchedule(evalMonth),
-      fetch(`${API}/api/self-eval/branch-overview?branch_id=${staff.branch_id}&eval_month=${evalMonth}`),
+      fetch(`${API}/api/self-eval/branch-overview?actor_id=${encodeURIComponent(staff.id)}&branch_id=${staff.branch_id}&eval_month=${evalMonth}`),
     ]);
     schedule = sched;
     data = await res.json();
@@ -83,9 +83,11 @@ async function loadList() {
     return;
   }
 
-  const total = data.length;
-  const submittedCount = data.filter((s) => ['submitted', 'reviewed'].includes(s.submission?.status)).length;
-  const reviewedCount = data.filter((s) => s.submission?.status === 'reviewed').length;
+  // 上方的統計只算「我要面談的人」；自己、上級（例如副理看店經理）不算在內
+  const mine = data.filter((s) => s.can_review);
+  const total = mine.length;
+  const submittedCount = mine.filter((s) => ['submitted', 'reviewed'].includes(s.submission?.status)).length;
+  const reviewedCount = mine.filter((s) => s.submission?.status === 'reviewed').length;
   const staffPassed = schedule.today > schedule.staff_due_date;
   const interviewPassed = schedule.today > schedule.interview_due_date;
   const needsAttention = (staffPassed && submittedCount < total) || (interviewPassed && reviewedCount < total);
@@ -99,8 +101,8 @@ async function loadList() {
   listEl.innerHTML = '';
   data.forEach((s) => {
     const status = s.submission?.status || 'none';
-    const canOpen = status === 'submitted' || status === 'reviewed';
-    const late = lateLabel(status);
+    const canOpen = s.can_review && (status === 'submitted' || status === 'reviewed');
+    const late = s.can_review ? lateLabel(status) : '';
     const submittedOn = canOpen && s.submission.submitted_at
       ? `・${new Date(s.submission.submitted_at).toLocaleDateString('zh-TW')} 送出`
       : '';
@@ -114,10 +116,12 @@ async function loadList() {
       </div>
       <div class="row-right">
         ${late ? `<span class="late-tag">${late}</span>` : ''}
-        <span class="status ${status}">${STATUS_LABEL[status]}</span>
+        ${s.can_review
+          ? `<span class="status ${status}">${STATUS_LABEL[status]}</span>`
+          : `<span class="status none">${s.is_self ? '你自己' : '非你的面談對象'}</span>`}
       </div>`;
 
-    // 面談是在同仁送出之後才進行，還沒送出的表不開放點進去
+    // 面談是在同仁送出之後才進行，還沒送出的表、不是自己要面談的人，都不開放點進去
     if (canOpen) {
       row.addEventListener('click', () => openDetail(s.submission.id, s.name));
     } else {
@@ -244,7 +248,7 @@ async function submitReview(submissionId, markReviewed) {
   msg.textContent = '儲存中…';
 
   try {
-    const res = await fetch(`${API}/api/self-eval/manager-review`, {
+    const res = await fetch(`${API}/api/self-eval/manager-review?actor_id=${encodeURIComponent(staff.id)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

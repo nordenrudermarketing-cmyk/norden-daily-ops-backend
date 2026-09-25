@@ -1,11 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { supabase } from '../supabaseClient.js';
+import { loadActor, isBranchLead } from '../lib/roleLevel.js';
 
 const router = express.Router();
 
 // ============================================================
-// 帳號管理（總公司、店經理用）
+// 帳號管理（總公司、店經理、店副理用）
 //
 // ⚠ 這組 API 沒有真正的登入驗證（2026-09-13 決定「先只做畫面」）。
 //   actor_id 是前端送來的「目前登入的是誰」，後端會拿它去資料庫查這個人真實的職務與館別，
@@ -14,7 +15,8 @@ const router = express.Router();
 //
 // 權限規則：
 //   總公司：所有館別、所有職務的帳號都能管理
-//   店經理：只能管理「自己館別」的「房務、客務」帳號；自己的帳號只能改密碼
+//   店經理：只能管理「自己館別」的「房務、客務、店副理」帳號；自己的帳號只能改密碼
+//   店副理：只能管理「自己館別」的「房務、客務」帳號（店經理以上、其他副理都不能動）；自己的帳號只能改密碼
 //   其他人：不能使用
 //
 // 刪除：一律先「停用」（不能登入，但所有紀錄保留，之後可以再啟用）。
@@ -23,8 +25,16 @@ const router = express.Router();
 // 密碼：資料庫只存 bcrypt 雜湊，任何 API 都不會回傳密碼或雜湊值。
 // ============================================================
 
-// 店經理可以管理的職務類別
+// 店經理、店副理都可以管理的職務類別
 const GENERAL_CATEGORIES = ['housekeeping', 'frontdesk'];
+// 只有店經理（和總公司）可以管理的職務名稱
+const MANAGER_EXTRA_ROLES = ['店副理'];
+
+// 這個館別主管可以設定成這個職務嗎？（總公司不用問這個）
+function roleAllowedFor(actor, role) {
+  if (GENERAL_CATEGORIES.includes(role?.category)) return true;
+  return actor.level === 'manager' && MANAGER_EXTRA_ROLES.includes(role?.name);
+}
 
 // 這三張表指向 staff 的外鍵是 on delete cascade（schema_v4 / v6 / v7），
 // 刪帳號會把裡面的資料一起刪掉，所以永久刪除前要先確認是空的
@@ -37,12 +47,6 @@ const CASCADE_TABLES = [
 const ACCOUNT_COLUMNS =
   'id, name, login_code, branch_id, role_id, is_active, is_part_time, password_hash, branches(name), roles(name, category)';
 
-function levelOf(roleName) {
-  if (roleName === '總公司') return 'hq';
-  if (roleName === '店經理') return 'manager';
-  return 'none';
-}
-
 function cleanText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -50,9 +54,10 @@ function cleanText(value) {
 function canManage(actor, target) {
   if (actor.level === 'hq') return true;
   return (
-    actor.level === 'manager' &&
+    isBranchLead(actor.level) &&
+    target.id !== actor.id &&
     target.branch_id === actor.branch_id &&
-    GENERAL_CATEGORIES.includes(target.roles?.category)
+    roleAllowedFor(actor, target.roles)
   );
 }
 
@@ -93,15 +98,19 @@ async function loginCodeTaken(code, exceptId = null) {
   return (data || []).some((s) => s.id !== exceptId);
 }
 
-// 決定新增／修改時實際要寫入的館別與職務（店經理的館別一律強制為自己的館別）
+// 決定新增／修改時實際要寫入的館別與職務（店經理、店副理的館別一律強制為自己的館別）
 async function resolveScope(actor, branchId, roleId) {
   if (!roleId) return { error: '請選擇職務' };
   const { data: role } = await supabase.from('roles').select('id, name, category').eq('id', roleId).maybeSingle();
   if (!role) return { error: '請選擇職務' };
 
-  if (actor.level === 'manager') {
-    if (!GENERAL_CATEGORIES.includes(role.category)) {
-      return { error: '店經理只能設定房務或客務職務的帳號' };
+  if (isBranchLead(actor.level)) {
+    if (!roleAllowedFor(actor, role)) {
+      return {
+        error: actor.level === 'manager'
+          ? '店經理只能設定房務、客務或店副理職務的帳號'
+          : '店副理只能設定房務或客務職務的帳號',
+      };
     }
     return { branch_id: actor.branch_id, role };
   }
@@ -136,19 +145,13 @@ router.use(async (req, res, next) => {
   const actorId = req.query.actor_id;
   if (!actorId) return res.status(403).json({ error: '請先登入' });
 
-  const { data, error } = await supabase
-    .from('staff')
-    .select('id, name, branch_id, is_active, roles(name, category)')
-    .eq('id', actorId)
-    .maybeSingle();
-  if (error || !data || data.is_active === false) {
-    return res.status(403).json({ error: '找不到目前登入的帳號，請重新登入' });
+  const actor = await loadActor(actorId);
+  if (!actor) return res.status(403).json({ error: '找不到目前登入的帳號，請重新登入' });
+  if (actor.level === 'staff') {
+    return res.status(403).json({ error: '帳號管理只有總公司、店經理、店副理可以使用' });
   }
 
-  const level = levelOf(data.roles?.name);
-  if (level === 'none') return res.status(403).json({ error: '帳號管理只有總公司和店經理可以使用' });
-
-  req.actor = { ...data, level };
+  req.actor = actor;
   next();
 });
 
@@ -167,7 +170,7 @@ router.get('/meta', async (req, res) => {
   res.json({
     actor: { id: actor.id, name: actor.name, level: actor.level, branch_id: actor.branch_id },
     branches: isHQ ? branchesRes.data : branchesRes.data.filter((b) => b.id === actor.branch_id),
-    roles: isHQ ? rolesRes.data : rolesRes.data.filter((r) => GENERAL_CATEGORIES.includes(r.category)),
+    roles: isHQ ? rolesRes.data : rolesRes.data.filter((r) => roleAllowedFor(actor, r)),
   });
 });
 
@@ -176,7 +179,7 @@ router.get('/meta', async (req, res) => {
 router.get('/', async (req, res) => {
   const { actor } = req;
   let query = supabase.from('staff').select(ACCOUNT_COLUMNS);
-  if (actor.level === 'manager') query = query.eq('branch_id', actor.branch_id);
+  if (isBranchLead(actor.level)) query = query.eq('branch_id', actor.branch_id);
 
   const { data, error } = await query.order('name');
   if (error) return res.status(400).json({ error: error.message });

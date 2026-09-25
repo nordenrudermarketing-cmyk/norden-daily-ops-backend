@@ -1,5 +1,7 @@
 import express from 'express';
 import { supabase } from '../supabaseClient.js';
+import { loadActor, levelOf } from '../lib/roleLevel.js';
+import { taipeiDate } from '../lib/taiwanTime.js';
 
 const router = express.Router();
 
@@ -16,22 +18,10 @@ const ROLE_CATEGORY_MAP = { housekeeping: 'housekeeping', frontdesk: 'frontdesk'
 // 逾期只會標示提醒，不會擋住填寫或面談。
 //
 // Railway 伺服器跑在 UTC，直接用 new Date() 算日期的話，台灣時間 1 號早上 8 點以前
-// 還會被當成上個月，所以日期一律先換算成台灣時間，前端也改用這裡回傳的日期判斷逾期。
+// 還會被當成上個月，所以日期一律先換算成台灣時間（lib/taiwanTime.js），
+// 前端也改用這裡回傳的日期判斷逾期。
 // ============================================================
 const SCHEDULE = { releaseDay: 1, staffDueDay: 10, interviewDueDay: 20 };
-
-const taipeiFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
-});
-
-// 回傳台灣時間的 'YYYY-MM-DD'；沒給值就是今天
-function taipeiDate(value = new Date()) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const parts = Object.fromEntries(taipeiFormatter.formatToParts(date).map((p) => [p.type, p.value]));
-  return `${parts.year}-${parts.month}-${parts.day}`;
-}
 
 // '2026-08' 加減 n 個月
 function addMonths(yearMonth, n) {
@@ -199,16 +189,37 @@ router.post('/save', async (req, res) => {
   res.json(submission);
 });
 
-// ---------- 店經理面談 ----------
+// ---------- 主管面談（店經理、店副理） ----------
 
-// GET /api/self-eval/branch-overview?branch_id=xxx&eval_month=2026-07-01
+// 這位主管可以面談這位同仁嗎？（target 需要有 id、branch_id、roles{name, category}）
+//   店經理：同館、不是自己、不是總公司（可以面談店副理）
+//   店副理：同館的房務、客務（不能面談店經理、其他副理、自己）
+//   總公司：自己以外都可以（目前沒有畫面在用，先保留原本的彈性）
+// ⚠ 店經理自己的自評目前沒有人可以面談，見 CLAUDE.md 已知限制
+function canInterview(actor, target) {
+  if (!actor || !target || target.id === actor.id) return false;
+  const targetLevel = levelOf(target.roles?.name);
+  if (actor.level === 'hq') return true;
+  if (target.branch_id !== actor.branch_id) return false;
+  if (actor.level === 'manager') return targetLevel === 'deputy' || targetLevel === 'staff';
+  if (actor.level === 'deputy') return targetLevel === 'staff' && ['housekeeping', 'frontdesk'].includes(target.roles?.category);
+  return false;
+}
+
+// GET /api/self-eval/branch-overview?actor_id=xxx&branch_id=xxx&eval_month=2026-07-01
+// 每一列附上 can_review：這位主管能不能面談這個人
 router.get('/branch-overview', async (req, res) => {
-  const { branch_id } = req.query;
   const evalMonth = normalizeEvalMonth(req.query.eval_month);
+  const actor = await loadActor(req.query.actor_id);
+  if (!actor) return res.status(403).json({ error: '找不到目前登入的帳號，請重新登入' });
+  if (actor.level === 'staff') return res.status(403).json({ error: '審閱自評表只有主管可以使用' });
+
+  // 店經理、店副理只能看自己館別；總公司可以指定館別
+  const branch_id = actor.level === 'hq' ? (req.query.branch_id || actor.branch_id) : actor.branch_id;
 
   const { data: staffList, error: staffErr } = await supabase
     .from('staff')
-    .select('id, name, roles(name)')
+    .select('id, name, branch_id, roles(name, category)')
     .eq('branch_id', branch_id)
     .eq('is_active', true);
   if (staffErr) return res.status(400).json({ error: staffErr.message });
@@ -226,6 +237,8 @@ router.get('/branch-overview', async (req, res) => {
     staff_id: s.id,
     name: s.name,
     role_name: s.roles?.name,
+    is_self: s.id === actor.id,
+    can_review: canInterview(actor, s),
     submission: subMap[s.id] || null,
   })));
 });
@@ -251,18 +264,24 @@ router.get('/submission-detail', async (req, res) => {
   res.json({ submission, answers: sorted });
 });
 
-// POST /api/self-eval/manager-review
+// POST /api/self-eval/manager-review?actor_id=xxx
 // { submission_id, answers: [{template_id, manager_answer, manager_note}], interview_notes, interview_date, mark_reviewed }
 // mark_reviewed = true 代表「完成面談」，完成後這份表就鎖定
 router.post('/manager-review', async (req, res) => {
   const { submission_id, answers, interview_notes, interview_date, mark_reviewed } = req.body;
 
+  const actor = await loadActor(req.query.actor_id);
+  if (!actor) return res.status(403).json({ error: '找不到目前登入的帳號，請重新登入' });
+
   const { data: current, error: curErr } = await supabase
     .from('self_eval_submissions')
-    .select('id, status')
+    .select('id, status, staff:staff_id(id, branch_id, roles(name, category))')
     .eq('id', submission_id)
     .single();
   if (curErr) return res.status(400).json({ error: curErr.message });
+  if (!canInterview(actor, current.staff)) {
+    return res.status(403).json({ error: '你不是這位同仁的面談主管，不能填寫面談' });
+  }
   if (current.status === 'reviewed') {
     return res.status(400).json({ error: '這份自評表已經完成面談，不能再修改' });
   }

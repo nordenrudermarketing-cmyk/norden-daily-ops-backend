@@ -1,5 +1,6 @@
 // 帳號管理（檔名沿用 manage-passwords，原本連到「密碼管理」的連結才不會壞掉）
-// 總公司：所有館別、所有職務；店經理：自己館別的房務、客務，自己的帳號只能改密碼
+// 總公司：所有館別、所有職務；店經理：自己館別的房務、客務、店副理；店副理：自己館別的房務、客務
+// 店經理、店副理自己的帳號只能改密碼
 // 權限由後端 /api/accounts 依資料庫裡的真實職務判斷，這裡只負責畫面
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
@@ -17,8 +18,8 @@ let pwTargetId = null;
 
 if (!staff) {
   window.location.href = 'index.html';
-} else if (roleName !== '總公司' && roleName !== '店經理') {
-  alert('帳號管理只有總公司和店經理可以使用');
+} else if (!['總公司', '店經理', '店副理'].includes(roleName)) {
+  alert('帳號管理只有總公司、店經理、店副理可以使用');
   window.location.href = 'index.html';
 } else {
   init();
@@ -180,7 +181,7 @@ function openEdit(account) {
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
 
-  // 館別：總公司可以選；店經理固定是自己館別（後端也會強制）
+  // 館別：總公司可以選；店經理、店副理固定是自己館別（後端也會強制）
   $('fBranchField').style.display = isHQ ? '' : 'none';
   $('fBranch').innerHTML = meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
   $('fBranch').value = account?.branch_id ||
@@ -188,7 +189,7 @@ function openEdit(account) {
     meta.branches.find((b) => b.code !== 'HQ')?.id ||
     meta.branches[0]?.id || '';
 
-  // 職務：店經理只會拿到房務、客務；編輯自己時鎖住（後端也會擋）
+  // 職務：店經理只會拿到房務、客務、店副理，店副理只會拿到房務、客務；編輯自己時鎖住（後端也會擋）
   $('fRole').innerHTML = meta.roles.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
   if (account) $('fRole').value = account.role_id;
   $('fRole').disabled = !!account?.is_self;

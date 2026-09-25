@@ -24,7 +24,7 @@ document.getElementById('ownerSelect').addEventListener('change', saveOwner);
 
 let housekeepingStaff = [];
 let zoneOwners = {}; // zone -> staff_id
-const isManager = staff.roles?.name === '店經理';
+const isManager = ['店經理', '店副理'].includes(staff.roles?.name); // 店副理是店經理的職務代理人
 document.getElementById('backLink').href = isManager ? 'dashboard.html' : 'checklist.html';
 
 init();

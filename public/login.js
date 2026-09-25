@@ -71,7 +71,7 @@ function landingPageFor(staff) {
   const roleName = staff.roles?.name || '';
 
   if (roleName === '總公司') return 'hq-dashboard.html';
-  if (roleName === '店經理') return 'dashboard.html';
+  if (roleName === '店經理' || roleName === '店副理') return 'dashboard.html'; // 店副理是店經理的職務代理人，畫面一樣
   if (roleName.includes('房務')) return 'checklist.html';
 
   if (roleName === '客務人員') {

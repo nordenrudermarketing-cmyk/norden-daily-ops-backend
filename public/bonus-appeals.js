@@ -2,7 +2,7 @@ const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-const isManager = staff.roles?.name === '店經理';
+const isManager = ['店經理', '店副理'].includes(staff.roles?.name); // 店副理是店經理的職務代理人
 document.getElementById('staffLine').textContent = staff.name;
 document.getElementById('workDate').value = new Date().toISOString().slice(0, 10);
 document.getElementById('submitBtn').addEventListener('click', submitAppeal);
