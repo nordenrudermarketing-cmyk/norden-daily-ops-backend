@@ -36,6 +36,7 @@ import managerMemoRoutes from './routes/managerMemo.js';
 import managerWorksheetRoutes from './routes/managerWorksheet.js';
 import featuresRoutes from './routes/features.js';
 import accountsRoutes from './routes/accounts.js';
+import todosRoutes from './routes/todos.js';
 import { featureGuard } from './lib/featureGuard.js';
 import { CURRENT_DB_SCHEMA } from './supabaseClient.js';
 
@@ -87,6 +88,7 @@ app.use('/api/bonus-appeals', bonusAppealsRoutes);
 app.use('/api/adhoc-tasks', adhocTasksRoutes);
 app.use('/api/manager-memo', managerMemoRoutes);
 app.use('/api/manager-worksheet', managerWorksheetRoutes);
+app.use('/api/todos', todosRoutes);
 
 // 提供同仁端網頁（登入、打卡、巡房檢查）
 app.use(express.static(path.join(__dirname, '..', 'public')));

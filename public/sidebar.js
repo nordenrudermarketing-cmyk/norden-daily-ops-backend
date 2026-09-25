@@ -56,6 +56,7 @@
       ] },
       { label: '其他', icon: 'dots', items: [
         { label: '每月自評表', url: 'self-eval.html' },
+        { label: '待辦事項', url: 'todos.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
       ] },
@@ -76,6 +77,7 @@
       ] },
       { label: '其他', icon: 'dots', items: [
         { label: '每月自評表', url: 'self-eval.html' },
+        { label: '待辦事項', url: 'todos.html' },
         { label: '我的例行事項', url: 'routine-tasks.html' },
         { label: '個人清潔配額', url: 'staff-cleaning.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
@@ -91,6 +93,7 @@
       ] },
       { label: '獎金', icon: 'coin', items: [{ label: '獎金申覆審核', url: 'bonus-appeals.html' }] },
       { label: '任務管理', icon: 'leaf', items: [
+        { label: '待辦事項', url: 'todos.html' },
         { label: '保養排程管理', url: 'zone-maintenance.html' },
         { label: '公區任務分配', url: 'public-area-assign.html' },
         { label: '例行事項管理', url: 'routine-tasks-manage.html' },
@@ -114,7 +117,10 @@
       { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     hq: [
-      { label: '總覽', icon: 'home', items: [{ label: '總公司儀表板', url: 'hq-dashboard.html' }] },
+      { label: '總覽', icon: 'home', items: [
+        { label: '總公司儀表板', url: 'hq-dashboard.html' },
+        { label: '待辦事項', url: 'todos.html' },
+      ] },
       { label: '各館管理', icon: 'branch', items: [
         { label: '自評題目管理', url: 'self-eval-templates.html' },
         { label: '各館自評進度', url: 'self-eval-hq-flagged.html' },

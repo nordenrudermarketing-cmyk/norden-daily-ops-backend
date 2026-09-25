@@ -9,57 +9,33 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('staff');
   window.location.href = 'index.html';
 });
-document.getElementById('taskSubmit').addEventListener('click', submitTask);
-
-let branchList = [];
 let disabledKeys = [];
 
 init();
 
 async function init() {
-  // 被總公司關掉的區塊（各館營運總覽、交辦任務）直接藏起來，也不去打對應的 API
+  // 被總公司關掉的區塊（各館營運總覽）直接藏起來，也不去打對應的 API
+  // （原本的「總公司交辦任務」已改成左側選單的「待辦事項」）
   try {
     const res = await fetch(`${API}/api/features`);
     disabledKeys = (await res.json())?.disabled_keys || [];
   } catch (e) { /* 查不到就全部顯示 */ }
 
   const showOverview = !disabledKeys.includes('hq_overview');
-  const showTasks = !disabledKeys.includes('hq_tasks');
   // .branch-grid 在 CSS 裡有 display:grid，hidden 屬性會被蓋掉，所以直接改 style
   document.getElementById('branchGrid').style.display = showOverview ? '' : 'none';
-  document.getElementById('hqTasksSection').style.display = showTasks ? '' : 'none';
-  document.getElementById('hqEmptyHint').style.display = showOverview || showTasks ? 'none' : '';
+  document.getElementById('hqEmptyHint').style.display = showOverview ? 'none' : '';
 
   if (showOverview) await loadOverview();
-  if (showTasks) {
-    if (!showOverview) await loadBranchOptions();
-    await loadTasks();
-  }
-}
-
-// 營運總覽關掉、交辦任務還開著的時候，「目標館別」下拉選單改從帳號管理的館別清單拿
-async function loadBranchOptions() {
-  try {
-    const res = await fetch(`${API}/api/accounts/meta?actor_id=${staff.id}`);
-    const meta = await res.json();
-    branchList = (meta.branches || []).filter((b) => b.code !== 'HQ').map((b) => ({ id: b.id, name: b.name }));
-  } catch (e) {
-    branchList = [];
-  }
-  document.getElementById('taskBranch').innerHTML = branchList.map((b) => `<option value="${b.id}">${b.name}</option>`).join('');
 }
 
 async function loadOverview() {
-  if (disabledKeys.includes('hq_overview')) return; // 送出任務後也會呼叫這裡
+  if (disabledKeys.includes('hq_overview')) return; // 處理完異常後也會呼叫這裡
   const grid = document.getElementById('branchGrid');
   grid.innerHTML = '<p class="empty-state">載入中…</p>';
 
   const res = await fetch(`${API}/api/hq/overview`);
   const overview = await res.json();
-  branchList = overview.map((b) => ({ id: b.branch_id, name: b.branch_name }));
-
-  const branchSelect = document.getElementById('taskBranch');
-  branchSelect.innerHTML = branchList.map((b) => `<option value="${b.id}">${b.name}</option>`).join('');
 
   grid.innerHTML = '';
   overview.forEach((b) => {
@@ -73,7 +49,6 @@ async function loadOverview() {
       <div class="metric-line"><span>未處理異常</span><span class="val ${b.unresolved_anomalies > 0 ? 'warn' : ''}">${b.unresolved_anomalies}${b.oldest_anomaly_days !== null ? `（最久 ${b.oldest_anomaly_days} 天）` : ''}</span></div>
       <div class="metric-line"><span>未處理缺失</span><span class="val ${b.unresolved_defects > 0 ? 'warn' : ''}">${b.unresolved_defects}${b.oldest_defect_days !== null ? `（最久 ${b.oldest_defect_days} 天）` : ''}</span></div>
       <div class="metric-line"><span>店經理巡館完成</span><span class="val">${b.manager_checklist_done} / 8</span></div>
-      <div class="metric-line"><span>待處理總公司任務</span><span class="val ${b.pending_hq_tasks > 0 ? 'warn' : ''}">${b.pending_hq_tasks}</span></div>
       <p style="font-size:10.5px;color:var(--accent);margin:8px 0 0;">點卡片查看實際內容 ▾</p>
       <div class="branch-detail" style="display:none;"></div>
     `;
@@ -159,48 +134,4 @@ async function loadBranchDetail(branchId, container) {
 
 function anomalies_empty(arr) {
   return !arr || arr.length === 0;
-}
-
-async function loadTasks() {
-  const res = await fetch(`${API}/api/hq/tasks`);
-  const tasks = await res.json();
-  const body = document.querySelector('#taskTable tbody');
-
-  if (tasks.length === 0) {
-    body.innerHTML = '<tr><td colspan="5" style="color:var(--ink-soft);">還沒有交辦任務</td></tr>';
-    return;
-  }
-
-  body.innerHTML = tasks.map((t) => `
-    <tr>
-      <td>${t.branches?.name || ''}</td>
-      <td>${t.title}</td>
-      <td>${t.due_date || '—'}</td>
-      <td>${t.status === 'completed' ? '已完成' : '待處理'}</td>
-      <td>${t.response_notes || ''}</td>
-    </tr>`).join('');
-}
-
-async function submitTask() {
-  const payload = {
-    title: document.getElementById('taskTitle').value.trim(),
-    description: document.getElementById('taskDesc').value,
-    target_branch_id: document.getElementById('taskBranch').value,
-    due_date: document.getElementById('taskDue').value || null,
-    assigned_by: document.getElementById('taskAssignedBy').value,
-  };
-  if (!payload.title) { alert('請填標題'); return; }
-
-  const res = await fetch(`${API}/api/hq/tasks`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) { alert((await res.json()).error || '送出失敗'); return; }
-
-  document.getElementById('taskTitle').value = '';
-  document.getElementById('taskDesc').value = '';
-  document.getElementById('taskDue').value = '';
-  loadTasks();
-  loadOverview();
 }

@@ -81,12 +81,19 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 面談對象由 `canInterview()` 決定：店經理面談本館副理、房務、客務；店副理只面談本館房務、客務；
 都不能面談自己。`branch-overview`、`manager-review` 要帶 `actor_id`。
 
+### 待辦事項 `routes/todos.js`
+
+副理以上派任務給執行人，狀態 `in_progress → pending_review（完成待檢查）→ done（檢核結案）`，另有 `on_hold` 暫緩。
+「我派發的任務」看 `owner_branch_id`（派發人當時的館別），「我的任務」看 `assignee_id`。
+取代了舊的總公司交辦任務（`hq_tasks` 表保留、API 與畫面已移除）。
+
 ---
 
 ## 加新功能的步驟
 
 1. 開新 branch（**不要直接改 main**）
-2. 後端加 `src/routes/xxx.js`，在 `server.js` 掛載
+2. 後端加 `src/routes/xxx.js`，在 `server.js` 掛載；需要分權限的話讓前端帶 `?actor_id=`，
+   後端用 `lib/roleLevel.js` 的 `loadActor()` 查真實職務（參考 `accounts.js`、`todos.js`）
 3. 前端加 `public/xxx.html` + `xxx.js`；HTML 最後要有 `<script src="sidebar.js"></script>`
 4. 在 `featureCatalog.js` 加一筆（頁面、API 前綴），需要的話在 `sidebar.js` 的 `NAV_SETS` 加選單項目
 5. 要動資料庫就加 `schema_vNN_說明.sql`（見下）

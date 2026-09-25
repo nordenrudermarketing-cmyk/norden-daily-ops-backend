@@ -156,6 +156,14 @@ export const FEATURE_CATALOG = [
     apis: ['/api/bonus-appeals'],
   },
   {
+    key: 'todos',
+    label: '待辦事項',
+    group: '共用',
+    description: '副理以上派發任務、指定執行人並追蹤進度（取代原本的總公司交辦任務）',
+    pages: ['todos.html'],
+    apis: ['/api/todos'],
+  },
+  {
     key: 'adhoc_tasks',
     label: '臨時任務',
     group: '共用',
@@ -222,14 +230,6 @@ export const FEATURE_CATALOG = [
     description: '總公司儀表板上的各館卡片：今日房務完成、未處理異常與缺失、巡館進度',
     pages: [],
     apis: ['/api/hq/overview'],
-  },
-  {
-    key: 'hq_tasks',
-    label: '總公司交辦任務',
-    group: '總公司',
-    description: '總公司儀表板的交辦新任務與任務列表（店經理儀表板也會用到）',
-    pages: [],
-    apis: ['/api/hq/tasks'],
   },
   {
     key: 'weekly_report',
