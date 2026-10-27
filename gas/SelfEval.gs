@@ -143,7 +143,7 @@ function apiSelfEvalForm_(req) {
   const submission = Db.first('self_eval_submissions', { staff_id: staffId, eval_month: evalMonth });
   const answerMap = {};
   if (submission) {
-    Db.where('self_eval_answers', { submission_id: submission.id }).forEach(function (a) { answerMap[a.template_id] = a; });
+    Db.whereEq('self_eval_answers', 'submission_id', submission.id).forEach(function (a) { answerMap[a.template_id] = a; });
   }
 
   const schedule = scheduleFor_(evalMonth);
@@ -168,32 +168,37 @@ function apiSelfEvalSave_(req) {
   const b = req.body;
   if (b.staff_id && b.staff_id !== actor.id) throw httpError_(403, '只能填寫自己的自評表');
   const evalMonth = normalizeEvalMonth_(b.eval_month);
-
-  const existing = Db.first('self_eval_submissions', { staff_id: actor.id, eval_month: evalMonth });
-  if (existing && existing.status === 'reviewed') throw httpError_(400, '這份自評表已經完成面談，不能再修改');
-
   const now = nowIso_();
-  const submission = Db.upsert('self_eval_submissions', ['staff_id', 'eval_month'], {
-    staff_id: actor.id,
-    branch_id: actor.branch_id,
-    eval_month: evalMonth,
-    status: b.submit ? 'submitted' : 'draft',
-    due_date: scheduleFor_(evalMonth).staff_due_date,
-    submitted_at: b.submit ? now : null,
-    updated_at: now,
-  })[0];
 
-  if (Array.isArray(b.answers) && b.answers.length > 0) {
-    Db.upsert('self_eval_answers', ['submission_id', 'template_id'], b.answers.map(function (a) {
-      return {
-        submission_id: submission.id,
-        template_id: a.template_id,
-        staff_answer: a.staff_answer,
-        staff_note: a.staff_note,
-      };
-    }));
-  }
-  return submission;
+  // 表單和答案一起存：只排隊一次，而且只讀這位同仁、這份表相關的列（見 Db.gs 的 transaction、scope）
+  return Db.transaction(function () {
+    const submission = Db.upsert('self_eval_submissions', ['staff_id', 'eval_month'], {
+      staff_id: actor.id,
+      branch_id: actor.branch_id,
+      eval_month: evalMonth,
+      status: b.submit ? 'submitted' : 'draft',
+      due_date: scheduleFor_(evalMonth).staff_due_date,
+      submitted_at: b.submit ? now : null,
+      updated_at: now,
+    }, {
+      scope: { column: 'staff_id', value: actor.id },
+      guard: function (existing) {
+        if (existing && existing.status === 'reviewed') throw httpError_(400, '這份自評表已經完成面談，不能再修改');
+      },
+    })[0];
+
+    if (Array.isArray(b.answers) && b.answers.length > 0) {
+      Db.upsert('self_eval_answers', ['submission_id', 'template_id'], b.answers.map(function (a) {
+        return {
+          submission_id: submission.id,
+          template_id: a.template_id,
+          staff_answer: a.staff_answer,
+          staff_note: a.staff_note,
+        };
+      }), { scope: { column: 'submission_id', value: submission.id } });
+    }
+    return submission;
+  });
 }
 
 // ---------- 店經理面談 ----------
@@ -227,7 +232,7 @@ function apiSelfEvalSubmissionDetail_(req) {
   const templates = {};
   Db.all('self_eval_templates').forEach(function (t) { templates[t.id] = t; });
 
-  const answers = Db.where('self_eval_answers', { submission_id: submission.id }).map(function (a) {
+  const answers = Db.whereEq('self_eval_answers', 'submission_id', submission.id).map(function (a) {
     const t = templates[a.template_id];
     return Object.assign(a, {
       template: t ? { category: t.category, question_zh: t.question_zh, question_id: t.question_id, sort_order: t.sort_order } : null,
@@ -253,16 +258,6 @@ function apiSelfEvalManagerReview_(req) {
   // 面談是在同仁送出之後才進行，還是草稿的表不能被主管鎖定
   if (b.mark_reviewed && current.status !== 'submitted') throw httpError_(400, '同仁還沒送出自評表，不能完成面談');
 
-  if (Array.isArray(b.answers) && b.answers.length) {
-    const patches = {};
-    Db.where('self_eval_answers', { submission_id: current.id }).forEach(function (row) {
-      const a = b.answers.find(function (x) { return x.template_id === row.template_id; });
-      if (a) patches[row.id] = { manager_answer: a.manager_answer, manager_note: a.manager_note };
-    });
-    // 只改已經存在的答案（跟原本的 update 一樣），一次寫完整份表
-    Db.updateById('self_eval_answers', patches);
-  }
-
   const patch = {
     manager_interview_notes: b.interview_notes,
     interview_date: b.interview_date || null,
@@ -273,7 +268,21 @@ function apiSelfEvalManagerReview_(req) {
     patch.manager_signed_at = nowIso_();
     if (!patch.interview_date) patch.interview_date = taipeiDate_();
   }
-  return Db.update('self_eval_submissions', { id: current.id }, patch)[0];
+
+  // 主管意見和面談紀錄一起存，只排隊一次
+  return Db.transaction(function () {
+    if (Array.isArray(b.answers) && b.answers.length) {
+      const scope = { column: 'submission_id', value: current.id };
+      const patches = {};
+      Db.whereEq('self_eval_answers', 'submission_id', current.id).forEach(function (row) {
+        const a = b.answers.find(function (x) { return x.template_id === row.template_id; });
+        if (a) patches[row.id] = { manager_answer: a.manager_answer, manager_note: a.manager_note };
+      });
+      // 只改已經存在的答案（跟原本的 update 一樣）
+      Db.updateById('self_eval_answers', patches, { scope: scope });
+    }
+    return Db.update('self_eval_submissions', { id: current.id }, patch)[0];
+  });
 }
 
 // ---------- 總公司：各館自評進度 ----------

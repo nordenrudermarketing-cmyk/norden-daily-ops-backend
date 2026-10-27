@@ -884,7 +884,7 @@ Railway 維護辛苦且有金鑰外洩疑慮。
 |---|---|
 | `gas/Main.gs` | 網頁入口：`doGet` 回外框、`getPage` 回各頁 HTML |
 | `gas/Router.gs` | API 單一入口，路由表在 `routes_()`（新增 API 要在這裡加一行） |
-| `gas/Db.gs` | 讀寫試算表的共用函式（`Db.where`、`Db.insert`、`Db.update`、`Db.upsert`…） |
+| `gas/Db.gs` | 讀寫試算表的共用函式（`Db.where`、`Db.whereEq`、`Db.insert`、`Db.update`、`Db.upsert`、`Db.transaction`…） |
 | `gas/Schema.gs` | 資料表結構（取代 `schema_vNN.sql`） |
 | `gas/Auth.gs` | 登入、密碼、登入憑證 |
 | `gas/Catalog.gs` / `Features.gs` | 功能開關（規則同 Railway 版） |
@@ -988,4 +988,5 @@ clasp -P clasp-production.json redeploy AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNM
 - 能開試算表的人等於能看全部資料，分享權限要只給必要的人
 - 有些瀏覽器（LINE 內建瀏覽器、Claude 的瀏覽器窗格）會擋 `confirm()`／`alert()` 彈出視窗；
   轉接器偵測到被擋時改用頁面內的確認框，按「確定」後重新觸發原本那一下點擊（實測：登出、送出自評、完成面談都正常）
-- 寫入比讀取慢：送出自評約 7.5 秒、新增帳號約 5 秒（排隊＋重新讀最新資料＋寫入），之後可以把兩次寫入合併來加速
+- 寫入比讀取慢：送出自評約 4 秒（原本 7.5 秒）、新增帳號約 5 秒。自評表的「表單＋答案」已合併成一次排隊寫入（`Db.transaction`），
+  而且只讀相關的列（`Db.whereEq`、`scope`：用試算表的尋找功能找出該份表的答案，不整張讀），作答紀錄越累積越多也不會跟著變慢

@@ -142,20 +142,76 @@ function copy_(obj) {
   return Object.assign({}, obj);
 }
 
-// 寫入排隊；寫完 flush 確定資料進了試算表，再清一次快取，避免別人剛好在這之間把舊資料放回快取
+// 寫入排隊；寫完 flush 確定資料進了試算表，再清一次快取，避免別人剛好在這之間把舊資料放回快取。
+// 在 Db.transaction 裡面的寫入共用同一次排隊與 flush（見下方 transaction）。
+let LOCK_DEPTH_ = 0;
+let LOCK_TABLES_ = [];
+
 function withLock_(table, fn) {
+  if (LOCK_DEPTH_ > 0) {
+    if (LOCK_TABLES_.indexOf(table) < 0) LOCK_TABLES_.push(table);
+    return fn();
+  }
+  return runLocked_([table], fn);
+}
+
+function runLocked_(tables, fn) {
   const started = Date.now();
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
+  LOCK_DEPTH_ = 1;
+  LOCK_TABLES_ = tables.slice();
   try {
     return fn();
   } finally {
     SpreadsheetApp.flush();
-    clearTableCache_(table);
+    LOCK_TABLES_.forEach(clearTableCache_);
+    LOCK_DEPTH_ = 0;
+    LOCK_TABLES_ = [];
     lock.releaseLock();
     DB_STATS_.writes++;
     DB_STATS_.writeMs += Date.now() - started;
   }
+}
+
+// ---------- 只讀「相關的那幾列」 ----------
+// 作答紀錄這種表每個月會多上千列，每次都整張讀會越來越慢。
+// 這裡先用試算表的「尋找」功能找出某一欄等於某個值的列（例如某份自評表的所有答案），
+// 再只讀「第一個找到的列～最後一個找到的列」這一塊。
+// 回傳的 records 包含這一塊裡的所有列（寫回時才不會蓋掉中間其他人的資料），呼叫的人自己再篩選。
+function scopedLoad_(table, column, value) {
+  const started = Date.now();
+  const sheet = sheetOf_(table);
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return String(h).trim(); });
+  const col = headers.indexOf(column) + 1;
+  if (col < 1) throw new Error('「' + table + '」分頁沒有「' + column + '」欄位');
+  const records = [];
+  if (lastRow > 1 && value !== null && value !== undefined && value !== '') {
+    const rows = sheet.getRange(2, col, lastRow - 1, 1).createTextFinder(String(value)).matchEntireCell(true)
+      .findAll().map(function (r) { return r.getRow(); });
+    if (rows.length) {
+      const first = Math.min.apply(null, rows);
+      const last = Math.max.apply(null, rows);
+      const types = SCHEMA[table].columns;
+      sheet.getRange(first, 1, last - first + 1, lastCol).getValues().forEach(function (row, i) {
+        if (row.every(function (v) { return v === '' || v === null; })) return;
+        const data = {};
+        headers.forEach(function (h, c) { if (h) data[h] = fromCell_(row[c], types[h] || 'text'); });
+        records.push({ row: first + i, data: data });
+      });
+    }
+  }
+  DB_STATS_.reads++;
+  DB_STATS_.readMs += Date.now() - started;
+  return { sheet: sheet, headers: headers, records: records };
+}
+
+// 寫入時要讀的資料：有指定 scope 就只讀相關的列，否則整張讀（都不走快取）
+function loadForWrite_(table, opts) {
+  const scope = opts && opts.scope;
+  return scope ? scopedLoad_(table, scope.column, scope.value) : load_(table, true);
 }
 
 // 把改過的資料寫回試算表。changed：[{ row, data }]（record.data 已經是改好的內容）
@@ -216,6 +272,20 @@ const Db = {
     return load_(table).records.filter(function (r) { return match(r.data); }).map(function (r) { return copy_(r.data); });
   },
 
+  // 某一欄等於某個值的資料。大表（例如作答紀錄）用這個比 where 快：只讀相關的列
+  whereEq: function (table, column, value) {
+    const t = DB_CACHE_[table] || scopedLoad_(table, column, value);
+    return t.records
+      .filter(function (r) { return toCell_(r.data[column]) === toCell_(value); })
+      .map(function (r) { return copy_(r.data); });
+  },
+
+  // 把好幾個寫入包成一次：只排隊一次、最後只 flush 一次（例如自評表＋它的答案一起存）
+  transaction: function (fn) {
+    if (LOCK_DEPTH_ > 0) return fn();
+    return runLocked_([], fn);
+  },
+
   first: function (table, filter) {
     const match = matcher_(filter);
     const found = load_(table).records.find(function (r) { return match(r.data); });
@@ -252,10 +322,11 @@ const Db = {
   },
 
   // 依 id 一次改很多筆，每筆改的內容不同：{ id1: {...}, id2: {...} }
-  updateById: function (table, patchesById) {
+  // opts.scope = { column, value }：只讀相關的列（見 scopedLoad_）
+  updateById: function (table, patchesById, opts) {
     if (Object.keys(patchesById).length === 0) return [];
     return withLock_(table, function () {
-      const t = load_(table, true);
+      const t = loadForWrite_(table, opts);
       const changed = [];
       t.records.forEach(function (r) {
         const patch = patchesById[r.data.id];
@@ -270,11 +341,13 @@ const Db = {
   },
 
   // keyCols：用來判斷「是不是同一筆」的欄位，例如 ['staff_id', 'eval_month']
-  upsert: function (table, keyCols, rows) {
+  // opts.scope = { column, value }：只讀相關的列（見 scopedLoad_），keyCols 要包含這個欄位
+  // opts.guard(現有資料或 null)：寫入前在排隊中檢查最新資料，不符合就丟錯誤中止
+  upsert: function (table, keyCols, rows, opts) {
     const list = Array.isArray(rows) ? rows : [rows];
     if (list.length === 0) return [];
     return withLock_(table, function () {
-      const t = load_(table, true);
+      const t = loadForWrite_(table, opts);
       const now = nowIso_();
       const keyOf = function (obj) { return keyCols.map(function (k) { return toCell_(obj[k]); }).join('\u0001'); };
       const index = {};
@@ -283,6 +356,7 @@ const Db = {
       const result = [];
       const changed = [];
       const toInsert = [];
+      if (opts && opts.guard) list.forEach(function (r) { const f = index[keyOf(r)]; opts.guard(f ? copy_(f.data) : null); });
       list.forEach(function (r) {
         const found = index[keyOf(r)];
         if (found) {
