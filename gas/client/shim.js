@@ -72,6 +72,82 @@
     });
   };
 
+  // ---------- 彈出視窗的備援 ----------
+  // 有些瀏覽器（LINE 內建瀏覽器、部分 App 裡的瀏覽器）會擋掉 confirm()／alert()，
+  // 被擋時 confirm() 會「馬上」回傳 false，結果「確定要登出嗎？」「完成面談」這類按鈕按了都沒反應。
+  // 這裡偵測到被擋（不到 50 毫秒就回來，人不可能那麼快按）時，改在頁面內顯示確認框；
+  // 按「確定」之後，把剛才那一下點擊重新觸發一次，這次 confirm() 直接回傳 true。
+  // 瀏覽器沒擋的話一切照舊，使用原本的彈出視窗。
+  var lastClickTarget = null;
+  var autoConfirm = false;
+  var nativeConfirm = window.confirm.bind(window);
+  var nativeAlert = window.alert.bind(window);
+
+  document.addEventListener('click', function (e) { lastClickTarget = e.target; }, true);
+
+  function showDialog(message, withCancel, onOk) {
+    var overlay = document.createElement('div');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(20,26,22,.45);display:flex;' +
+      'align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface,#fff);color:var(--ink,#23291F);border-radius:14px;max-width:360px;width:100%;' +
+      'padding:22px 20px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:15px;line-height:1.7;';
+    var text = document.createElement('div');
+    text.style.whiteSpace = 'pre-line';
+    text.textContent = String(message);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:18px;';
+    function button(label, primary, handler) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.style.cssText = 'font:inherit;font-size:14px;padding:8px 18px;border-radius:9px;cursor:pointer;' +
+        (primary ? 'border:0;background:var(--accent,#2F5D4F);color:#fff;' : 'border:1px solid var(--line,#e3e0d8);background:transparent;color:inherit;');
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        overlay.remove();
+        if (handler) handler();
+      });
+      return b;
+    }
+    if (withCancel) row.appendChild(button('取消', false, null));
+    var ok = button(withCancel ? '確定' : '知道了', true, onOk);
+    row.appendChild(ok);
+    box.appendChild(text);
+    box.appendChild(row);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    ok.focus();
+  }
+
+  window.confirm = function (message) {
+    if (autoConfirm) {
+      autoConfirm = false;
+      return true;
+    }
+    var started = Date.now();
+    var answer = false;
+    try { answer = nativeConfirm(message); } catch (e) { answer = false; }
+    if (answer || Date.now() - started > 50) return answer;
+    var target = lastClickTarget;
+    showDialog(message, true, function () {
+      if (!target || !target.isConnected) return;
+      autoConfirm = true;
+      target.click();
+      // 保險：重新觸發的那一下如果沒有用到 confirm()，也不要讓下一次確認被自動跳過
+      setTimeout(function () { autoConfirm = false; }, 3000);
+    });
+    return false;
+  };
+
+  window.alert = function (message) {
+    var started = Date.now();
+    try { nativeAlert(message); } catch (e) { /* 被擋就改用頁面內的提示 */ }
+    if (Date.now() - started < 50) showDialog(message, false, null);
+  };
+
   // 攔截站內連結（例如 <a href="self-eval.html">），交給外框換頁
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;

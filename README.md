@@ -852,7 +852,7 @@ Railway 維護辛苦且有金鑰外洩疑慮。
 
 | 階段 | 內容 | 狀態 |
 |---|---|---|
-| 第 1 階段 | 正式站目前在用的：登入、每月自評表、帳號管理、功能開關 | 測試站已實測通過，等正式切換 |
+| 第 1 階段 | 正式站目前在用的：登入、每月自評表、帳號管理、功能開關 | 測試站以總公司、店經理、房務三種身分實測通過；正式站已建立，等切換 |
 | 第 2 階段 | 其他功能（目前在正式站都是關閉的）**要重新開放時才搬**，直接在 Google 版重做 | 未開始 |
 | 第 3 階段 | 評核表整合進系統 | 未開始 |
 
@@ -920,7 +920,8 @@ Railway 維護辛苦且有金鑰外洩疑慮。
 - 網址：https://script.google.com/macros/s/AKfycbxYXexduJSqbqKy6UukOv48T_D8_CWqHcwWB--W1Og-NDTmUatELTgk-iH87EDVL0LQOA/exec
 - 資料庫：office.hq 雲端硬碟裡的試算表「**路得系統（測試）**」（名稱含「測試」，網頁右下角就會顯示「測試站」）
 - 資料是 2026-10-27 從正式站 Supabase 複製的，在測試站怎麼改都不影響正式站
-- 「測試-房務（新系統）」（登入代碼 `T-GAS-HK`、台中館、未設密碼）是實測時建的測試帳號
+- 實測時建了兩個測試帳號（台中館）：「測試-房務（新系統）」`T-GAS-HK`、「測試-店經理（新系統）」`T-GAS-MGR`，
+  密碼由使用者設定；它們只存在測試站，會讓測試站的台中館人數多 2 人
 
 ### 怎麼更新程式（Claude 執行）
 
@@ -955,17 +956,36 @@ clasp -P clasp-staging.json redeploy AKfycbxYXexduJSqbqKy6UukOv48T_D8_CWqHcwWB--
 
 正式切換時兩步都要重做一次，拿最新的資料。
 
-### 正式切換（還沒做）
+### 正式站（已建立，還沒切換）
 
-1. 用 clasp 建「路得系統（正式）」試算表＋專案（`clasp-production.json`），上傳、部署、在選單授權
-2. 挑每月 21～30 號（面談截止後、下期 1 號發布前）重新匯出 Supabase → 匯入正式試算表
-3. 通知同仁新網址；Railway 首頁改成自動導向新網址一段時間
-4. Railway 和 Supabase 保留 1～3 個月不刪，出問題可以切回去
+- 網址：https://script.google.com/macros/s/AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNMy40Dza8D60yu-bFNZV49XOufhZFUdKCa/exec
+- 資料庫：office.hq 雲端硬碟裡的試算表「**路得系統（正式）**」
+- 設定檔：`clasp-production.json`；部署 ID：`AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNMy40Dza8D60yu-bFNZV49XOufhZFUdKCa`
+- 更新正式站（使用者說「發布」之後才做）：
+
+```bash
+clasp -P clasp-production.json push -f
+```
+
+```bash
+clasp -P clasp-production.json redeploy AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNMy40Dza8D60yu-bFNZV49XOufhZFUdKCa -d "這次改了什麼"
+```
+
+### 正式切換步驟
+
+1. ~~用 clasp 建「路得系統（正式）」試算表＋專案、上傳、部署~~（2026-10-27 完成）
+2. 在正式試算表選單按「檢查資料表結構」完成授權
+3. 挑每月 21～30 號（面談截止後、下期 1 號發布前），重跑 `tools/supabase_to_sheets.gs`（先「清除進度」）拿最新資料，
+   再在正式試算表選單「從 Supabase 備份匯入資料」
+4. 用正式網址實測登入與自評表
+5. 通知同仁新網址；Railway 首頁改成自動導向新網址一段時間
+6. Railway 和 Supabase 保留 1～3 個月不刪，出問題可以切回去
 
 ### 已知限制（Google 版）
 
 - 網頁頂端會有 Google 的提示條「這個應用程式是由 Google Apps Script 的使用者建立」，可以按 ✕ 收起，但每次都會出現
 - 網址很長，建議之後用短網址或 Google 協作平台放入口
 - 能開試算表的人等於能看全部資料，分享權限要只給必要的人
-- 店經理面談、房務填寫的畫面還沒在測試站用那兩種身分實測（邏輯已用模擬測試驗證）
-- 在系統內換頁後按瀏覽器「上一頁」，還要用手機實際確認
+- 有些瀏覽器（LINE 內建瀏覽器、Claude 的瀏覽器窗格）會擋 `confirm()`／`alert()` 彈出視窗；
+  轉接器偵測到被擋時改用頁面內的確認框，按「確定」後重新觸發原本那一下點擊（實測：登出、送出自評、完成面談都正常）
+- 寫入比讀取慢：送出自評約 7.5 秒、新增帳號約 5 秒（排隊＋重新讀最新資料＋寫入），之後可以把兩次寫入合併來加速

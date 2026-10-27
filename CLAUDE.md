@@ -12,7 +12,7 @@ README.md 是這個專案的**變更紀錄兼說明書**，每加一個功能就
 
 2026-10-27 起分階段搬到 Google（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
 **搬完之前兩套並存**：正式站還是 Railway 版（下面「三個服務怎麼分工」以下都是在講它），
-Google 版目前只有測試站。
+Google 版的測試站已實測通過、正式站已建立但還沒切換（同仁還在用 Railway）。
 
 - 擁有者帳號：Workspace `office.hq@nordenruder.com`（試算表、Apps Script、clasp 登入都是它）
 - **第 1 階段**只搬正式站在用的：登入、自評表、帳號管理、功能開關。
@@ -22,7 +22,8 @@ Google 版目前只有測試站。
 - 更新流程（clasp 要用 **PowerShell** 跑，先重新載入 PATH）：
   `python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
   `clasp -P clasp-staging.json redeploy <部署ID> -d "說明"`（用 redeploy 網址才不會變）
-- 測試站網址、部署 ID 寫在 README；試算表名稱含「測試」＝測試站（右下角會顯示「測試站」與每次呼叫耗時）
+- 正式站設定檔 `clasp-production.json`，**使用者說「發布」才能 push／redeploy 正式站**
+- 測試站與正式站的網址、部署 ID 寫在 README；試算表名稱含「測試」＝測試站（右下角會顯示「測試站」與每次呼叫耗時）
 - **新增 API**：在 `gas/Router.gs` 的 `routes_()` 加一行；**新增頁面**：加進 `build_gas.py` 的 `PAGES`；
   **功能搬過來**：`gas/Catalog.gs` 標 `ported: true`；**加欄位／表**：改 `gas/Schema.gs`，
   再請使用者在試算表選單按「路得系統 → 檢查資料表結構」

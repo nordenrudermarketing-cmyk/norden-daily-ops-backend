@@ -11,7 +11,7 @@
   @keyframes loadbar { 0% { transform: scaleX(0); } 60% { transform: scaleX(.8); } 100% { transform: scaleX(1); opacity: 0; } }
   #envBadge { position: fixed; right: 8px; bottom: 8px; z-index: 20; background: #b3462c; color: #fff;
               font: 12px/1.6 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; padding: 2px 10px;
-              border-radius: 12px; opacity: .85; pointer-events: none; max-width: 75vw; }
+              border-radius: 12px; opacity: .85; max-width: 75vw; cursor: pointer; user-select: none; }
   #fatal { position: fixed; inset: 0; z-index: 30; display: none; background: #F7F5F0; color: #23291F;
            font: 14px/1.8 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; padding: 60px 24px; text-align: center; }
   #fatal button { margin-top: 12px; padding: 8px 20px; border: 0; border-radius: 8px; background: #2F5D4F; color: #fff; font-size: 14px; }
@@ -50,19 +50,30 @@
     return params;
   }
 
-  // 測試站右下角列出最近幾次呼叫花多久，用來找出哪裡慢（正式站不會顯示）
+  // 測試站右下角顯示最近一次呼叫花多久，點一下展開最近幾次的明細（正式站不會顯示）
   var timings = [];
-  function showTiming(req, res, totalMs) {
+  var lastTotal = null;
+  var timingOpen = false;
+  function renderBadge() {
     var badge = document.getElementById('envBadge');
     if (!badge) return;
+    var head = '測試站' + (lastTotal === null ? '' : ' · ' + (lastTotal / 1000).toFixed(1) + 's');
+    badge.innerHTML = head + (timingOpen && timings.length
+      ? '<div style="font-size:9px;line-height:1.4;text-align:left">' +
+        timings.map(function (t) { return t.replace(/</g, '&lt;'); }).join('<br>') + '</div>'
+      : '');
+  }
+  function showTiming(req, res, totalMs) {
     var s = res.stats || {};
+    lastTotal = totalMs;
     timings.unshift(req.method + ' ' + req.path.replace('/api/', '') + '　總共 ' + (totalMs / 1000).toFixed(1) + 's' +
       '（伺服器 ' + ((res.ms || 0) / 1000).toFixed(1) + 's，讀表 ' + (s.reads || 0) + ' 次 ' + ((s.readMs || 0) / 1000).toFixed(1) + 's' +
       (s.writes ? '，寫入 ' + s.writes + ' 次 ' + (s.writeMs / 1000).toFixed(1) + 's' : '') + '）');
-    timings = timings.slice(0, 3);
-    badge.innerHTML = '測試站<div style="font-size:9px;line-height:1.4;text-align:left">' +
-      timings.map(function (t) { return t.replace(/</g, '&lt;'); }).join('<br>') + '</div>';
+    timings = timings.slice(0, 5);
+    renderBadge();
   }
+  var envBadge = document.getElementById('envBadge');
+  if (envBadge) envBadge.addEventListener('click', function () { timingOpen = !timingOpen; renderBadge(); });
 
   function showFatal(message) {
     document.getElementById('fatalMsg').textContent = '頁面載入失敗：' + message;
