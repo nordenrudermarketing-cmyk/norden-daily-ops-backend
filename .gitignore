@@ -1,0 +1,4 @@
+# tools/build_gas.py 產生的 Apps Script 上傳檔（每次建置都會重新產生，不進版本控制）
+build/
+node_modules/
+.env

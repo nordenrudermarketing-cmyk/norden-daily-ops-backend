@@ -1,5 +1,9 @@
 # 路得行旅 每日營運系統 — 後端 API
 
+> **2026-10 起正在搬到 Google（Apps Script ＋ Google 試算表）**，說明見最後一節
+> 「[搬到 Google Apps Script（第 1 階段）](#搬到-google-apps-script第-1-階段)」。
+> 搬完之前，正式站仍是下面說明的 Railway ＋ Supabase 版本。
+
 目前包含三組核心功能（對應房務打掃 → 客務C班巡房檢查 → 業績獎金試算 這條流程）：
 
 - `POST /api/login` — 同仁用登入代碼登入
@@ -834,3 +838,134 @@ Supabase Branching 是照著 repo 裡 `supabase/migrations/` 的檔案**重建�
 - 教育訓練系統（新人學習地圖、教練制度、四階段考核）還沒開始建，設計方向已在
   對話中討論過，包含 learning_paths / learning_units / staff_learning_progress /
   coach_assignments / assessment_stages / performance_reviews 這幾張表。
+
+## 搬到 Google Apps Script（第 1 階段）
+
+2026-10-27 開始，系統從「GitHub → Railway → Supabase」搬到 Google：
+**Apps Script 當網頁和後端、Google 試算表當資料庫**，全部放在 Workspace 帳號
+`office.hq@nordenruder.com` 底下（不屬於任何個人）。
+
+為什麼搬：更新頻率低、試算表可以直接看資料做圖表、之後要整合評核表（目前是 Google 表單）、
+Railway 維護辛苦且有金鑰外洩疑慮。
+
+### 分階段搬
+
+| 階段 | 內容 | 狀態 |
+|---|---|---|
+| 第 1 階段 | 正式站目前在用的：登入、每月自評表、帳號管理、功能開關 | 測試站已實測通過，等正式切換 |
+| 第 2 階段 | 其他功能（目前在正式站都是關閉的）**要重新開放時才搬**，直接在 Google 版重做 | 未開始 |
+| 第 3 階段 | 評核表整合進系統 | 未開始 |
+
+還沒搬的功能在 Google 版一律當作「關閉」，總公司也打不開（頁面和 API 都還不存在）。
+
+### 架構
+
+```
+同仁手機／電腦瀏覽器
+   │  打開 https://script.google.com/macros/s/…/exec
+   ▼
+外框 Shell.html（Apps Script 網頁）
+   └─ 內框：各功能頁面（public/ 裡原本的網頁，原封不動）
+         │  fetch('/api/...') 被轉接器攔截
+         ▼
+   google.script.run → api()（Router.gs）
+         ▼
+   Google 試算表「路得系統（測試）」／正式版（每張表一個分頁）
+```
+
+**前端幾乎沒改**：`public/` 裡的網頁原本就是用 `fetch('/api/...')` 拿資料、`window.location` 換頁，
+`gas/client/shim.js`（轉接器）把這兩件事轉成 Apps Script 的做法。
+`tools/build_gas.py` 負責把 `public/` 的 html＋js＋css 合併成 Apps Script 吃的單一 .html，
+並把 `window.location.href = …` 改寫成轉接器的換頁函式。
+
+### 檔案
+
+| 位置 | 用途 |
+|---|---|
+| `gas/Main.gs` | 網頁入口：`doGet` 回外框、`getPage` 回各頁 HTML |
+| `gas/Router.gs` | API 單一入口，路由表在 `routes_()`（新增 API 要在這裡加一行） |
+| `gas/Db.gs` | 讀寫試算表的共用函式（`Db.where`、`Db.insert`、`Db.update`、`Db.upsert`…） |
+| `gas/Schema.gs` | 資料表結構（取代 `schema_vNN.sql`） |
+| `gas/Auth.gs` | 登入、密碼、登入憑證 |
+| `gas/Catalog.gs` / `Features.gs` | 功能開關（規則同 Railway 版） |
+| `gas/SelfEval.gs` / `Accounts.gs` / `Staff.gs` | 各功能的後端，邏輯照 `src/routes/` 搬過來 |
+| `gas/Setup.gs` | 試算表上方「路得系統」選單：檢查資料表結構、從備份匯入資料、顯示網址 |
+| `gas/Vendor_bcrypt.gs` | 第三方套件 bcryptjs（驗證舊密碼用） |
+| `gas/Shell.html` | 外框 |
+| `gas/client/shim.js` | 轉接器（建置時塞進每一頁） |
+| `tools/build_gas.py` | 建置：產生 `build/gas/`（不進版本控制） |
+| `tools/supabase_to_sheets.gs` | 一次性工具：把 Supabase 全部資料表複製到試算表 |
+| `clasp-staging.json` | 測試站 Apps Script 專案的設定（clasp 用） |
+
+### 跟 Railway 版的差別
+
+- **修掉「API 沒有身分驗證」**：登入成功後伺服器發一張有簽章的登入憑證（存在瀏覽器的 `staff.token`），
+  之後每次呼叫都帶著，後端只認憑證上的身分，網頁送來的 `actor_id` 一律忽略。
+  簽章密鑰 `TOKEN_SECRET` 存在指令碼屬性，憑證 90 天有效。
+- **加上權限檢查**：同仁只能填自己的自評表；主管只能看自己館別；題目管理、各館進度、功能開關限總公司。
+- **完成面談後同仁不能再改**：Railway 版同仁重新存檔會把已面談的表改回草稿，現在會擋住。
+- **一律用台灣時間**：`appsscript.json` 的時區是 Asia/Taipei；登入查當日班別也改用伺服器的台灣日期
+  （Railway 版用瀏覽器的 UTC 日期，台灣早上 8 點前會查到昨天）。
+- **密碼不在試算表裡**：bcrypt 雜湊存在「指令碼屬性」`PW_<同仁 id>`，只有系統擁有者看得到。
+  格式跟 Railway 版相同，同仁沿用舊密碼。
+- **資料庫是試算表**：每張表一個分頁、第一列是欄位名稱、全部存成純文字（登入代碼 `0012` 不會變成 `12`）。
+  藍色分頁（館別、職務、自評題目）可以直接在試算表上修改；其他分頁由系統寫入，不要手動改。
+- **速度**：每讀一次試算表約 0.3～0.4 秒，所以很少變動的表（館別、職務、同仁、題目、功能開關）
+  會暫存在 CacheService 10 分鐘；有人手動改試算表時 `onEdit` 會清掉暫存。
+  目前每個操作約 1 秒、換頁約 3～4 秒（Google 本身的傳遞延遲占大部分）。
+  測試站右下角會顯示每次呼叫的耗時。
+
+### 測試站
+
+- 網址：https://script.google.com/macros/s/AKfycbxYXexduJSqbqKy6UukOv48T_D8_CWqHcwWB--W1Og-NDTmUatELTgk-iH87EDVL0LQOA/exec
+- 資料庫：office.hq 雲端硬碟裡的試算表「**路得系統（測試）**」（名稱含「測試」，網頁右下角就會顯示「測試站」）
+- 資料是 2026-10-27 從正式站 Supabase 複製的，在測試站怎麼改都不影響正式站
+- 「測試-房務（新系統）」（登入代碼 `T-GAS-HK`、台中館、未設密碼）是實測時建的測試帳號
+
+### 怎麼更新程式（Claude 執行）
+
+```bash
+python tools/build_gas.py
+```
+
+```bash
+clasp -P clasp-staging.json push -f
+```
+
+```bash
+clasp -P clasp-staging.json redeploy AKfycbxYXexduJSqbqKy6UukOv48T_D8_CWqHcwWB--W1Og-NDTmUatELTgk-iH87EDVL0LQOA -d "這次改了什麼"
+```
+
+- `clasp` 要在 PowerShell 執行（Git Bash 找不到它的模組）；clasp 已用 office.hq 帳號登入
+- `redeploy` 指定同一個部署 ID，**網址不會變**；不要用 `deploy`，那會產生新網址
+- **不要在 Apps Script 網頁編輯器直接改程式**，下次上傳會被蓋掉，GitHub 才是正本
+- 要退回上一版：`clasp -P clasp-staging.json redeploy <部署ID> -V <上一個版本號>`（`clasp versions` 可以查版本號）
+
+### 要加新欄位或新表
+
+改 `gas/Schema.gs` → 上傳 → 在試算表選單按「**路得系統 → 檢查資料表結構**」，會自動補上分頁和欄位，不會刪任何東西。
+
+### 資料搬家
+
+1. `tools/supabase_to_sheets.gs` 貼進一份新試算表的 Apps Script，指令碼屬性填 Supabase 網址與
+   **service_role** 金鑰（填成 anon 金鑰會讀到 0 筆），選單「匯入全部資料表」。
+   結果是「路得系統_Supabase備份」試算表（63 張表全部資料，**含密碼雜湊，不要分享**）。用完刪掉金鑰。
+2. 在新系統的試算表選單按「**從 Supabase 備份匯入資料**」，貼上備份試算表的網址，
+   會覆蓋第 1 階段用到的 9 張表，密碼雜湊搬到指令碼屬性。
+
+正式切換時兩步都要重做一次，拿最新的資料。
+
+### 正式切換（還沒做）
+
+1. 用 clasp 建「路得系統（正式）」試算表＋專案（`clasp-production.json`），上傳、部署、在選單授權
+2. 挑每月 21～30 號（面談截止後、下期 1 號發布前）重新匯出 Supabase → 匯入正式試算表
+3. 通知同仁新網址；Railway 首頁改成自動導向新網址一段時間
+4. Railway 和 Supabase 保留 1～3 個月不刪，出問題可以切回去
+
+### 已知限制（Google 版）
+
+- 網頁頂端會有 Google 的提示條「這個應用程式是由 Google Apps Script 的使用者建立」，可以按 ✕ 收起，但每次都會出現
+- 網址很長，建議之後用短網址或 Google 協作平台放入口
+- 能開試算表的人等於能看全部資料，分享權限要只給必要的人
+- 店經理面談、房務填寫的畫面還沒在測試站用那兩種身分實測（邏輯已用模擬測試驗證）
+- 在系統內換頁後按瀏覽器「上一頁」，還要用手機實際確認

@@ -8,7 +8,34 @@ README.md 是這個專案的**變更紀錄兼說明書**，每加一個功能就
 
 ---
 
-## 三個服務怎麼分工
+## ⚠ 正在搬家：Railway＋Supabase → Google Apps Script＋試算表
+
+2026-10-27 起分階段搬到 Google（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
+**搬完之前兩套並存**：正式站還是 Railway 版（下面「三個服務怎麼分工」以下都是在講它），
+Google 版目前只有測試站。
+
+- 擁有者帳號：Workspace `office.hq@nordenruder.com`（試算表、Apps Script、clasp 登入都是它）
+- **第 1 階段**只搬正式站在用的：登入、自評表、帳號管理、功能開關。
+  其他功能「要重新開放時才在 Google 版重做」，沒搬的功能在 Google 版一律關閉、不能打開
+- 程式：`gas/`（後端 .gs、外框 Shell.html、轉接器 client/shim.js）＋ `tools/build_gas.py`（建置）。
+  前端仍是 `public/`，靠轉接器把 `fetch('/api/...')` 和 `window.location` 換頁轉成 Apps Script 的做法
+- 更新流程（clasp 要用 **PowerShell** 跑，先重新載入 PATH）：
+  `python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
+  `clasp -P clasp-staging.json redeploy <部署ID> -d "說明"`（用 redeploy 網址才不會變）
+- 測試站網址、部署 ID 寫在 README；試算表名稱含「測試」＝測試站（右下角會顯示「測試站」與每次呼叫耗時）
+- **新增 API**：在 `gas/Router.gs` 的 `routes_()` 加一行；**新增頁面**：加進 `build_gas.py` 的 `PAGES`；
+  **功能搬過來**：`gas/Catalog.gs` 標 `ported: true`；**加欄位／表**：改 `gas/Schema.gs`，
+  再請使用者在試算表選單按「路得系統 → 檢查資料表結構」
+- 身分一律從登入憑證來（`req.actor`），**不要再信任網頁送來的 actor_id / staff_id**
+- 密碼雜湊在指令碼屬性 `PW_<id>`，不在試算表；**不要在登入框替使用者輸入密碼**，
+  測試站資料是正式站的複本（真實同仁），要登入請使用者自己在瀏覽器窗格輸入
+- 本機可以用 Node 模擬 Apps Script 環境跑主要 API（模擬測試腳本放在 scratchpad，不在 repo）；
+  `node --check` 可以檢查 .gs 語法
+- 不要在 Apps Script 網頁編輯器改程式（會被下次上傳蓋掉）
+
+---
+
+## 三個服務怎麼分工（Railway 版，目前的正式站）
 
 ```
 GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase（PostgreSQL 資料庫）
@@ -21,8 +48,8 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 - 兩個網址都含 `production`（Railway 預設環境名），**測試站前面多 `staging-`**，很容易看錯
 - 先打 `/api/health` 確認 `db_schema` 是 `public` 還是 `staging`，再動手
 
-**這台機器跑不起來這個專案**：沒有 Node.js、沒有 `node_modules`、沒有 `.env`。
-不要假設可以 `npm run dev` 或跑測試——程式碼的第一次執行一定是在 Railway 上，
+**這台機器跑不起來 Railway 版**：2026-10-27 起有裝 Node.js（給 clasp 用），但沒有 `node_modules`、沒有 `.env`。
+不要假設可以 `npm run dev`——Railway 版程式碼的第一次執行一定是在 Railway 上，
 驗證只能 push 到 branch 之後，用瀏覽器開測試站實測。
 
 ---
@@ -105,7 +132,8 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 ## 已知限制（使用者知道，刻意還沒處理）
 
-- **API 沒有身分驗證**：知道 API 的人可以偽造身分呼叫，包含帳號管理和重設密碼
+- **API 沒有身分驗證**（Railway 版）：知道 API 的人可以偽造身分呼叫，包含帳號管理和重設密碼。
+  Google 版已用登入憑證修掉
 - `sidebar.js` 裡原本就有的 `if (API_BASE)` 讓「非台中館隱藏交班表」「房務只有當日小隊長看得到分配」
   「店經理登入提醒 banner」這三個功能從來沒有真正執行過
 - 手機窄畫面時，側邊選單的子選單預設展開會蓋住頁面上方
