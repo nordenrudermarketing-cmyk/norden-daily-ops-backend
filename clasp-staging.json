@@ -1,0 +1,10 @@
+{
+  "scriptId": "1cekpPieCT84ND1F1-NtMO3BXwzIFn-Fz_QEvZEOSokaKyf0npgmMan2K",
+  "rootDir": "build/gas",
+  "parentId": "1KJGZ02MaVZMJe3-GpFBkzOgJEbt4FXJqQZlxqBkp4Y0",
+  "scriptExtensions": [".gs"],
+  "htmlExtensions": [".html"],
+  "jsonExtensions": [".json"],
+  "filePushOrder": [],
+  "skipSubdirectories": true
+}
