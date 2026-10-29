@@ -17,6 +17,7 @@
               box-shadow: 0 8px 24px rgba(0,0,0,.2); padding: 12px 14px;
               font: 13px/1.6 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; }
   #envPanel h4 { margin: 0 0 6px; font-size: 13px; color: #6b6f63; font-weight: 600; }
+  #envPanel h4.group { margin: 12px 0 2px; font-size: 12px; }
   #envPanel button { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 10px; border: 1px solid #e3e0d8;
                      border-radius: 8px; background: #fff; font: inherit; color: inherit; cursor: pointer; }
   #envPanel button.current { border-color: #2F5D4F; background: #eef4f1; font-weight: 600; cursor: default; }
@@ -61,7 +62,7 @@
   }
 
   // 測試站右下角（正式站不會顯示）：顯示目前身分和最近一次呼叫花多久；
-  // 點一下展開面板，可以切換測試身分（見 TestIdentity.gs），也看得到最近幾次呼叫的耗時明細
+  // 點一下展開面板，可以切換成任何一位同仁（見 TestIdentity.gs），也看得到最近幾次呼叫的耗時明細
   var timings = [];
   var lastTotal = null;
   var panelOpen = false;
@@ -94,23 +95,26 @@
     panel.style.display = panelOpen ? 'block' : 'none';
     if (!panelOpen) return;
     panel.innerHTML = '';
-    panel.appendChild(el('h4', '', '切換測試身分'));
+    panel.appendChild(el('h4', '', '切換身分（測試站專用）'));
     if (identityMsg) panel.appendChild(el('div', 'muted', identityMsg));
     if (identities) {
-      var options = [{ id: identities.origin.id, label: identities.origin.name + '（總公司・原本身分）' }]
-        .concat(identities.accounts.map(function (a) {
-          return { id: a.id, label: a.name + '（' + [a.branch_name, a.role_name].filter(Boolean).join('・') + '）' };
-        }));
-      options.forEach(function (o) {
-        var isCurrent = o.id === identities.current_id;
-        var button = el('button', isCurrent ? 'current' : '', (isCurrent ? '✓ ' : '') + o.label);
+      var addOption = function (id, label) {
+        var isCurrent = id === identities.current_id;
+        var button = el('button', isCurrent ? 'current' : '', (isCurrent ? '✓ ' : '') + label);
         button.type = 'button';
-        if (!isCurrent) button.addEventListener('click', function () { switchTo(o.id); });
+        if (!isCurrent) button.addEventListener('click', function () { switchTo(id); });
         panel.appendChild(button);
+      };
+      addOption(identities.origin.id, identities.origin.name + '（總公司・原本身分）');
+      // 依館別分組（API 已經照館別、姓名排好）
+      var lastBranch = null;
+      identities.accounts.forEach(function (a) {
+        if (a.branch_name !== lastBranch) {
+          lastBranch = a.branch_name;
+          panel.appendChild(el('h4', 'group', a.branch_name));
+        }
+        addOption(a.id, a.name + (a.role_name ? '（' + a.role_name + '）' : ''));
       });
-      if (!identities.accounts.length) {
-        panel.appendChild(el('div', 'muted', '測試站還沒有測試帳號（登入代碼 T- 開頭、名字有「測試」）'));
-      }
     }
     if (timings.length) {
       var box = el('div', 'timings', '');
@@ -124,7 +128,7 @@
     var staff = currentStaff();
     identities = null;
     if (!staff || !staff.token) {
-      identityMsg = '先用總公司帳號登入，就可以在這裡切換測試身分';
+      identityMsg = '先用總公司帳號登入，就可以在這裡切換成任何一位同仁';
       renderPanel();
       return;
     }
@@ -133,7 +137,7 @@
     window.__app.api({ method: 'GET', path: '/api/test/identities', query: {}, body: null, token: staff.token })
       .then(function (res) {
         if (res.status === 200) { identities = res.body; identityMsg = ''; }
-        else identityMsg = (res.body && res.body.error) || '無法載入測試帳號';
+        else identityMsg = (res.body && res.body.error) || '無法載入同仁清單';
         renderPanel();
       });
   }

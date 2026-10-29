@@ -79,7 +79,7 @@ function sign_(payload) {
   return base64Url_(Utilities.computeHmacSha256Signature(payload, tokenSecret_()));
 }
 
-// switchedBy：測試站「切換測試身分」時，記下原本是哪位總公司切過來的（見 TestIdentity.gs），平常不用給
+// switchedBy：測試站「切換身分」時，記下原本是哪位總公司切過來的（見 TestIdentity.gs），平常不用給
 function issueToken_(staffId, switchedBy) {
   const data = { sid: staffId, exp: Date.now() + TOKEN_DAYS * 86400000 };
   if (switchedBy) data.by = switchedBy;

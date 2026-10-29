@@ -3,17 +3,22 @@
 //
 //   檢查資料表結構     依 Schema.gs 建立缺少的分頁、補上缺少的欄位（不會刪任何東西）
 //   從 Supabase 備份匯入 把「路得系統_Supabase備份」試算表的資料搬進來（會覆蓋目前資料）
+//   從正式站同步最新資料 只有測試站才有：把「路得系統（正式）」的最新資料複製過來（正式站只讀不改）
 //   顯示系統網址       目前部署的網頁網址
 //
 // 第一次使用任何一個選單項目時，Google 會要求授權，選 office.hq 帳號並允許即可。
 // ============================================================
 
+// 正式站的資料庫（試算表「路得系統（正式）」）。只有測試站的「從正式站同步最新資料」會讀它，不會寫入
+const PRODUCTION_DB_ID = '1BfEGZiD4bAvd_s1LA1vZz50Qj_vedQe8Uv4PUL0_Xsk';
+
 function onOpen() {
-  SpreadsheetApp.getUi()
+  const menu = SpreadsheetApp.getUi()
     .createMenu('路得系統')
     .addItem('檢查資料表結構', 'menuEnsureSchema')
-    .addItem('從 Supabase 備份匯入資料', 'menuImportFromBackup')
-    .addSeparator()
+    .addItem('從 Supabase 備份匯入資料', 'menuImportFromBackup');
+  if (isStaging_()) menu.addItem('從正式站同步最新資料', 'menuSyncFromProduction');
+  menu.addSeparator()
     .addItem('顯示系統網址', 'menuShowUrl')
     .addToUi();
 }
@@ -88,10 +93,34 @@ function menuImportFromBackup() {
   ui.alert('匯入完成', report.join('\n'), ui.ButtonSet.OK);
 }
 
-function importFromBackup_(backupId) {
+// 測試站專用：把正式站的最新資料複製過來，方便用最新、最真實的資料測試或除錯。
+// 測試帳號（只存在測試站）會保留；密碼不複製（正式站的密碼存在正式站的指令碼屬性，這裡讀不到），
+// 測試站已經有密碼的人沿用測試站密碼，新帳號第一次登入時輸入的密碼就是他在測試站的密碼。
+function menuSyncFromProduction() {
+  const ui = SpreadsheetApp.getUi();
+  if (!isStaging_()) {
+    ui.alert('這個功能只能在測試站（試算表名稱含「測試」）使用，避免把正式資料蓋掉。');
+    return;
+  }
+  const answer = ui.alert(
+    '從正式站同步最新資料',
+    '會把「路得系統（正式）」的最新資料複製到這份測試試算表，覆蓋這裡的：\n' + Object.keys(SCHEMA).join('、') + '\n\n' +
+    '・測試帳號（登入代碼 T- 開頭、名字有「測試」）會保留\n' +
+    '・密碼不會複製：測試站已經有密碼的人沿用測試站的密碼；新帳號第一次登入時輸入的密碼，就是他在測試站的密碼\n' +
+    '・正式站的資料只會被讀取，不會被修改\n\n要繼續嗎？',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+  const report = importFromBackup_(PRODUCTION_DB_ID, { keepTestAccounts: true });
+  ui.alert('同步完成', report.join('\n'), ui.ButtonSet.OK);
+}
+
+// opts.keepTestAccounts：staff 表保留這份試算表裡、來源沒有的測試帳號（測試站同步正式站資料時用）
+function importFromBackup_(backupId, opts) {
   ensureSchema_();
-  const backup = SpreadsheetApp.openById(backupId);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (backupId === ss.getId()) throw new Error('來源和目前這份是同一份試算表，不能自己匯入自己');
+  const backup = SpreadsheetApp.openById(backupId);
   const report = [];
 
   Object.keys(SCHEMA).forEach(function (table) {
@@ -124,21 +153,36 @@ function importFromBackup_(backupId) {
       report.push('密碼：' + Object.keys(pw).length + ' 位同仁的密碼已搬到指令碼屬性');
     }
 
-    if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
-    if (rows.length) {
-      const out = rows.map(function (r) {
-        return headers.map(function (h) {
-          const i = colIndex[h];
-          return i === undefined || r[i] === null ? '' : String(r[i]);
-        });
+    const out = rows.map(function (r) {
+      return headers.map(function (h) {
+        const i = colIndex[h];
+        return i === undefined || r[i] === null ? '' : String(r[i]);
       });
+    });
+
+    // 只存在這份試算表的測試帳號（來源沒有）：先記下來，覆蓋後再放回去
+    let kept = 0;
+    if (opts && opts.keepTestAccounts && table === 'staff') {
+      const sourceIds = {};
+      rows.forEach(function (r) { sourceIds[String(r[colIndex.id])] = true; });
+      load_('staff', true).records
+        .filter(function (rec) { return isTestAccount_(rec.data) && !sourceIds[rec.data.id]; })
+        .forEach(function (rec) {
+          out.push(headers.map(function (h) { return toCell_(rec.data[h]); }));
+          kept++;
+        });
+    }
+
+    if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clearContent();
+    if (out.length) {
       ensureRows_(sheet, out.length + 1);
       const range = sheet.getRange(2, 1, out.length, headers.length);
       range.setNumberFormat('@');
       range.setValues(out);
     }
     const dropped = srcHeaders.filter(function (h) { return h && h !== 'password_hash' && headers.indexOf(h) < 0; });
-    report.push(table + '：' + rows.length + ' 筆' + (dropped.length ? '（沒搬的欄位：' + dropped.join('、') + '）' : ''));
+    report.push(table + '：' + rows.length + ' 筆' + (kept ? '（另外保留測試帳號 ' + kept + ' 個）' : '') +
+      (dropped.length ? '（沒搬的欄位：' + dropped.join('、') + '）' : ''));
   });
 
   Object.keys(SCHEMA).forEach(clearTableCache_);
