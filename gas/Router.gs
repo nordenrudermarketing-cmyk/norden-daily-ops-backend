@@ -49,6 +49,10 @@ function routes_() {
     { method: 'GET', path: '/api/self-eval/submission-detail', handler: apiSelfEvalSubmissionDetail_ },
     { method: 'POST', path: '/api/self-eval/manager-review', handler: apiSelfEvalManagerReview_ },
     { method: 'GET', path: '/api/self-eval/hq-progress', handler: apiSelfEvalHqProgress_ },
+
+    // 測試站專用：切換測試身分（正式站回 404），見 TestIdentity.gs
+    { method: 'GET', path: '/api/test/identities', handler: apiTestIdentities_ },
+    { method: 'POST', path: '/api/test/switch', handler: apiTestSwitch_ },
   ];
 }
 
