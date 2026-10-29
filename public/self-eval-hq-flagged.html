@@ -51,6 +51,8 @@
   .staff-table th, .staff-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .staff-table th { font-size: 12px; font-weight: 500; color: var(--ink-soft); background: #faf9f6; }
   .staff-table tr:last-child td { border-bottom: none; }
+  /* 第一欄有主管名字，限制寬度讓它換行，後面兩欄才不會被擠出畫面 */
+  .staff-table td:first-child { width: 34%; }
   .sub { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
   .sub.warn { color: var(--danger); }
 </style>
