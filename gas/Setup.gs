@@ -4,6 +4,7 @@
 //   檢查資料表結構     依 Schema.gs 建立缺少的分頁、補上缺少的欄位（不會刪任何東西）
 //   從 Supabase 備份匯入 把「路得系統_Supabase備份」試算表的資料搬進來（會覆蓋目前資料）
 //   從正式站同步最新資料 只有測試站才有：把「路得系統（正式）」的最新資料複製過來（正式站只讀不改）
+//   依館別建立初始管轄 管轄功能上線時用一次：每位店經理管轄自己館別的所有同仁（管轄表是空的才會執行）
 //   顯示系統網址       目前部署的網頁網址
 //
 // 第一次使用任何一個選單項目時，Google 會要求授權，選 office.hq 帳號並允許即可。
@@ -18,6 +19,7 @@ function onOpen() {
     .addItem('檢查資料表結構', 'menuEnsureSchema')
     .addItem('從 Supabase 備份匯入資料', 'menuImportFromBackup');
   if (isStaging_()) menu.addItem('從正式站同步最新資料', 'menuSyncFromProduction');
+  menu.addItem('依館別建立初始管轄', 'menuSeedSupervisions');
   menu.addSeparator()
     .addItem('顯示系統網址', 'menuShowUrl')
     .addToUi();
@@ -188,6 +190,23 @@ function importFromBackup_(backupId, opts) {
   Object.keys(SCHEMA).forEach(clearTableCache_);
   CacheService.getScriptCache().remove(FEATURE_CACHE_KEY);
   return report;
+}
+
+// 管轄功能上線時用一次（見 Supervision.gs 的 seedSupervisionsByBranch_）
+function menuSeedSupervisions() {
+  const ui = SpreadsheetApp.getUi();
+  ensureSchema_();
+  const answer = ui.alert(
+    '依館別建立初始管轄',
+    '會讓每位在職的店經理管轄自己館別的所有在職同仁（跟管轄功能上線前的規則一樣），之後再由總公司在帳號管理調整。\n\n' +
+    '只有在「supervisions」分頁還是空的時候才會執行，不會蓋掉已經設定好的管轄。要繼續嗎？',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+  const result = seedSupervisionsByBranch_();
+  ui.alert('依館別建立初始管轄', result.skipped
+    ? '「supervisions」分頁已經有資料，沒有做任何變更。'
+    : '已建立 ' + result.created + ' 筆管轄關係。', ui.ButtonSet.OK);
 }
 
 function menuShowUrl() {

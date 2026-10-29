@@ -4,9 +4,10 @@
 // 差別：「目前登入的是誰」改由登入憑證決定（Auth.gs），網頁送來的 actor_id 一律忽略，
 //       所以沒辦法再偽造身分。
 //
-// 權限規則：
-//   總公司：所有館別、所有職務的帳號都能管理
-//   店經理：只能管理「自己館別」的「房務、客務」帳號；自己的帳號只能改密碼
+// 權限規則（2026-10 起照「管轄」，見 Supervision.gs）：
+//   總公司：所有館別、所有職務的帳號都能管理，也只有總公司能設定「管轄人員」
+//   店經理：只能管理「自己管轄」的「房務、客務」帳號；自己的帳號只能改密碼。
+//           新增帳號時館別可以選「自己館別＋管轄人員所在館別」，新帳號自動列入建立者的管轄
 //   其他人：不能使用
 //
 // 刪除：一律先「停用」（不能登入，但所有紀錄保留，之後可以再啟用）。
@@ -38,18 +39,38 @@ function withRelations_(s) {
   return Object.assign(s, { roles: roleById_(s.role_id), branches: branchById_(s.branch_id) });
 }
 
-function canManage_(actor, target) {
+// mySupervisees：店經理管轄的同仁 { id: true }（列表時先算好傳進來；沒給就現場查）
+function canManage_(actor, target, mySupervisees) {
   if (actor.level === 'hq') return true;
-  return actor.level === 'manager' &&
-    target.branch_id === actor.branch_id &&
-    GENERAL_CATEGORIES.indexOf(target.roles && target.roles.category) >= 0;
+  if (actor.level !== 'manager' || GENERAL_CATEGORIES.indexOf(target.roles && target.roles.category) < 0) return false;
+  return mySupervisees ? !!mySupervisees[target.id] : isSupervisorOf_(actor, target.id);
+}
+
+function idSet_(ids) {
+  const set = {};
+  ids.forEach(function (id) { set[id] = true; });
+  return set;
+}
+
+// 店經理新增／修改帳號時可以選的館別：自己的館別＋管轄人員所在的館別
+function managerBranchIds_(actor) {
+  const ids = idSet_([actor.branch_id]);
+  superviseesOf_(actor.id).forEach(function (id) {
+    const s = Db.first('staff', { id: id });
+    if (s && s.branch_id) ids[s.branch_id] = true;
+  });
+  return ids;
 }
 
 // 回傳給網頁的樣子：不含密碼，並附上「這個主管對這個帳號能做什麼」
-function toPublicAccount_(actor, s, hasPassword) {
-  const manageable = canManage_(actor, s);
+// ctx：{ mySupervisees, supMap, countMap }，列表時先算好；單筆回應時沒給就現場算
+function toPublicAccount_(actor, s, hasPassword, ctx) {
+  ctx = ctx || {};
+  const manageable = canManage_(actor, s, ctx.mySupervisees);
   const isSelf = s.id === actor.id;
   const isActive = s.is_active !== false;
+  const supervisorIds = ctx.supMap ? (ctx.supMap[s.id] || []) : supervisorsOf_(s.id);
+  const canSupervise = canBeSupervisor_(s);
   return {
     id: s.id,
     name: s.name,
@@ -67,6 +88,11 @@ function toPublicAccount_(actor, s, hasPassword) {
     can_set_password: manageable || isSelf,
     can_deactivate: manageable && !isSelf,
     can_hard_delete: manageable && !isSelf && !isActive && !hasPassword,
+    // 管轄：他的主管是誰；他能不能當主管、管轄幾個人（設定管轄只有總公司能做）
+    supervisor_names: staffNames_(supervisorIds),
+    can_supervise: canSupervise,
+    supervisee_count: canSupervise ? (ctx.countMap ? (ctx.countMap[s.id] || 0) : superviseesOf_(s.id).length) : 0,
+    can_set_supervision: actor.level === 'hq' && canSupervise,
   };
 }
 
@@ -87,14 +113,16 @@ function loginCodeTaken_(code, exceptId) {
   return Db.where('staff', { login_code: code }).some(function (s) { return s.id !== exceptId; });
 }
 
-// 決定新增／修改時實際要寫入的館別與職務（店經理的館別一律強制為自己的館別）
+// 決定新增／修改時實際要寫入的館別與職務（店經理只能選自己館別或管轄人員所在的館別，沒選就用自己館別）
 function resolveScope_(actor, branchId, roleId) {
   const role = roleId ? Db.first('roles', { id: roleId }) : null;
   if (!role) throw httpError_(400, '請選擇職務');
 
   if (actor.level === 'manager') {
     if (GENERAL_CATEGORIES.indexOf(role.category) < 0) throw httpError_(400, '店經理只能設定房務或客務職務的帳號');
-    return { branch_id: actor.branch_id, role: role };
+    if (!branchId) return { branch_id: actor.branch_id, role: role };
+    if (!managerBranchIds_(actor)[branchId]) throw httpError_(400, '只能選自己館別或管轄人員所在的館別');
+    return { branch_id: branchId, role: role };
   }
   const branch = branchId ? Db.first('branches', { id: branchId }) : null;
   if (!branch) throw httpError_(400, '請選擇館別');
@@ -118,10 +146,12 @@ function apiAccountsMeta_(req) {
   const isHQ = actor.level === 'hq';
   const branches = Db.all('branches').sort(byName_).map(function (b) { return { id: b.id, name: b.name, code: b.code }; });
   const roles = Db.all('roles').sort(byName_).map(function (r) { return { id: r.id, name: r.name, category: r.category }; });
+  const allowed = isHQ ? null : managerBranchIds_(actor);
   return {
     actor: { id: actor.id, name: actor.name, level: actor.level, branch_id: actor.branch_id },
-    branches: isHQ ? branches : branches.filter(function (b) { return b.id === actor.branch_id; }),
+    branches: isHQ ? branches : branches.filter(function (b) { return allowed[b.id]; }),
     roles: isHQ ? roles : roles.filter(function (r) { return GENERAL_CATEGORIES.indexOf(r.category) >= 0; }),
+    supervisor_roles: SUPERVISOR_ROLE_NAMES,
   };
 }
 
@@ -129,11 +159,21 @@ function apiAccountsMeta_(req) {
 function apiAccountsList_(req) {
   const actor = accountActor_(req);
   const flags = passwordFlags_();
-  return Db.where('staff', function (s) { return actor.level !== 'manager' || s.branch_id === actor.branch_id; })
+  const supMap = supervisorMap_();
+  // 「管轄幾人」只算在職的同仁
+  const activeIds = idSet_(Db.where('staff', { is_active: true }).map(function (s) { return s.id; }));
+  const countMap = {};
+  Object.keys(supMap).forEach(function (staffId) {
+    if (!activeIds[staffId]) return;
+    supMap[staffId].forEach(function (supId) { countMap[supId] = (countMap[supId] || 0) + 1; });
+  });
+  const mySupervisees = actor.level === 'hq' ? null : idSet_(superviseesOf_(actor.id));
+  const ctx = { mySupervisees: mySupervisees, supMap: supMap, countMap: countMap };
+  return Db.all('staff')
     .map(withRelations_)
     .sort(byName_)
-    .filter(function (s) { return canManage_(actor, s) || s.id === actor.id; })
-    .map(function (s) { return toPublicAccount_(actor, s, !!flags[s.id]); });
+    .filter(function (s) { return canManage_(actor, s, mySupervisees) || s.id === actor.id; })
+    .map(function (s) { return toPublicAccount_(actor, s, !!flags[s.id], ctx); });
 }
 
 // POST /api/accounts  { name, login_code, branch_id, role_id, is_part_time, password? }
@@ -159,6 +199,10 @@ function apiAccountsCreate_(req) {
   })[0];
   // 沒給密碼就留空：同仁第一次登入時輸入的密碼會直接變成他的密碼
   if (password.trim()) setPasswordHash_(created.id, hashPassword_(password));
+  // 店經理建立的帳號自動列入他的管轄（否則建好之後他就看不到、也管不到了）
+  if (actor.level === 'manager') {
+    Db.insert('supervisions', { supervisor_id: actor.id, staff_id: created.id, created_by: actor.id });
+  }
   return accountResponse_(actor, created.id);
 }
 
@@ -250,5 +294,7 @@ function apiAccountsDelete_(req) {
   });
 
   Db.remove('staff', { id: target.id });
+  // 他的管轄關係（當主管的、被管轄的）一起刪掉
+  Db.remove('supervisions', function (r) { return r.supervisor_id === target.id || r.staff_id === target.id; });
   return { ok: true, deleted: target.id };
 }

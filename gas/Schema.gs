@@ -46,12 +46,19 @@ const SCHEMA = {
       sort_order: 'number', is_active: 'bool',
     },
   },
+  // reviewed_by：完成面談的主管；last_edited_by：最後存面談草稿的主管（2026-10 管轄功能加入）
   self_eval_submissions: {
     columns: {
       id: 'text', staff_id: 'text', branch_id: 'text', eval_month: 'text', status: 'text',
       due_date: 'text', submitted_at: 'text', manager_interview_notes: 'text', interview_date: 'text',
       manager_signed_at: 'text', created_at: 'text', updated_at: 'text',
+      reviewed_by: 'text', last_edited_by: 'text',
     },
+  },
+  // 管轄：哪位主管負責哪位同仁（一位同仁可以有多位主管），只有總公司能設定，見 Supervision.gs
+  supervisions: {
+    cache: true,
+    columns: { id: 'text', supervisor_id: 'text', staff_id: 'text', created_at: 'text', created_by: 'text' },
   },
   self_eval_answers: {
     columns: {

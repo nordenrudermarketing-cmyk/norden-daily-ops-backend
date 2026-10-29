@@ -118,6 +118,7 @@
       { label: '各館管理', icon: 'branch', items: [
         { label: '自評題目管理', url: 'self-eval-templates.html' },
         { label: '各館自評進度', url: 'self-eval-hq-flagged.html' },
+        { label: '審閱同仁自評表', url: 'self-eval-review.html' },
         { label: '各館週報', url: 'weekly-report.html' },
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
       ] },

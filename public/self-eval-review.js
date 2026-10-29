@@ -33,11 +33,14 @@ async function fetchSchedule(evalMonth) {
 
 monthInput.addEventListener('change', loadList);
 $('backToList').addEventListener('click', loadList);
+$('showAll').addEventListener('change', loadList);
 
 if (staff) init();
 
 async function init() {
   $('staffLine').textContent = staff.name;
+  // 總公司可以切換「顯示全部同仁」，替不在自己管轄內的同仁面談（備援）
+  if (staff.roles?.name === '總公司') $('showAllWrap').style.display = '';
   try {
     schedule = await fetchSchedule();
     monthInput.value = schedule.eval_month.slice(0, 7);
@@ -69,11 +72,13 @@ async function loadList() {
   listEl.innerHTML = '<p class="empty-state">載入中…</p>';
   $('scheduleBanner').innerHTML = '';
 
+  // 我管轄的同仁（總公司勾「顯示全部同仁」時是全部在職同仁），已經依館別、姓名排好
+  const scope = $('showAll').checked ? 'all' : 'mine';
   let data;
   try {
     const [sched, res] = await Promise.all([
       fetchSchedule(evalMonth),
-      fetch(`${API}/api/self-eval/branch-overview?branch_id=${staff.branch_id}&eval_month=${evalMonth}`),
+      fetch(`${API}/api/self-eval/my-reviewees?eval_month=${evalMonth}&scope=${scope}`),
     ]);
     schedule = sched;
     data = await res.json();
@@ -97,20 +102,44 @@ async function loadList() {
     </div>`;
 
   listEl.innerHTML = '';
+  if (total === 0) {
+    listEl.innerHTML = scope === 'all'
+      ? '<p class="empty-state">目前沒有在職同仁</p>'
+      : '<p class="empty-state">目前沒有指定給你管轄的同仁，需要的話請總公司在「帳號管理」設定</p>';
+    return;
+  }
+
+  let lastBranch = null;
   data.forEach((s) => {
+    if (s.branch_name !== lastBranch) {
+      lastBranch = s.branch_name;
+      const title = document.createElement('p');
+      title.className = 'branch-title';
+      title.textContent = s.branch_name;
+      listEl.appendChild(title);
+    }
+
     const status = s.submission?.status || 'none';
     const canOpen = status === 'submitted' || status === 'reviewed';
     const late = lateLabel(status);
     const submittedOn = canOpen && s.submission.submitted_at
       ? `・${new Date(s.submission.submitted_at).toLocaleDateString('zh-TW')} 送出`
       : '';
+    // 一位同仁可能有多位主管：列出其他主管，並標出是誰完成面談、誰最後存了面談進度
+    const others = (s.supervisor_names || []).filter((n) => n !== staff.name);
+    const extra = [];
+    if (status === 'reviewed' && s.submission.reviewed_by_name) extra.push(`由 ${s.submission.reviewed_by_name} 完成面談`);
+    else if (status === 'submitted' && s.submission.last_edited_by_name) extra.push(`${s.submission.last_edited_by_name} 已開始面談`);
+    if (others.length) extra.push(`其他主管：${others.join('、')}`);
+    if (!s.supervisor_names?.length) extra.push('未指定主管');
 
     const row = document.createElement('div');
     row.className = 'staff-row';
     row.innerHTML = `
       <div>
-        <p style="margin:0;font-size:14px;font-weight:500;">${escapeHtml(s.name)}</p>
-        <p style="margin:2px 0 0;font-size:12px;color:var(--ink-soft);">${escapeHtml(s.role_name || '')}${submittedOn}</p>
+        <p style="margin:0;font-size:14px;font-weight:500;">${escapeHtml(s.name)}${scope === 'all' && !s.is_mine ? '<span class="tag-other">非我管轄</span>' : ''}</p>
+        <p class="meta-line">${escapeHtml(s.role_name || '')}${submittedOn}</p>
+        ${extra.length ? `<p class="meta-line">${escapeHtml(extra.join('・'))}</p>` : ''}
       </div>
       <div class="row-right">
         ${late ? `<span class="late-tag">${late}</span>` : ''}
@@ -147,7 +176,8 @@ async function openDetail(submissionId, staffName) {
 
 function renderDetail(data) {
   const { submission, answers } = data;
-  const isReviewed = submission.status === 'reviewed';
+  // 已完成面談、或我已經不是他的主管（只是以前面談過、來看歷史紀錄）時只能看不能改
+  const isReviewed = submission.status === 'reviewed' || submission.can_review === false;
   const detailView = $('detailView');
   detailView.innerHTML = '';
 
@@ -157,9 +187,15 @@ function renderDetail(data) {
 
   const info = document.createElement('div');
   info.className = `schedule-banner${interviewOverdue ? ' overdue' : ''}`;
-  info.innerHTML = isReviewed
-    ? `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・已完成面談`
-    : `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・請於 <strong>${schedule?.interview_due_date || '20 號'}</strong> 前完成面談${interviewOverdue ? '（已超過期限）' : ''}`;
+  const reviewer = submission.reviewed_by_name ? `由 ${escapeHtml(submission.reviewed_by_name)} ` : '';
+  const supervisors = submission.supervisor_names?.length ? `<br>主管：${escapeHtml(submission.supervisor_names.join('、'))}` : '';
+  const lastEdit = !isReviewed && submission.last_edited_by_name
+    ? `<br>面談進度上次由 ${escapeHtml(submission.last_edited_by_name)} 儲存，多位主管共用同一份面談紀錄`
+    : '';
+  info.innerHTML = (submission.status === 'reviewed'
+    ? `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・${reviewer}已完成面談`
+    : `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・請於 <strong>${schedule?.interview_due_date || '20 號'}</strong> 前完成面談${interviewOverdue ? '（已超過期限）' : ''}`) +
+    supervisors + lastEdit;
   detailView.appendChild(info);
 
   let lastCategory = null;
@@ -204,7 +240,7 @@ function renderDetail(data) {
       <div class="q-card">
         <p style="font-weight:500;margin:0 0 6px;">主管面談及改善追蹤紀錄</p>
         <p style="font-size:13px;white-space:pre-wrap;">${escapeHtml(submission.manager_interview_notes || '（無）')}</p>
-        <p style="font-size:12px;color:var(--ink-soft);margin-top:8px;">面談日期：${escapeHtml(submission.interview_date || '—')}・已完成面談</p>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:8px;">面談日期：${escapeHtml(submission.interview_date || '—')}・${submission.status === 'reviewed' ? `${reviewer}已完成面談${submission.reviewed_by_name ? '' : '（管轄功能上線前完成，沒有記錄面談主管）'}` : '尚未完成面談'}</p>
       </div>`;
   } else {
     const defaultDate = submission.interview_date || schedule?.today || '';

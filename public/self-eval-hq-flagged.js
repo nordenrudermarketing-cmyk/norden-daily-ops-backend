@@ -119,6 +119,7 @@ function showOverview() {
         <p class="headcount">${empty ? '目前沒有同仁' : `應填 ${b.total} 人`}</p>
         ${stageRow('同仁填寫', b.fill_done, b.total, b.fill_overdue)}
         ${stageRow('主管面談', b.interview_done, b.total, b.interview_overdue)}
+        ${b.no_supervisor > 0 ? `<p class="card-foot" style="color:var(--danger);">未指定主管 ${b.no_supervisor} 人（請到帳號管理設定）</p>` : ''}
         ${empty ? '' : '<p class="card-foot">查看每位同仁 →</p>'}
       </button>`;
   }).join('');
@@ -157,7 +158,8 @@ function fillCell(s) {
 function interviewCell(s) {
   if (s.interview_status === 'done') {
     return `<span class="pill done">已完成面談</span>` +
-      `<span class="sub ${s.reviewed_late ? 'warn' : ''}">面談日期 ${escapeHtml(s.interview_date || s.reviewed_on || '—')}${s.reviewed_late ? '・超過期限才完成' : ''}</span>`;
+      `<span class="sub ${s.reviewed_late ? 'warn' : ''}">面談日期 ${escapeHtml(s.interview_date || s.reviewed_on || '—')}${s.reviewed_late ? '・超過期限才完成' : ''}</span>` +
+      `${s.reviewed_by_name ? `<span class="sub">面談主管 ${escapeHtml(s.reviewed_by_name)}</span>` : ''}`;
   }
   if (s.fill_status !== 'done') {
     return `<span class="pill todo">等同仁送出</span>` +
@@ -191,7 +193,11 @@ function renderDetail() {
 
   $('staffBody').innerHTML = rows.map((s) => `
     <tr>
-      <td>${escapeHtml(s.name)}<span class="sub">${escapeHtml(s.role_name || '')}${s.inactive ? '・已停用' : ''}</span></td>
+      <td>${escapeHtml(s.name)}<span class="sub">${escapeHtml(s.role_name || '')}${s.inactive ? '・已停用' : ''}</span>${
+        s.no_supervisor
+          ? '<span class="sub warn">未指定主管</span>'
+          : s.supervisor_names?.length ? `<span class="sub">主管：${escapeHtml(s.supervisor_names.join('、'))}</span>` : ''
+      }</td>
       <td>${fillCell(s)}</td>
       <td>${interviewCell(s)}</td>
     </tr>`).join('');

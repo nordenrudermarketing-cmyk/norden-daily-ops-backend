@@ -40,7 +40,8 @@ async function load() {
   const statusBanner = document.getElementById('statusBanner');
   if (status === 'reviewed') {
     const interviewDate = formData.submission.interview_date ? `（面談日期 ${formData.submission.interview_date}）` : '';
-    statusBanner.innerHTML = `<div class="due-banner">主管已完成面談${escapeHtml(interviewDate)}，以下內容僅供查看</div>`;
+    const reviewer = formData.submission.reviewed_by_name || '主管';
+    statusBanner.innerHTML = `<div class="due-banner">${escapeHtml(reviewer)}已完成面談${escapeHtml(interviewDate)}，以下內容僅供查看</div>`;
   } else if (status === 'submitted') {
     statusBanner.innerHTML = '<div class="due-banner">已送出，等待主管面談，以下內容僅供查看</div>';
   } else {

@@ -1,6 +1,7 @@
 // 帳號管理（檔名沿用 manage-passwords，原本連到「密碼管理」的連結才不會壞掉）
-// 總公司：所有館別、所有職務；店經理：自己館別的房務、客務，自己的帳號只能改密碼
-// 權限由後端 /api/accounts 依資料庫裡的真實職務判斷，這裡只負責畫面
+// 總公司：所有館別、所有職務，並且設定每位主管的「管轄人員」；
+// 店經理：自己管轄的房務、客務，自己的帳號只能改密碼
+// 權限由後端 /api/accounts 依資料庫裡的真實職務與管轄判斷，這裡只負責畫面
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
 const API = window.APP_CONFIG?.API_BASE_URL ?? '';
@@ -14,6 +15,8 @@ let meta = { branches: [], roles: [] };
 let accounts = [];
 let editingId = null; // null 代表新增
 let pwTargetId = null;
+let supTarget = null;   // 正在設定管轄人員的主管
+let supSelected = null; // Set：勾選中的同仁 id
 
 if (!staff) {
   window.location.href = 'index.html';
@@ -62,6 +65,8 @@ async function init() {
   $('pwShow').addEventListener('change', () => {
     $('pwInput').type = $('pwShow').checked ? 'text' : 'password';
   });
+  $('supForm').addEventListener('submit', saveSupervision);
+  $('supSearch').addEventListener('input', renderSupList);
 
   try {
     meta = await api('/meta');
@@ -71,13 +76,15 @@ async function init() {
   }
 
   if (isHQ) {
-    $('scopeLine').textContent = '你可以管理：全部館別、所有職務的帳號';
+    $('scopeLine').textContent = `你可以管理：全部館別、所有職務的帳號；${meta.supervisor_roles?.join('、') || '主管'}的帳號可以設定「管轄人員」`;
+  } else {
+    $('scopeLine').textContent = '你可以管理：你管轄的房務、客務帳號（自己的帳號可以改密碼）。管轄人員由總公司設定';
+  }
+  // 館別篩選：總公司看全部館別；店經理的管轄人員跨好幾個館時也顯示
+  if (isHQ || meta.branches.length > 1) {
     $('branchFilter').style.display = '';
     $('branchFilter').innerHTML = '<option value="">全部館別</option>' +
       meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
-  } else {
-    const branchName = meta.branches[0]?.name || '自己館別';
-    $('scopeLine').textContent = `你可以管理：${branchName}的房務、客務帳號（自己的帳號可以改密碼）`;
   }
 
   await load();
@@ -122,8 +129,10 @@ function render() {
           登入代碼：${escapeHtml(a.login_code || '—')}　${escapeHtml(a.branch_name || '')}・${escapeHtml(a.role_name || '')}
           <span class="badge ${a.has_password ? 'ok' : 'warn'}">${a.has_password ? '已設定密碼' : '尚未設定密碼'}</span>
         </p>
+        ${supervisionLine(a)}
       </div>
       <div class="acct-actions">
+        ${a.can_set_supervision && a.is_active ? '<button data-act="supervise">管轄人員</button>' : ''}
         ${a.can_edit ? '<button data-act="edit">編輯</button>' : ''}
         ${a.can_set_password ? '<button data-act="password">設定密碼</button>' : ''}
         ${a.can_edit && a.has_password && !a.is_self ? '<button data-act="reset">清空密碼</button>' : ''}
@@ -141,7 +150,18 @@ function render() {
   });
 }
 
+// 「主管：A、B」或「未指定主管」；主管級帳號再加「管轄 N 人」
+function supervisionLine(a) {
+  if (!a.is_active) return '';
+  const parts = [];
+  if (a.supervisor_names?.length) parts.push(`主管：${escapeHtml(a.supervisor_names.join('、'))}`);
+  else parts.push('<span class="badge warn" style="margin-left:0;">未指定主管</span>');
+  if (a.can_supervise) parts.push(`管轄 ${a.supervisee_count} 人`);
+  return `<p class="acct-sup">${parts.join('　')}</p>`;
+}
+
 const ACTIONS = {
+  supervise: (a) => openSupervision(a),
   edit: (a) => openEdit(a),
   password: (a) => openPassword(a),
   reset: (a) => {
@@ -180,8 +200,8 @@ function openEdit(account) {
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
 
-  // 館別：總公司可以選；店經理固定是自己館別（後端也會強制）
-  $('fBranchField').style.display = isHQ ? '' : 'none';
+  // 館別：總公司可以選全部；店經理可以選自己館別和管轄人員所在的館別（只有一個時就不顯示，後端也會檢查）
+  $('fBranchField').style.display = isHQ || meta.branches.length > 1 ? '' : 'none';
   $('fBranch').innerHTML = meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
   $('fBranch').value = account?.branch_id ||
     $('branchFilter').value ||
@@ -224,6 +244,102 @@ async function saveEdit(event) {
     await load();
   } catch (err) {
     $('editError').textContent = err.message;
+  }
+}
+
+// ---------- 管轄人員（只有總公司） ----------
+
+async function openSupervision(account) {
+  supTarget = account;
+  supSelected = null;
+  $('supTitle').textContent = `「${account.name}」的管轄人員`;
+  $('supSearch').value = '';
+  $('supError').textContent = '';
+  $('supList').innerHTML = '<p class="empty-state">載入中…</p>';
+  $('supCount').textContent = '';
+  $('supDialog').showModal();
+
+  try {
+    const res = await fetch(`${API}/api/supervisions/${encodeURIComponent(account.id)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '載入失敗');
+    // 停用中的同仁也保留在名單裡（畫面上不列出），儲存時才不會把他們拿掉
+    supSelected = new Set(data.staff_ids || []);
+    renderSupList();
+  } catch (err) {
+    $('supList').innerHTML = '';
+    $('supError').textContent = err.message;
+  }
+}
+
+// 可以選的人：所有在職同仁（不含主管自己），依館別分組；每組可以「全選本館」
+function renderSupList() {
+  if (!supSelected) return;
+  const keyword = $('supSearch').value.trim().toLowerCase();
+  const people = accounts.filter((a) => a.is_active && a.id !== supTarget.id && (!keyword ||
+    a.name.toLowerCase().includes(keyword) || (a.login_code || '').toLowerCase().includes(keyword)));
+
+  const groups = new Map();
+  people.forEach((a) => {
+    const key = a.branch_name || '（沒有館別）';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
+  });
+
+  if (groups.size === 0) {
+    $('supList').innerHTML = '<p class="empty-state">沒有符合條件的同仁</p>';
+  } else {
+    $('supList').innerHTML = [...groups.entries()]
+      .sort((x, y) => x[0].localeCompare(y[0], 'zh-Hant'))
+      .map(([branch, list], i) => {
+        const allOn = list.every((a) => supSelected.has(a.id));
+        return `
+          <label class="sup-group-title"><input type="checkbox" data-group="${i}" ${allOn ? 'checked' : ''}> ${escapeHtml(branch)}（全選本館 ${list.length} 人）</label>
+          ${list.map((a) => `
+            <label class="sup-item"><input type="checkbox" data-id="${a.id}" data-in-group="${i}" ${supSelected.has(a.id) ? 'checked' : ''}>
+              ${escapeHtml(a.name)} <small>${escapeHtml(a.role_name || '')}・${escapeHtml(a.login_code || '')}</small></label>`).join('')}`;
+      }).join('');
+  }
+
+  $('supList').querySelectorAll('input[data-id]').forEach((box) => {
+    box.addEventListener('change', () => {
+      if (box.checked) supSelected.add(box.dataset.id);
+      else supSelected.delete(box.dataset.id);
+      renderSupList();
+    });
+  });
+  $('supList').querySelectorAll('input[data-group]').forEach((box) => {
+    box.addEventListener('change', () => {
+      $('supList').querySelectorAll(`input[data-in-group="${box.dataset.group}"]`).forEach((item) => {
+        if (box.checked) supSelected.add(item.dataset.id);
+        else supSelected.delete(item.dataset.id);
+      });
+      renderSupList();
+    });
+  });
+
+  const activeIds = new Set(accounts.filter((a) => a.is_active).map((a) => a.id));
+  const count = [...supSelected].filter((id) => activeIds.has(id)).length;
+  $('supCount').textContent = `已選 ${count} 位在職同仁`;
+}
+
+async function saveSupervision(event) {
+  event.preventDefault();
+  if (!supSelected) return;
+  $('supError').textContent = '儲存中…';
+  try {
+    const res = await fetch(`${API}/api/supervisions/${encodeURIComponent(supTarget.id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_ids: [...supSelected] }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || '儲存失敗');
+    $('supDialog').close();
+    setStatus(`已更新「${supTarget.name}」的管轄人員（新增 ${data.added} 人、移除 ${data.removed} 人）`);
+    await load();
+  } catch (err) {
+    $('supError').textContent = err.message;
   }
 }
 

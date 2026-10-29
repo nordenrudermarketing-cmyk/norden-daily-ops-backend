@@ -38,6 +38,10 @@ function routes_() {
     { method: 'POST', path: '/api/accounts/:id/activate', handler: apiAccountsActivate_ },
     { method: 'DELETE', path: '/api/accounts/:id', handler: apiAccountsDelete_ },
 
+    // 管轄（限總公司），見 Supervision.gs
+    { method: 'GET', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsGet_ },
+    { method: 'PUT', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsPut_ },
+
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
     { method: 'GET', path: '/api/self-eval/templates', handler: apiSelfEvalTemplates_ },
     { method: 'POST', path: '/api/self-eval/templates', handler: apiSelfEvalTemplateCreate_ },
@@ -45,7 +49,7 @@ function routes_() {
     { method: 'POST', path: '/api/self-eval/templates/:id/toggle', handler: apiSelfEvalTemplateToggle_ },
     { method: 'GET', path: '/api/self-eval/form', handler: apiSelfEvalForm_ },
     { method: 'POST', path: '/api/self-eval/save', handler: apiSelfEvalSave_ },
-    { method: 'GET', path: '/api/self-eval/branch-overview', handler: apiSelfEvalBranchOverview_ },
+    { method: 'GET', path: '/api/self-eval/my-reviewees', handler: apiSelfEvalMyReviewees_ },
     { method: 'GET', path: '/api/self-eval/submission-detail', handler: apiSelfEvalSubmissionDetail_ },
     { method: 'POST', path: '/api/self-eval/manager-review', handler: apiSelfEvalManagerReview_ },
     { method: 'GET', path: '/api/self-eval/hq-progress', handler: apiSelfEvalHqProgress_ },

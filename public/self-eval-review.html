@@ -24,6 +24,11 @@
   .q-yesno { display: flex; gap: 10px; margin-bottom: 8px; }
   .q-yesno label { font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
   .q-note { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 44px; }
+  .branch-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 16px 0 8px; }
+  .list-tools { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+  .list-tools label.toggle { font-size: 12.5px; color: var(--ink-soft); display: flex; align-items: center; gap: 4px; cursor: pointer; margin-bottom: 14px; }
+  .meta-line { margin: 2px 0 0; font-size: 12px; color: var(--ink-soft); }
+  .tag-other { font-size: 11px; color: var(--ink-soft); background: #efece5; border-radius: 6px; padding: 1px 6px; margin-left: 4px; }
 </style>
 </head>
 <body>
@@ -37,7 +42,11 @@
     </div>
 
     <div id="listView">
-      <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+      <div class="list-tools">
+        <div class="field" style="max-width:200px;"><label for="monthInput">評核月份</label><input type="month" id="monthInput"></div>
+        <!-- 只有總公司看得到：主管請假、離職時可以代為面談 -->
+        <label class="toggle" id="showAllWrap" style="display:none;"><input type="checkbox" id="showAll"> 顯示全部同仁（代為面談）</label>
+      </div>
       <div id="scheduleBanner"></div>
       <div id="staffList"></div>
     </div>
