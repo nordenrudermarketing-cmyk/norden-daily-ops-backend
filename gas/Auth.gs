@@ -79,13 +79,16 @@ function sign_(payload) {
   return base64Url_(Utilities.computeHmacSha256Signature(payload, tokenSecret_()));
 }
 
-function issueToken_(staffId) {
-  const payload = base64Url_(JSON.stringify({ sid: staffId, exp: Date.now() + TOKEN_DAYS * 86400000 }));
+// switchedBy：測試站「切換身分」時，記下原本是哪位總公司切過來的（見 TestIdentity.gs），平常不用給
+function issueToken_(staffId, switchedBy) {
+  const data = { sid: staffId, exp: Date.now() + TOKEN_DAYS * 86400000 };
+  if (switchedBy) data.by = switchedBy;
+  const payload = base64Url_(JSON.stringify(data));
   return payload + '.' + sign_(payload);
 }
 
-// 驗證成功回傳同仁 id，失敗回傳 null
-function verifyToken_(token) {
+// 驗證成功回傳憑證內容 { sid, exp, by? }，失敗回傳 null
+function readToken_(token) {
   if (typeof token !== 'string' || token.indexOf('.') < 0) return null;
   const parts = token.split('.');
   if (parts.length !== 2 || sign_(parts[0]) !== parts[1]) return null;
@@ -94,10 +97,16 @@ function verifyToken_(token) {
     while (text.length % 4) text += '=';
     const data = JSON.parse(Utilities.newBlob(Utilities.base64Decode(text)).getDataAsString());
     if (!data.sid || !data.exp || data.exp < Date.now()) return null;
-    return data.sid;
+    return data;
   } catch (e) {
     return null;
   }
+}
+
+// 驗證成功回傳同仁 id，失敗回傳 null
+function verifyToken_(token) {
+  const data = readToken_(token);
+  return data ? data.sid : null;
 }
 
 // ---------- 身分與職級 ----------
@@ -109,13 +118,14 @@ function levelOf_(roleName) {
 }
 
 // 從憑證找出「目前登入的是誰」，找不到或已停用就丟 401
+// switched_by：測試站切換過來的身分才有，記著原本的總公司是誰
 function authenticate_(token) {
-  const sid = verifyToken_(token);
-  if (!sid) throw httpError_(401, '登入已過期，請重新登入');
-  const staff = Db.first('staff', { id: sid });
+  const data = readToken_(token);
+  if (!data) throw httpError_(401, '登入已過期，請重新登入');
+  const staff = Db.first('staff', { id: data.sid });
   if (!staff || staff.is_active !== true) throw httpError_(401, '帳號已停用或不存在，請重新登入');
   const role = roleById_(staff.role_id);
-  return Object.assign(staff, { roles: role, level: levelOf_(role && role.name) });
+  return Object.assign(staff, { roles: role, level: levelOf_(role && role.name), switched_by: data.by || null });
 }
 
 function requireLevel_(actor, levels, message) {

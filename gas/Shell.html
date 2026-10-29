@@ -12,6 +12,17 @@
   #envBadge { position: fixed; right: 8px; bottom: 8px; z-index: 20; background: #b3462c; color: #fff;
               font: 12px/1.6 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; padding: 2px 10px;
               border-radius: 12px; opacity: .85; max-width: 75vw; cursor: pointer; user-select: none; }
+  #envPanel { position: fixed; right: 8px; bottom: 40px; z-index: 21; display: none; width: 300px; max-width: calc(100vw - 16px);
+              max-height: 70vh; overflow: auto; box-sizing: border-box; background: #fff; color: #23291F; border-radius: 12px;
+              box-shadow: 0 8px 24px rgba(0,0,0,.2); padding: 12px 14px;
+              font: 13px/1.6 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; }
+  #envPanel h4 { margin: 0 0 6px; font-size: 13px; color: #6b6f63; font-weight: 600; }
+  #envPanel h4.group { margin: 12px 0 2px; font-size: 12px; }
+  #envPanel button { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 10px; border: 1px solid #e3e0d8;
+                     border-radius: 8px; background: #fff; font: inherit; color: inherit; cursor: pointer; }
+  #envPanel button.current { border-color: #2F5D4F; background: #eef4f1; font-weight: 600; cursor: default; }
+  #envPanel .muted { color: #6b6f63; font-size: 12px; }
+  #envPanel .timings { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; line-height: 1.5; color: #6b6f63; }
   #fatal { position: fixed; inset: 0; z-index: 30; display: none; background: #F7F5F0; color: #23291F;
            font: 14px/1.8 -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; padding: 60px 24px; text-align: center; }
   #fatal button { margin-top: 12px; padding: 8px 20px; border: 0; border-radius: 8px; background: #2F5D4F; color: #fff; font-size: 14px; }
@@ -19,7 +30,7 @@
 </head>
 <body>
 <div id="loading"></div>
-<? if (isStaging) { ?><div id="envBadge">測試站</div><? } ?>
+<? if (isStaging) { ?><div id="envBadge">測試站</div><div id="envPanel"></div><? } ?>
 <div id="fatal"><div id="fatalMsg"></div><button onclick="location.reload()">重新整理</button></div>
 <iframe id="page" title="路得行旅 每日營運系統"></iframe>
 <script>
@@ -50,18 +61,105 @@
     return params;
   }
 
-  // 測試站右下角顯示最近一次呼叫花多久，點一下展開最近幾次的明細（正式站不會顯示）
+  // 測試站右下角（正式站不會顯示）：顯示目前身分和最近一次呼叫花多久；
+  // 點一下展開面板，可以切換成任何一位同仁（見 TestIdentity.gs），也看得到最近幾次呼叫的耗時明細
   var timings = [];
   var lastTotal = null;
-  var timingOpen = false;
+  var panelOpen = false;
+  var identities = null;     // /api/test/identities 的結果
+  var identityMsg = '';
+
+  // 登入狀態存在 localStorage 的 staff（內框的網頁跟外框是同一個來源，讀得到同一份）
+  function currentStaff() {
+    try { return JSON.parse(localStorage.getItem('staff') || 'null'); } catch (e) { return null; }
+  }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    node.textContent = text;
+    return node;
+  }
+
   function renderBadge() {
     var badge = document.getElementById('envBadge');
     if (!badge) return;
-    var head = '測試站' + (lastTotal === null ? '' : ' · ' + (lastTotal / 1000).toFixed(1) + 's');
-    badge.innerHTML = head + (timingOpen && timings.length
-      ? '<div style="font-size:9px;line-height:1.4;text-align:left">' +
-        timings.map(function (t) { return t.replace(/</g, '&lt;'); }).join('<br>') + '</div>'
-      : '');
+    var staff = currentStaff();
+    badge.textContent = '測試站' + (staff && staff.name ? ' · ' + staff.name : '') +
+      (lastTotal === null ? '' : ' · ' + (lastTotal / 1000).toFixed(1) + 's');
+  }
+
+  function renderPanel() {
+    var panel = document.getElementById('envPanel');
+    if (!panel) return;
+    panel.style.display = panelOpen ? 'block' : 'none';
+    if (!panelOpen) return;
+    panel.innerHTML = '';
+    panel.appendChild(el('h4', '', '切換身分（測試站專用）'));
+    if (identityMsg) panel.appendChild(el('div', 'muted', identityMsg));
+    if (identities) {
+      var addOption = function (id, label) {
+        var isCurrent = id === identities.current_id;
+        var button = el('button', isCurrent ? 'current' : '', (isCurrent ? '✓ ' : '') + label);
+        button.type = 'button';
+        if (!isCurrent) button.addEventListener('click', function () { switchTo(id); });
+        panel.appendChild(button);
+      };
+      addOption(identities.origin.id, identities.origin.name + '（總公司・原本身分）');
+      // 依館別分組（API 已經照館別、姓名排好）
+      var lastBranch = null;
+      identities.accounts.forEach(function (a) {
+        if (a.branch_name !== lastBranch) {
+          lastBranch = a.branch_name;
+          panel.appendChild(el('h4', 'group', a.branch_name));
+        }
+        addOption(a.id, a.name + (a.role_name ? '（' + a.role_name + '）' : ''));
+      });
+    }
+    if (timings.length) {
+      var box = el('div', 'timings', '');
+      box.appendChild(el('div', '', '最近幾次呼叫的耗時'));
+      timings.forEach(function (t) { box.appendChild(el('div', '', t)); });
+      panel.appendChild(box);
+    }
+  }
+
+  function loadIdentities() {
+    var staff = currentStaff();
+    identities = null;
+    if (!staff || !staff.token) {
+      identityMsg = '先用總公司帳號登入，就可以在這裡切換成任何一位同仁';
+      renderPanel();
+      return;
+    }
+    identityMsg = '載入中…';
+    renderPanel();
+    window.__app.api({ method: 'GET', path: '/api/test/identities', query: {}, body: null, token: staff.token })
+      .then(function (res) {
+        if (res.status === 200) { identities = res.body; identityMsg = ''; }
+        else identityMsg = (res.body && res.body.error) || '無法載入同仁清單';
+        renderPanel();
+      });
+  }
+
+  function switchTo(staffId) {
+    var staff = currentStaff();
+    identityMsg = '切換中…';
+    renderPanel();
+    window.__app.api({ method: 'POST', path: '/api/test/switch', query: {}, body: { staff_id: staffId }, token: staff && staff.token })
+      .then(function (res) {
+        if (res.status !== 200) {
+          identityMsg = (res.body && res.body.error) || '切換失敗';
+          renderPanel();
+          return;
+        }
+        localStorage.setItem('staff', JSON.stringify(res.body));
+        panelOpen = false;
+        renderPanel();
+        renderBadge();
+        // 回登入頁，登入頁看到已經有 staff 就會依新身分的職務導到對的首頁
+        render({ page: 'index', query: {} }, 'push');
+      });
   }
   function showTiming(req, res, totalMs) {
     var s = res.stats || {};
@@ -73,7 +171,11 @@
     renderBadge();
   }
   var envBadge = document.getElementById('envBadge');
-  if (envBadge) envBadge.addEventListener('click', function () { timingOpen = !timingOpen; renderBadge(); });
+  if (envBadge) envBadge.addEventListener('click', function () {
+    panelOpen = !panelOpen;
+    if (panelOpen) loadIdentities();
+    else renderPanel();
+  });
 
   function showFatal(message) {
     document.getElementById('fatalMsg').textContent = '頁面載入失敗：' + message;

@@ -8,11 +8,12 @@ README.md 是這個專案的**變更紀錄兼說明書**，每加一個功能就
 
 ---
 
-## ⚠ 正在搬家：Railway＋Supabase → Google Apps Script＋試算表
+## ⚠ 正式站已經是 Google 版（Apps Script＋試算表）
 
-2026-10-27 起分階段搬到 Google（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
-**搬完之前兩套並存**：正式站還是 Railway 版（下面「三個服務怎麼分工」以下都是在講它），
-Google 版的測試站已實測通過、正式站已建立但還沒切換（同仁還在用 Railway）。
+2026-10-29 起同仁改用 Google 版（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
+Railway 正式站設了 `REDIRECT_TO_URL`，舊網址一律跳到 Google 版、API 回 410；
+Railway＋Supabase 保留 1～3 個月當退路（刪掉該變數就切回舊系統），**新功能一律做在 Google 版**。
+下面「三個服務怎麼分工」以下講的是已停用的 Railway 版，只供參考。
 
 - 擁有者帳號：Workspace `office.hq@nordenruder.com`（試算表、Apps Script、clasp 登入都是它）
 - **第 1 階段**只搬正式站在用的：登入、自評表、帳號管理、功能開關。
@@ -30,13 +31,15 @@ Google 版的測試站已實測通過、正式站已建立但還沒切換（同�
 - 身分一律從登入憑證來（`req.actor`），**不要再信任網頁送來的 actor_id / staff_id**
 - 密碼雜湊在指令碼屬性 `PW_<id>`，不在試算表；**不要在登入框替使用者輸入密碼**，
   測試站資料是正式站的複本（真實同仁），要登入請使用者自己在瀏覽器窗格輸入
+- 測試站工具：試算表選單「從正式站同步最新資料」（測試帳號保留、密碼不複製）；
+  網頁右下角「測試站」面板可以讓總公司切換成任何在職同仁（`gas/TestIdentity.gs`，正式站無效）
 - 本機可以用 Node 模擬 Apps Script 環境跑主要 API（模擬測試腳本放在 scratchpad，不在 repo）；
   `node --check` 可以檢查 .gs 語法
 - 不要在 Apps Script 網頁編輯器改程式（會被下次上傳蓋掉）
 
 ---
 
-## 三個服務怎麼分工（Railway 版，目前的正式站）
+## 三個服務怎麼分工（Railway 版，2026-10-29 起停用、只做退路）
 
 ```
 GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase（PostgreSQL 資料庫）
@@ -101,18 +104,41 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 ---
 
-## 加新功能的步驟
+## 開發到發布的流程（Google 版，2026-10-29 起）
 
-1. 開新 branch（**不要直接改 main**）
-2. 後端加 `src/routes/xxx.js`，在 `server.js` 掛載
-3. 前端加 `public/xxx.html` + `xxx.js`；HTML 最後要有 `<script src="sidebar.js"></script>`
-4. 在 `featureCatalog.js` 加一筆（頁面、API 前綴），需要的話在 `sidebar.js` 的 `NAV_SETS` 加選單項目
-5. 要動資料庫就加 `schema_vNN_說明.sql`（見下）
-6. push → 請使用者把 Railway 測試站的 Branch 指到這個 branch → 用瀏覽器實測
-7. 更新 README
-8. **等使用者說「發布」才 merge 到 main**
+測試站和正式站是**兩個獨立的 Apps Script 專案**，跑哪一版由 clasp 上傳決定，跟 git branch 無關
+（不再需要請使用者切 Railway 的 branch）。GitHub 的 main ＝ 正式站上的版本。
 
-## SQL 慣例
+**開發（Claude 自己做到底）**
+1. 開新 branch（**不要直接改 main**）；需要最新資料時，請使用者在「路得系統（測試）」按「從正式站同步最新資料」
+2. 寫程式：後端 `gas/Xxx.gs`、API 在 `Router.gs` 的 `routes_()` 加一行；前端仍在 `public/`，
+   新頁面加進 `build_gas.py` 的 `PAGES`（HTML 最後要有 `sidebar.js`）；新功能在 `Catalog.gs` 加一筆並標 `ported: true`，
+   選單在 `sidebar.js` 的 `NAV_SETS`；新欄位／新表改 `gas/Schema.gs`
+3. 本機先檢查：`node --check`，需要時用 Node 模擬 Apps Script 跑主要 API
+4. 上傳測試站：`python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
+   **有改 Schema 就請使用者在「路得系統（測試）」按「路得系統 → 檢查資料表結構」** →
+   `clasp -P clasp-staging.json redeploy <測試站部署ID> -d "說明"`
+5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：請使用者在窗格裡用總公司帳號登入測試站一次，
+   之後由 Claude 用右下角「測試站」面板切換成需要的身分（店經理、房務…）操作驗證，驗完切回總公司；
+   有 bug 自己修，回到第 4 步
+6. push branch、更新 README，回報「測試站驗證完成」並列出驗證了哪些項目
+
+**發布（使用者說「發布」之後才做）**
+7. `python tools/build_gas.py` → `clasp -P clasp-production.json push -f`
+   （push 只更新程式碼，同仁用的是「部署」，所以這時候還不會影響任何人）
+8. **有改 Schema 就請使用者在「路得系統（正式）」按「檢查資料表結構」**——等於以前的「先跑 SQL 再上程式」
+9. `clasp -P clasp-production.json redeploy <正式站部署ID> -d "說明"` → 同仁重新整理就是新版
+10. 開 PR 合併進 main，打開正式站網址確認登入頁正常，請使用者登入看一眼
+
+**出問題時**：`clasp -P clasp-production.json redeploy <正式站部署ID> -V <上一個版本號>`，一分鐘內退回上一版
+（`clasp -P clasp-production.json versions` 查版本號）。Schema 補的欄位留著不影響舊程式，不用刪。
+
+**注意**
+- clasp 出現 `invalid_rapt`＝公司帳號要重新驗證，請使用者自己執行 `clasp login`
+- 合併進 main 時 Railway 仍會重新部署，但它只負責把舊網址導向 Google 版；**不要動 `src/server.js` 的導向、不要刪 Railway 的 `REDIRECT_TO_URL`**
+- 會改到自評流程的更新，盡量避開每月 1～20 號（同仁填寫、主管面談期間）
+
+## SQL 慣例（Railway 版，停用）
 
 - 檔名 `schema_vNN_說明.sql`，放 repo 根目錄，一份 SQL 要**跑兩次**：
   - 進測試區：最前面加 `set search_path to staging, public;`
@@ -121,13 +147,14 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
   而且萬一要 revert，退掉程式碼就等於完全恢復
 - ⚠ 最初建表的 `schema_v2.sql` **不在 repo 裡**，所以沒辦法靠重跑 SQL 檔重建資料庫
 
-## 環境變數（Railway）
+## 環境變數（Railway 版，停用）
 
 | 變數 | 正式站 | 測試站 |
 |---|---|---|
 | `SUPABASE_URL` | 同一個 Supabase 專案 | 同左 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 同上 | 同左 |
 | `SUPABASE_DB_SCHEMA` | **不設定**（＝`public`） | `staging` |
+| `REDIRECT_TO_URL` | Google 版正式站網址（2026-10-29 起） | 不設定 |
 
 ---
 
