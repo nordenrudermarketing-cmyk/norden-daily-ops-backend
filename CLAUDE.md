@@ -8,11 +8,12 @@ README.md 是這個專案的**變更紀錄兼說明書**，每加一個功能就
 
 ---
 
-## ⚠ 正在搬家：Railway＋Supabase → Google Apps Script＋試算表
+## ⚠ 正式站已經是 Google 版（Apps Script＋試算表）
 
-2026-10-27 起分階段搬到 Google（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
-**搬完之前兩套並存**：正式站還是 Railway 版（下面「三個服務怎麼分工」以下都是在講它），
-Google 版的測試站已實測通過、正式站已建立但還沒切換（同仁還在用 Railway）。
+2026-10-29 起同仁改用 Google 版（細節見 README 最後一節「搬到 Google Apps Script（第 1 階段）」）。
+Railway 正式站設了 `REDIRECT_TO_URL`，舊網址一律跳到 Google 版、API 回 410；
+Railway＋Supabase 保留 1～3 個月當退路（刪掉該變數就切回舊系統），**新功能一律做在 Google 版**。
+下面「三個服務怎麼分工」以下講的是已停用的 Railway 版，只供參考。
 
 - 擁有者帳號：Workspace `office.hq@nordenruder.com`（試算表、Apps Script、clasp 登入都是它）
 - **第 1 階段**只搬正式站在用的：登入、自評表、帳號管理、功能開關。
@@ -36,7 +37,7 @@ Google 版的測試站已實測通過、正式站已建立但還沒切換（同�
 
 ---
 
-## 三個服務怎麼分工（Railway 版，目前的正式站）
+## 三個服務怎麼分工（Railway 版，2026-10-29 起停用、只做退路）
 
 ```
 GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase（PostgreSQL 資料庫）
