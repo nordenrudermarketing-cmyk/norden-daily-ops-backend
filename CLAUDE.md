@@ -78,7 +78,11 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
   **沒有 token、沒有 session**。`login.js` 依 `roles.name` 和當日班別決定登入後導到哪一頁
 - `sidebar.js` **每一頁都會載入**，負責：畫側邊選單、依功能開關過濾選單、攔截被關閉的頁面、
   藏掉指向已關閉功能的連結。要改選單結構就是改這支的 `NAV_SETS`
-- `*-home.js`（hq-home、manager-home…）是舊版的首頁 hub，登入流程已經不會導到那裡，但仍保留
+- **2026-10-29 前端瘦身**：`public/` 只留 Google 版在用的 8 頁（`build_gas.py` 的 `PAGES`）和它們用到的
+  `config.js`、`login.js`、`sidebar.js`、`style.css`、`self-eval-reminder.js`。
+  其餘 41 頁（房務、客務、排班、學習地圖、店經理日報…）已刪除，要重新開放某個功能時，
+  用 `git checkout b7f8a97^ -- public/<檔名>` 從刪除前的版本拿回來再改寫。
+  `sidebar.js` 的 `NAV_SETS` 和 `Catalog.gs` 仍保留這些功能的定義（沒搬的功能會自動隱藏）
 
 ### 功能開關（總公司可以整組隱藏功能）
 
