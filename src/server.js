@@ -52,6 +52,21 @@ app.use(express.json({ limit: '5mb' })); // 缺失照片用 base64 傳，稍微�
 app.get('/api/health', (req, res) =>
   res.json({ status: 'ok', service: 'norden-daily-ops-backend', db_schema: CURRENT_DB_SCHEMA }));
 
+// 搬到 Google 版之後用：Railway 的 Variables 設了 REDIRECT_TO_URL（新系統網址），
+// 打開舊網址的網頁一律跳到新系統；還開著舊頁面的人送出資料會被拒絕，避免資料寫進已經不用的舊資料庫。
+// 沒設定時完全不生效；要切回舊系統，刪掉這個變數就好。/api/health 不受影響，可以用來確認部署狀態。
+const REDIRECT_TO_URL = (process.env.REDIRECT_TO_URL || '').trim();
+if (REDIRECT_TO_URL && !/^https:\/\//.test(REDIRECT_TO_URL)) {
+  // 設錯（例如漏了 https://）會變成在自己網站裡無限跳轉，所以乾脆不啟用
+  console.warn('REDIRECT_TO_URL 不是 https:// 開頭，導向功能不啟用');
+} else if (REDIRECT_TO_URL) {
+  console.log(`導向功能啟用：網頁一律跳到 ${REDIRECT_TO_URL}`);
+  app.use('/api', (req, res) =>
+    res.status(410).json({ error: `系統已經搬到新網址，請重新整理頁面，或改用：${REDIRECT_TO_URL}` }));
+  // 302（暫時性跳轉）：瀏覽器不會記住，之後刪掉變數就能馬上切回舊系統
+  app.use((req, res) => res.redirect(302, REDIRECT_TO_URL));
+}
+
 // 功能開關：總公司關掉的功能，對應 API 一律擋在這裡（沒對應到的路徑照常放行）
 app.use('/api', featureGuard);
 

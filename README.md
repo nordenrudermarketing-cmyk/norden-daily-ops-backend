@@ -978,7 +978,7 @@ clasp -P clasp-production.json redeploy AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNM
 1. ~~用 clasp 建「路得系統（正式）」試算表＋專案、上傳、部署~~（2026-10-27 完成，上傳的是加速前的 71cb795 版）
 2. 在正式試算表選單按「檢查資料表結構」完成授權
 3. 使用者說「發布」後：正式站更新成最新版（push＋redeploy），branch 合併進 main
-4. 在 `src/server.js` 加上「有設定某個環境變數就把網頁導向新網址」，平常不生效（這是 Railway 版，merge 後才部署）
+4. ~~在 `src/server.js` 加上「有設定某個環境變數就把網頁導向新網址」~~（2026-10-29 完成，merge 後才部署到 Railway，見下方「舊網址導向」）
 5. 草擬通知同仁的訊息
 
 **切換當天（建議每月 21～30 號：面談截止後、下期 1 號發布前；約 30 分鐘，期間請同仁暫停使用）**
@@ -992,6 +992,17 @@ clasp -P clasp-production.json redeploy AKfycbwkwpew8uuR6P5zINnFdZoHy_6hjIVufZNM
 
 **切換後**：手機與 LINE 實測登入登出；README、CLAUDE.md 改成「正式站是 Google 版」；
 Railway 和 Supabase 保留 1～3 個月不刪，出問題時刪掉導向的環境變數就能切回舊系統。
+
+### 舊網址導向（Railway 版 `src/server.js`）
+
+Railway 正式站 Variables 加上 `REDIRECT_TO_URL` ＝ Google 版正式站網址（要 `https://` 開頭）之後：
+
+- 打開舊網址的任何網頁，都會跳到新系統（302 暫時性跳轉，瀏覽器不會記住）
+- 還開著舊頁面的人如果送出資料，會看到「系統已經搬到新網址」，資料**不會**寫進舊資料庫
+- `/api/health` 照常回應，可以確認 Railway 有沒有部署成功
+- 網址格式不對（例如漏了 `https://`）就不啟用，避免在舊網站裡無限跳轉；部署日誌會印出「導向功能啟用」或不啟用的原因
+
+**沒設定時完全不生效**。要切回舊系統，刪掉這個變數等 Railway 重新部署就好。
 
 ### 已知限制（Google 版）
 
