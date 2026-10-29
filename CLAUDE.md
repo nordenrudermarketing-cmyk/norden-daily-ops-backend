@@ -31,6 +31,8 @@ Railway＋Supabase 保留 1～3 個月當退路（刪掉該變數就切回舊系
 - 身分一律從登入憑證來（`req.actor`），**不要再信任網頁送來的 actor_id / staff_id**
 - 密碼雜湊在指令碼屬性 `PW_<id>`，不在試算表；**不要在登入框替使用者輸入密碼**，
   測試站資料是正式站的複本（真實同仁），要登入請使用者自己在瀏覽器窗格輸入
+- 測試站工具：試算表選單「從正式站同步最新資料」（測試帳號保留、密碼不複製）；
+  網頁右下角「測試站」面板可以讓總公司切換成任何在職同仁（`gas/TestIdentity.gs`，正式站無效）
 - 本機可以用 Node 模擬 Apps Script 環境跑主要 API（模擬測試腳本放在 scratchpad，不在 repo）；
   `node --check` 可以檢查 .gs 語法
 - 不要在 Apps Script 網頁編輯器改程式（會被下次上傳蓋掉）
@@ -108,7 +110,7 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 （不再需要請使用者切 Railway 的 branch）。GitHub 的 main ＝ 正式站上的版本。
 
 **開發（Claude 自己做到底）**
-1. 開新 branch（**不要直接改 main**）
+1. 開新 branch（**不要直接改 main**）；需要最新資料時，請使用者在「路得系統（測試）」按「從正式站同步最新資料」
 2. 寫程式：後端 `gas/Xxx.gs`、API 在 `Router.gs` 的 `routes_()` 加一行；前端仍在 `public/`，
    新頁面加進 `build_gas.py` 的 `PAGES`（HTML 最後要有 `sidebar.js`）；新功能在 `Catalog.gs` 加一筆並標 `ported: true`，
    選單在 `sidebar.js` 的 `NAV_SETS`；新欄位／新表改 `gas/Schema.gs`
@@ -116,8 +118,9 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 4. 上傳測試站：`python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
    **有改 Schema 就請使用者在「路得系統（測試）」按「路得系統 → 檢查資料表結構」** →
    `clasp -P clasp-staging.json redeploy <測試站部署ID> -d "說明"`
-5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：需要哪些身分，請使用者在窗格裡登入（總公司、店經理、房務…），
-   之後由 Claude 操作驗證；有 bug 自己修，回到第 4 步
+5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：請使用者在窗格裡用總公司帳號登入測試站一次，
+   之後由 Claude 用右下角「測試站」面板切換成需要的身分（店經理、房務…）操作驗證，驗完切回總公司；
+   有 bug 自己修，回到第 4 步
 6. push branch、更新 README，回報「測試站驗證完成」並列出驗證了哪些項目
 
 **發布（使用者說「發布」之後才做）**
