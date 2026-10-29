@@ -102,18 +102,40 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 ---
 
-## 加新功能的步驟
+## 開發到發布的流程（Google 版，2026-10-29 起）
 
+測試站和正式站是**兩個獨立的 Apps Script 專案**，跑哪一版由 clasp 上傳決定，跟 git branch 無關
+（不再需要請使用者切 Railway 的 branch）。GitHub 的 main ＝ 正式站上的版本。
+
+**開發（Claude 自己做到底）**
 1. 開新 branch（**不要直接改 main**）
-2. 後端加 `src/routes/xxx.js`，在 `server.js` 掛載
-3. 前端加 `public/xxx.html` + `xxx.js`；HTML 最後要有 `<script src="sidebar.js"></script>`
-4. 在 `featureCatalog.js` 加一筆（頁面、API 前綴），需要的話在 `sidebar.js` 的 `NAV_SETS` 加選單項目
-5. 要動資料庫就加 `schema_vNN_說明.sql`（見下）
-6. push → 請使用者把 Railway 測試站的 Branch 指到這個 branch → 用瀏覽器實測
-7. 更新 README
-8. **等使用者說「發布」才 merge 到 main**
+2. 寫程式：後端 `gas/Xxx.gs`、API 在 `Router.gs` 的 `routes_()` 加一行；前端仍在 `public/`，
+   新頁面加進 `build_gas.py` 的 `PAGES`（HTML 最後要有 `sidebar.js`）；新功能在 `Catalog.gs` 加一筆並標 `ported: true`，
+   選單在 `sidebar.js` 的 `NAV_SETS`；新欄位／新表改 `gas/Schema.gs`
+3. 本機先檢查：`node --check`，需要時用 Node 模擬 Apps Script 跑主要 API
+4. 上傳測試站：`python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
+   **有改 Schema 就請使用者在「路得系統（測試）」按「路得系統 → 檢查資料表結構」** →
+   `clasp -P clasp-staging.json redeploy <測試站部署ID> -d "說明"`
+5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：需要哪些身分，請使用者在窗格裡登入（總公司、店經理、房務…），
+   之後由 Claude 操作驗證；有 bug 自己修，回到第 4 步
+6. push branch、更新 README，回報「測試站驗證完成」並列出驗證了哪些項目
 
-## SQL 慣例
+**發布（使用者說「發布」之後才做）**
+7. `python tools/build_gas.py` → `clasp -P clasp-production.json push -f`
+   （push 只更新程式碼，同仁用的是「部署」，所以這時候還不會影響任何人）
+8. **有改 Schema 就請使用者在「路得系統（正式）」按「檢查資料表結構」**——等於以前的「先跑 SQL 再上程式」
+9. `clasp -P clasp-production.json redeploy <正式站部署ID> -d "說明"` → 同仁重新整理就是新版
+10. 開 PR 合併進 main，打開正式站網址確認登入頁正常，請使用者登入看一眼
+
+**出問題時**：`clasp -P clasp-production.json redeploy <正式站部署ID> -V <上一個版本號>`，一分鐘內退回上一版
+（`clasp -P clasp-production.json versions` 查版本號）。Schema 補的欄位留著不影響舊程式，不用刪。
+
+**注意**
+- clasp 出現 `invalid_rapt`＝公司帳號要重新驗證，請使用者自己執行 `clasp login`
+- 合併進 main 時 Railway 仍會重新部署，但它只負責把舊網址導向 Google 版；**不要動 `src/server.js` 的導向、不要刪 Railway 的 `REDIRECT_TO_URL`**
+- 會改到自評流程的更新，盡量避開每月 1～20 號（同仁填寫、主管面談期間）
+
+## SQL 慣例（Railway 版，停用）
 
 - 檔名 `schema_vNN_說明.sql`，放 repo 根目錄，一份 SQL 要**跑兩次**：
   - 進測試區：最前面加 `set search_path to staging, public;`
@@ -122,13 +144,14 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
   而且萬一要 revert，退掉程式碼就等於完全恢復
 - ⚠ 最初建表的 `schema_v2.sql` **不在 repo 裡**，所以沒辦法靠重跑 SQL 檔重建資料庫
 
-## 環境變數（Railway）
+## 環境變數（Railway 版，停用）
 
 | 變數 | 正式站 | 測試站 |
 |---|---|---|
 | `SUPABASE_URL` | 同一個 Supabase 專案 | 同左 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 同上 | 同左 |
 | `SUPABASE_DB_SCHEMA` | **不設定**（＝`public`） | `staging` |
+| `REDIRECT_TO_URL` | Google 版正式站網址（2026-10-29 起） | 不設定 |
 
 ---
 
