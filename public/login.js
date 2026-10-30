@@ -66,20 +66,22 @@ async function routeByRole(staff) {
   window.location.href = disabledPages.includes(target) ? 'self-eval.html' : target;
 }
 
+// 登入後的首頁看帳號層級（gas/Levels.gs）；現場人員再依職務、當日班別決定
+// 還沒搬到新系統的頁面屬於關閉中的功能，routeByRole 會改導到自評表
 function landingPageFor(staff) {
+  const level = window.accountLevelOf(staff);
+  if (level === 'office') return 'hq-dashboard.html';
+  if (level === 'hq_admin') return 'manage-passwords.html';
+  if (level === 'manager') return 'dashboard.html';
+
   const code = staff.todayShiftCode;
   const roleName = staff.roles?.name || '';
-
-  if (roleName === '總公司') return 'hq-dashboard.html';
-  if (roleName === '店經理') return 'dashboard.html';
   if (roleName.includes('房務')) return 'checklist.html';
-
   if (roleName === '客務人員') {
     if (code === 'A' || code === 'B' || code === 'C') return 'shift.html';
     if (code === '1') return 'offday.html';
     return 'unscheduled.html';
   }
-
-  alert(`目前尚未有對應「${roleName}」的頁面，之後會陸續加上。`);
-  return null;
+  // 其他職務（例如之後的行銷、咖啡廳）目前只有自評表
+  return 'self-eval.html';
 }

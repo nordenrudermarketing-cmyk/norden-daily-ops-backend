@@ -36,6 +36,8 @@ PAGES = [
     "hq-dashboard",
     "feature-toggles",
     "manage-passwords",
+    "org-departments",
+    "org-roles",
 ]
 
 SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>', re.I)

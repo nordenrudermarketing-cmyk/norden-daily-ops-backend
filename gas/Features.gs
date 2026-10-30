@@ -139,7 +139,7 @@ function apiFeatureState_() {
 
 // PUT /api/features/:key  { enabled }（只有總公司）
 function apiFeatureUpdate_(req) {
-  requireLevel_(req.actor, ['hq'], '功能開關只有總公司可以設定');
+  requireLevelFn_(req.actor, isOffice_, '功能開關只有總辦公室可以設定');
   const f = featureByKey_(req.params.key);
   if (!f) throw httpError_(404, '沒有這個功能：' + req.params.key);
   if (f.locked) throw httpError_(400, '這個功能是系統保留項目，不能關閉');
@@ -151,7 +151,7 @@ function apiFeatureUpdate_(req) {
 
 // POST /api/features/bulk  { updates: { key: boolean } }（只有總公司）
 function apiFeaturesBulk_(req) {
-  requireLevel_(req.actor, ['hq'], '功能開關只有總公司可以設定');
+  requireLevelFn_(req.actor, isOffice_, '功能開關只有總辦公室可以設定');
   const updates = req.body.updates;
   if (!updates || typeof updates !== 'object') throw httpError_(400, '缺少 updates');
   setFeatureState_(updates, req.actor.name);
@@ -160,7 +160,7 @@ function apiFeaturesBulk_(req) {
 
 // POST /api/features/preset/:name（self-eval-only 全關／enable-all 全開，只有總公司）
 function apiFeaturesPreset_(req) {
-  requireLevel_(req.actor, ['hq'], '功能開關只有總公司可以設定');
+  requireLevelFn_(req.actor, isOffice_, '功能開關只有總辦公室可以設定');
   let enabled;
   if (req.params.name === 'self-eval-only') enabled = false;
   else if (req.params.name === 'enable-all') enabled = true;

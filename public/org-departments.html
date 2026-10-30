@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>部門管理 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 760px; }
+  .intro { font-size: 12px; color: var(--ink-soft); line-height: 1.7; margin: 0 0 14px; }
+  .status-line { font-size: 12px; min-height: 18px; margin: 0 0 8px; color: var(--accent); }
+  .status-line.err { color: var(--danger); }
+  .org-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; }
+  .org-row.inactive { background: #f3f1ec; }
+  .org-row input[type="text"], .org-row select { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--ink); }
+  .org-row .name { flex: 1; min-width: 140px; }
+  .org-row .code { width: 90px; }
+  .org-row .meta { font-size: 12px; color: var(--ink-soft); min-width: 80px; }
+  .org-row button { font-size: 12px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit; color: var(--ink); }
+  .org-row button.primary { border: none; background: var(--accent); color: #fff; }
+  .org-row button.danger { color: var(--danger); border-color: #e3bfae; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>部門管理</h1>
+        <p id="staffLine">—</p>
+      </div>
+    </div>
+
+    <p class="intro">
+      部門代表同仁隸屬的分部門，例如台中館、台東1館、行銷、行政、咖啡廳。部門只用來分組和統計，不決定權限（權限看帳號層級）。<br>
+      部門不能刪除，不再使用的請「停用」；還有在職同仁的部門要先把同仁調走才能停用。代碼可以留空。
+    </p>
+
+    <p class="section-title">新增部門</p>
+    <div class="org-row">
+      <input type="text" class="name" id="newName" placeholder="部門名稱">
+      <input type="text" class="code" id="newCode" placeholder="代碼（選填）">
+      <button class="primary" id="addBtn">新增</button>
+    </div>
+
+    <p class="section-title">所有部門</p>
+    <p class="status-line" id="statusLine"></p>
+    <div id="list"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="org-departments.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

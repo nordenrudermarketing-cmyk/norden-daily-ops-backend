@@ -1,4 +1,4 @@
-// 各館自評進度（總公司）
+// 各部門自評進度（總公司行政、總辦公室）
 // 檔名沿用原本的「自評異常彙總」。這一頁只看完成進度，不列出勾「否」的項目——
 // 勾否不代表異常，是同仁跟主管面談、討論怎麼改善的起點。
 
@@ -100,7 +100,7 @@ function showOverview() {
   $('detailView').style.display = 'none';
   $('overviewView').style.display = '';
 
-  // 總公司自己沒有同仁的話就不顯示
+  // 沒有應填同仁的部門（例如總辦公室）就不顯示
   const branches = data.branches.filter((b) => !b.is_hq || b.total > 0);
   const total = branches.reduce((n, b) => n + b.total, 0);
   const fillDone = branches.reduce((n, b) => n + b.fill_done, 0);
@@ -119,6 +119,7 @@ function showOverview() {
         <p class="headcount">${empty ? '目前沒有同仁' : `應填 ${b.total} 人`}</p>
         ${stageRow('同仁填寫', b.fill_done, b.total, b.fill_overdue)}
         ${stageRow('主管面談', b.interview_done, b.total, b.interview_overdue)}
+        ${b.no_supervisor > 0 ? `<p class="card-foot" style="color:var(--danger);">未指定主管 ${b.no_supervisor} 人（請到帳號管理設定管轄人員）</p>` : ''}
         ${empty ? '' : '<p class="card-foot">查看每位同仁 →</p>'}
       </button>`;
   }).join('');
@@ -157,7 +158,8 @@ function fillCell(s) {
 function interviewCell(s) {
   if (s.interview_status === 'done') {
     return `<span class="pill done">已完成面談</span>` +
-      `<span class="sub ${s.reviewed_late ? 'warn' : ''}">面談日期 ${escapeHtml(s.interview_date || s.reviewed_on || '—')}${s.reviewed_late ? '・超過期限才完成' : ''}</span>`;
+      `<span class="sub ${s.reviewed_late ? 'warn' : ''}">面談日期 ${escapeHtml(s.interview_date || s.reviewed_on || '—')}${s.reviewed_late ? '・超過期限才完成' : ''}</span>` +
+      `${s.reviewed_by_name ? `<span class="sub">面談主管 ${escapeHtml(s.reviewed_by_name)}</span>` : ''}`;
   }
   if (s.fill_status !== 'done') {
     return `<span class="pill todo">等同仁送出</span>` +
@@ -191,7 +193,11 @@ function renderDetail() {
 
   $('staffBody').innerHTML = rows.map((s) => `
     <tr>
-      <td>${escapeHtml(s.name)}<span class="sub">${escapeHtml(s.role_name || '')}${s.inactive ? '・已停用' : ''}</span></td>
+      <td>${escapeHtml(s.name)}<span class="sub">${escapeHtml(s.role_name || '')}${s.inactive ? '・已停用' : ''}</span>${
+        s.no_supervisor
+          ? '<span class="sub warn">未指定主管</span>'
+          : s.supervisor_names?.length ? `<span class="sub">主管：${escapeHtml(s.supervisor_names.join('、'))}</span>` : ''
+      }</td>
       <td>${fillCell(s)}</td>
       <td>${interviewCell(s)}</td>
     </tr>`).join('');

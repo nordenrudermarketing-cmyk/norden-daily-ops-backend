@@ -78,7 +78,11 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
   **沒有 token、沒有 session**。`login.js` 依 `roles.name` 和當日班別決定登入後導到哪一頁
 - `sidebar.js` **每一頁都會載入**，負責：畫側邊選單、依功能開關過濾選單、攔截被關閉的頁面、
   藏掉指向已關閉功能的連結。要改選單結構就是改這支的 `NAV_SETS`
-- `*-home.js`（hq-home、manager-home…）是舊版的首頁 hub，登入流程已經不會導到那裡，但仍保留
+- **2026-10-29 前端瘦身**：`public/` 只留 Google 版在用的 8 頁（`build_gas.py` 的 `PAGES`）和它們用到的
+  `config.js`、`login.js`、`sidebar.js`、`style.css`、`self-eval-reminder.js`。
+  其餘 41 頁（房務、客務、排班、學習地圖、店經理日報…）已刪除，要重新開放某個功能時，
+  用 `git checkout b7f8a97^ -- public/<檔名>` 從刪除前的版本拿回來再改寫。
+  `sidebar.js` 的 `NAV_SETS` 和 `Catalog.gs` 仍保留這些功能的定義（沒搬的功能會自動隱藏）
 
 ### 功能開關（總公司可以整組隱藏功能）
 
@@ -101,6 +105,32 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 時程集中在檔案最上面的 `SCHEDULE`：每月 1 號發布上個月的表、10 號前同仁送出、20 號前主管完成面談。
 **日期一律用台灣時間計算**（Railway 跑 UTC，不換算的話台灣時間 1 號早上 8 點前會被當成上個月），
 前端也要用伺服器回傳的 `today` 判斷逾期，不要用瀏覽器的 `toISOString()`。
+
+### 帳號架構：部門、帳號層級、職務（Google 版，2026-10 起）
+
+三件事分開，**不要再用職務名稱判斷權限**：
+- **部門**（`branches` 表，以前叫館別）：只用來歸屬、分組、統計。只有總辦公室能管理（`gas/Org.gs`、`org-departments` 頁）
+- **帳號層級**（`staff.account_level`）：**權限的唯一依據**，規則全在 `gas/Levels.gs`，其他檔案一律用它的函式
+  （`fillsSelfEval_`、`canSuperviseLevel_`、`canViewAllSelfEval_`、`canSetSupervision_`、`isOffice_`、`outranks_`、`assignableLevels_`）；
+  前端用 `config.js` 的 `window.accountLevelOf(staff)`
+  - `field` 現場人員：填自評；只有自評表
+  - `manager` 經理：填自評；可當面談主管（也能管轄經理）；帳號管理＝自己管轄的現場人員
+  - `hq_admin` 總公司行政：人事專用，不填自評、不面談；管理經理以下帳號、設定管轄、唯讀看所有自評與進度
+  - `office` 總辦公室：不填自評；預設不管轄任何人，加進自己的管轄才能面談；管所有帳號（含同級）；部門、職務、題目、功能開關
+  - 只能建立／管理比自己低的層級（總辦公室可同級）；不能改自己的層級；最後一個在職總辦公室不能停用或降級
+  - 後門：試算表選單「新增總辦公室帳號」「把帳號設為總辦公室」
+- **職務**（`roles` 表）：只決定自評題目（`template_category`）。題目類別唯一定義在 `Org.gs` 的 `QUESTION_CATEGORIES`，
+  之後新增類別（例如咖啡廳專屬題目）只改這裡
+
+### 管轄（Google 版 `gas/Supervision.gs`，2026-10 起）
+
+「誰面談誰、經理能管誰的帳號」**不再照館別，改照管轄**（`supervisions` 表，多對多），由總公司行政或總辦公室在帳號管理設定。
+- 能當面談主管：經理、總辦公室；被管轄的人必須要填自評（現場人員、經理）
+- 一位同仁可以有多位主管，任何一位完成面談即可；`self_eval_submissions.reviewed_by` 記錄面談主管、`last_edited_by` 記錄最後存面談進度的人
+- **沒有代為面談**：面談一律只限自己的管轄人員
+- 經理新增的帳號自動列入建立者的管轄
+- 主管停用或層級改掉時，他的管轄暫時失效（不刪資料）；被管的同仁停用時關係仍保留
+- 新的上線環境要在試算表選單依序按「檢查資料表結構」→「帳號層級轉換（一次性）」→「依部門建立初始管轄」
 
 ---
 

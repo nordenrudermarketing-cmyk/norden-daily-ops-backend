@@ -11,6 +11,7 @@
     const API = window.APP_CONFIG.API_BASE_URL;
     const res = await fetch(`${API}/api/self-eval/form?staff_id=${staff.id}`);
     const data = await res.json();
+    if (data.not_required) return; // 總公司行政、總辦公室不用填自評
 
     const isSubmitted = data.submission?.status === 'submitted' || data.submission?.status === 'reviewed';
     if (isSubmitted) return; // 已經送出，不用提醒

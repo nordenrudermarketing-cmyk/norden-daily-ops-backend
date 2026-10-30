@@ -21,21 +21,24 @@
 // ============================================================
 
 const SCHEMA = {
+  // 部門（畫面上叫「部門」，2026-10 以前叫「館別」，表名沿用 branches）。is_active 空白＝啟用中
   branches: {
     manual: true,
     cache: true,
-    columns: { id: 'text', name: 'text', code: 'text' },
+    columns: { id: 'text', name: 'text', code: 'text', is_active: 'bool' },
   },
+  // 職務：只決定自評題目。template_category＝要加哪一類專屬題目（見 Org.gs 的 QUESTION_CATEGORIES）
   roles: {
     manual: true,
     cache: true,
-    columns: { id: 'text', name: 'text', category: 'text' },
+    columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool' },
   },
+  // account_level：帳號層級，決定權限（field 現場人員／manager 經理／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
   staff: {
     cache: true,
     columns: {
       id: 'text', name: 'text', branch_id: 'text', role_id: 'text', login_code: 'text',
-      is_active: 'bool', is_part_time: 'bool', learning_map_enabled: 'bool',
+      is_active: 'bool', is_part_time: 'bool', learning_map_enabled: 'bool', account_level: 'text',
     },
   },
   self_eval_templates: {
@@ -46,12 +49,19 @@ const SCHEMA = {
       sort_order: 'number', is_active: 'bool',
     },
   },
+  // reviewed_by：完成面談的主管；last_edited_by：最後存面談草稿的主管（2026-10 管轄功能加入）
   self_eval_submissions: {
     columns: {
       id: 'text', staff_id: 'text', branch_id: 'text', eval_month: 'text', status: 'text',
       due_date: 'text', submitted_at: 'text', manager_interview_notes: 'text', interview_date: 'text',
       manager_signed_at: 'text', created_at: 'text', updated_at: 'text',
+      reviewed_by: 'text', last_edited_by: 'text',
     },
+  },
+  // 管轄：哪位主管負責哪位同仁（一位同仁可以有多位主管），只有總公司能設定，見 Supervision.gs
+  supervisions: {
+    cache: true,
+    columns: { id: 'text', supervisor_id: 'text', staff_id: 'text', created_at: 'text', created_by: 'text' },
   },
   self_eval_answers: {
     columns: {

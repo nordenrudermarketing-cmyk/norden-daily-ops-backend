@@ -105,7 +105,7 @@
         if (!isCurrent) button.addEventListener('click', function () { switchTo(id); });
         panel.appendChild(button);
       };
-      addOption(identities.origin.id, identities.origin.name + '（總公司・原本身分）');
+      addOption(identities.origin.id, identities.origin.name + '（原本身分）');
       // 依館別分組（API 已經照館別、姓名排好）
       var lastBranch = null;
       identities.accounts.forEach(function (a) {
@@ -128,7 +128,7 @@
     var staff = currentStaff();
     identities = null;
     if (!staff || !staff.token) {
-      identityMsg = '先用總公司帳號登入，就可以在這裡切換成任何一位同仁';
+      identityMsg = '先用總公司行政或總辦公室的帳號登入，就可以在這裡切換成任何一位同仁';
       renderPanel();
       return;
     }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>各館自評進度 | 路得行旅</title>
+<title>各部門自評進度 | 路得行旅</title>
 <link rel="stylesheet" href="style.css">
 <style>
   /* 檔名沿用 self-eval-hq-flagged（原本的「自評異常彙總」），舊連結才不會壞 */
@@ -51,6 +51,8 @@
   .staff-table th, .staff-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .staff-table th { font-size: 12px; font-weight: 500; color: var(--ink-soft); background: #faf9f6; }
   .staff-table tr:last-child td { border-bottom: none; }
+  /* 第一欄有主管名字，限制寬度讓它換行，後面兩欄才不會被擠出畫面 */
+  .staff-table td:first-child { width: 34%; }
   .sub { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
   .sub.warn { color: var(--danger); }
 </style>
@@ -59,7 +61,7 @@
   <div class="screen wide-screen">
     <div class="topbar">
       <div>
-        <h1>各館自評進度</h1>
+        <h1>各部門自評進度</h1>
         <p class="subtitle">每月 1 號發布上個月的自評表・10 號前同仁完成填寫・20 號前主管完成面談</p>
       </div>
     </div>
@@ -78,7 +80,7 @@
     </div>
 
     <div id="detailView" style="display:none;">
-      <button class="back-btn" id="backBtn">← 回各館列表</button>
+      <button class="back-btn" id="backBtn">← 回部門列表</button>
       <h2 class="detail-title" id="detailTitle"></h2>
       <p class="schedule-line" id="detailSummary" style="margin-bottom:10px;"></p>
       <div class="filter-row" id="filterRow">

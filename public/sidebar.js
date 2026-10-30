@@ -6,10 +6,23 @@
   const staff = JSON.parse(localStorage.getItem('staff') || 'null');
   if (!staff) return; // 沒登入的頁面（例如 index.html）不顯示側邊選單
 
-  const roleName = staff.roles?.name || '';
   const currentPage = window.location.pathname.split('/').pop();
   // 部署時 API_BASE_URL 是空字串（前後端同網域），空字串也是有效設定，不能拿來當 if 判斷
   const API_BASE = window.APP_CONFIG?.API_BASE_URL ?? '';
+
+  // 帳號層級改版前登入的人，localStorage 裡沒有 account_level：跟伺服器要一次補上，不用重新登入
+  if (!staff.account_level) {
+    try {
+      const res = await fetch(`${API_BASE}/api/me`);
+      if (res.ok) {
+        const me = await res.json();
+        Object.assign(staff, { account_level: me.account_level, roles: me.roles, name: me.name, branch_id: me.branch_id });
+        localStorage.setItem('staff', JSON.stringify(staff));
+      }
+    } catch (e) { /* 查不到就先用職務名稱推算 */ }
+  }
+  const level = window.accountLevelOf(staff);
+  const roleName = staff.roles?.name || '';
 
   // ---------- 功能開關（總公司後台設定的） ----------
   // 被關掉的功能：① 選單不顯示 ② 直接打網址會被導回自評表
@@ -113,27 +126,45 @@
       ] },
       { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
-    hq: [
-      { label: '總覽', icon: 'home', items: [{ label: '總公司儀表板', url: 'hq-dashboard.html' }] },
-      { label: '各館管理', icon: 'branch', items: [
+    // 其他職務的現場人員（例如之後的行銷、咖啡廳）：目前只有自評表
+    field: [
+      { label: '自評', icon: 'dots', items: [{ label: '每月自評表', url: 'self-eval.html' }] },
+    ],
+    // 總公司行政：人事專用帳號，不填自評、不面談，只看（唯讀）和管理帳號
+    hq_admin: [
+      { label: '自評', icon: 'branch', items: [
+        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },
+        { label: '查看同仁自評表', url: 'self-eval-review.html' },
+      ] },
+      { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
+    ],
+    office: [
+      { label: '總覽', icon: 'home', items: [{ label: '總辦公室儀表板', url: 'hq-dashboard.html' }] },
+      { label: '自評', icon: 'branch', items: [
         { label: '自評題目管理', url: 'self-eval-templates.html' },
-        { label: '各館自評進度', url: 'self-eval-hq-flagged.html' },
+        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },
+        { label: '審閱同仁自評表', url: 'self-eval-review.html' },
         { label: '各館週報', url: 'weekly-report.html' },
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
       ] },
-      { label: '帳號管理', icon: 'lock', items: [
+      { label: '組織', icon: 'doc', items: [
+        { label: '部門管理', url: 'org-departments.html' },
+        { label: '職務管理', url: 'org-roles.html' },
+      ] },
+      { label: '帳號', icon: 'lock', items: [
         { label: '帳號管理', url: 'manage-passwords.html' },
         { label: '功能開關', url: 'feature-toggles.html' },
       ] },
     ],
   };
 
-  let navKey = null;
-  if (roleName.includes('房務')) navKey = 'housekeeping';
-  else if (roleName === '客務人員') navKey = 'frontdesk';
-  else if (roleName === '店經理') navKey = 'manager';
-  else if (roleName === '總公司') navKey = 'hq';
-  if (!navKey) return;
+  // 選單看帳號層級；現場人員再依職務分房務、客務
+  let navKey = level;
+  if (level === 'field') {
+    if (roleName.includes('房務')) navKey = 'housekeeping';
+    else if (roleName === '客務人員') navKey = 'frontdesk';
+  }
+  if (!NAV_SETS[navKey]) return;
 
   let categories = NAV_SETS[navKey];
 
