@@ -10,7 +10,7 @@ if (staff && window.accountLevelOf(staff) !== 'office') {
 
 const MODE_TEXT = {
   all: '目前狀態：<strong>全部功能開啟</strong>——系統所有功能都可以正常使用。',
-  self_eval_only: '目前狀態：<strong>只開放自評表</strong>——了了每月自評表與總公司後台之外，其他功能全部隱藏中。',
+  self_eval_only: '目前狀態：<strong>只開放自評表</strong>——除了每月自評表與後台管理之外，其他功能全部隱藏中。',
   custom: '目前狀態：<strong>自訂</strong>——部分功能已關閉，詳細請看下方清單。',
 };
 

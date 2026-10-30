@@ -137,7 +137,7 @@ async function loadList() {
     const extra = [];
     if (status === 'reviewed' && s.submission.reviewed_by_name) extra.push(`由 ${s.submission.reviewed_by_name} 完成面談`);
     else if (status === 'submitted' && s.submission.last_edited_by_name) extra.push(`${s.submission.last_edited_by_name} 已開始面談`);
-    if (others.length) extra.push(`其他主管：${others.join('、')}`);
+    if (others.length) extra.push(`${s.is_mine ? '其他主管' : '面談主管'}：${others.join('、')}`);
     if (!s.supervisor_names?.length) extra.push('未指定主管');
 
     const row = document.createElement('div');
