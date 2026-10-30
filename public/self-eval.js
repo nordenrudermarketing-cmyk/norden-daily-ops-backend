@@ -3,7 +3,7 @@ const API = window.APP_CONFIG?.API_BASE_URL ?? '';
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-const CATEGORY_LABEL = { common: '全部門共同自檢項目', management: '主管職專屬自檢項目', housekeeping: '房務部門專屬自檢項目', frontdesk: '客務部門專屬自檢項目' };
+const CATEGORY_LABEL = { common: '全部門共同自檢項目', management: '經理職專屬自檢項目', housekeeping: '房務部門專屬自檢項目', frontdesk: '客務部門專屬自檢項目' };
 
 document.getElementById('saveDraftBtn').addEventListener('click', () => save(false));
 document.getElementById('submitBtn').addEventListener('click', () => save(true));
@@ -21,6 +21,15 @@ if (staff) load();
 async function load() {
   const res = await fetch(`${API}/api/self-eval/form?staff_id=${staff.id}`);
   formData = await res.json();
+
+  // 總公司行政、總辦公室不用填自評（帳號層級，見 gas/Levels.gs）
+  if (formData.not_required) {
+    document.getElementById('staffLine').textContent = formData.staff?.name || staff.name;
+    document.getElementById('dueBanner').innerHTML =
+      `<div class="due-banner">你的帳號層級是「${escapeHtml(formData.level_label)}」，不需要填寫每月自評表。</div>`;
+    document.getElementById('signOffArea').style.display = 'none';
+    return;
+  }
 
   document.getElementById('staffLine').textContent = `${formData.staff.name}・評核月份：${formData.eval_month.slice(0, 7)}`;
 
@@ -62,7 +71,7 @@ function renderQuestions(readonly) {
       const title = document.createElement('div');
       title.className = 'unit-group-title';
       title.style.cssText = 'font-size:13px;font-weight:600;color:var(--ink-soft);margin:18px 0 8px;';
-      title.textContent = CATEGORY_LABEL[q.category] || q.category;
+      title.textContent = (formData.category_labels || CATEGORY_LABEL)[q.category] || q.category;
       listEl.appendChild(title);
       lastCategory = q.category;
     }

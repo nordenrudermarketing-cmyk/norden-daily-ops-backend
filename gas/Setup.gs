@@ -4,10 +4,13 @@
 //   檢查資料表結構     依 Schema.gs 建立缺少的分頁、補上缺少的欄位（不會刪任何東西）
 //   從 Supabase 備份匯入 把「路得系統_Supabase備份」試算表的資料搬進來（會覆蓋目前資料）
 //   從正式站同步最新資料 只有測試站才有：把「路得系統（正式）」的最新資料複製過來（正式站只讀不改）
-//   依館別建立初始管轄 管轄功能上線時用一次：每位店經理管轄自己館別的所有同仁（管轄表是空的才會執行）
+//   帳號層級轉換（一次性） 職務改名（店經理→經理、總公司→總辦公室經理），依職務補上每個人的帳號層級（見 Org.gs）
+//   依部門建立初始管轄 每位經理管轄同部門的現場人員（管轄表已有資料時會先問要不要清空重建）
+//   新增總辦公室帳號／把帳號設為總辦公室 後門：系統裡的總辦公室帳號都不能用時，由試算表擁有者處理
 //   顯示系統網址       目前部署的網頁網址
 //
 // 第一次使用任何一個選單項目時，Google 會要求授權，選 office.hq 帳號並允許即可。
+// 只有能編輯這份試算表的人（office.hq）看得到這個選單，所以後門不會被一般同仁使用。
 // ============================================================
 
 // 正式站的資料庫（試算表「路得系統（正式）」）。只有測試站的「從正式站同步最新資料」會讀它，不會寫入
@@ -19,8 +22,13 @@ function onOpen() {
     .addItem('檢查資料表結構', 'menuEnsureSchema')
     .addItem('從 Supabase 備份匯入資料', 'menuImportFromBackup');
   if (isStaging_()) menu.addItem('從正式站同步最新資料', 'menuSyncFromProduction');
-  menu.addItem('依館別建立初始管轄', 'menuSeedSupervisions');
   menu.addSeparator()
+    .addItem('帳號層級轉換（一次性）', 'menuMigrateAccountLevels')
+    .addItem('依部門建立初始管轄', 'menuSeedSupervisions')
+    .addSeparator()
+    .addItem('新增總辦公室帳號', 'menuCreateOfficeAccount')
+    .addItem('把帳號設為總辦公室', 'menuPromoteToOffice')
+    .addSeparator()
     .addItem('顯示系統網址', 'menuShowUrl')
     .addToUi();
 }
@@ -192,21 +200,79 @@ function importFromBackup_(backupId, opts) {
   return report;
 }
 
-// 管轄功能上線時用一次（見 Supervision.gs 的 seedSupervisionsByBranch_）
+// 帳號架構上線時用一次（見 Org.gs 的 migrateAccountLevels_），可以重複執行
+function menuMigrateAccountLevels() {
+  const ui = SpreadsheetApp.getUi();
+  ensureSchema_();
+  const answer = ui.alert(
+    '帳號層級轉換（一次性）',
+    '會做三件事：\n' +
+    '・職務改名：店經理 → 經理、總公司 → 總辦公室經理\n' +
+    '・每個職務補上自評題目類別\n' +
+    '・還沒有帳號層級的人依職務補上：總辦公室經理 → 總辦公室、經理 → 經理、其他 → 現場人員\n\n' +
+    '已經設定好的不會被改掉，可以重複執行。要繼續嗎？',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+  ui.alert('帳號層級轉換完成', migrateAccountLevels_().join('\n'), ui.ButtonSet.OK);
+}
+
+// 見 Supervision.gs 的 seedSupervisionsByBranch_
 function menuSeedSupervisions() {
   const ui = SpreadsheetApp.getUi();
   ensureSchema_();
   const answer = ui.alert(
-    '依館別建立初始管轄',
-    '會讓每位在職的店經理管轄自己館別的所有在職同仁（跟管轄功能上線前的規則一樣），之後再由總公司在帳號管理調整。\n\n' +
-    '只有在「supervisions」分頁還是空的時候才會執行，不會蓋掉已經設定好的管轄。要繼續嗎？',
+    '依部門建立初始管轄',
+    '會讓每位在職的經理，管轄自己部門的所有在職現場人員。經理之間、總辦公室的管轄不會自動建立，之後在帳號管理設定。\n\n要繼續嗎？',
     ui.ButtonSet.OK_CANCEL
   );
   if (answer !== ui.Button.OK) return;
-  const result = seedSupervisionsByBranch_();
-  ui.alert('依館別建立初始管轄', result.skipped
-    ? '「supervisions」分頁已經有資料，沒有做任何變更。'
-    : '已建立 ' + result.created + ' 筆管轄關係。', ui.ButtonSet.OK);
+  let result = seedSupervisionsByBranch_();
+  if (result.skipped) {
+    const replace = ui.alert(
+      '已經有管轄資料',
+      '「supervisions」分頁已經有 ' + result.existing + ' 筆管轄關係。\n\n' +
+      '要全部清空、依部門重新建立嗎？在帳號管理調整過的管轄會不見。',
+      ui.ButtonSet.YES_NO
+    );
+    if (replace !== ui.Button.YES) return;
+    result = seedSupervisionsByBranch_({ replace: true });
+  }
+  ui.alert('依部門建立初始管轄',
+    (result.removed ? '已清空原本的 ' + result.removed + ' 筆，' : '') + '已建立 ' + result.created + ' 筆管轄關係。',
+    ui.ButtonSet.OK);
+}
+
+// 後門：系統裡所有總辦公室帳號都不能用（停用、忘記密碼、人離職）時，由試算表擁有者新增一個
+function menuCreateOfficeAccount() {
+  const ui = SpreadsheetApp.getUi();
+  ensureSchema_();
+  const nameAns = ui.prompt('新增總辦公室帳號', '請輸入姓名：', ui.ButtonSet.OK_CANCEL);
+  if (nameAns.getSelectedButton() !== ui.Button.OK) return;
+  const codeAns = ui.prompt('新增總辦公室帳號', '請輸入登入代碼（不能跟別人重複）：', ui.ButtonSet.OK_CANCEL);
+  if (codeAns.getSelectedButton() !== ui.Button.OK) return;
+  try {
+    const s = createOfficeAccount_(nameAns.getResponseText(), codeAns.getResponseText());
+    ui.alert('已新增總辦公室帳號',
+      '「' + s.name + '」（登入代碼 ' + s.login_code + '）。\n還沒有密碼：第一次登入時輸入的密碼就會變成他的密碼，請盡快登入設定。',
+      ui.ButtonSet.OK);
+  } catch (err) {
+    ui.alert('無法新增', err.message, ui.ButtonSet.OK);
+  }
+}
+
+// 後門：把現有帳號直接改成總辦公室並重新啟用
+function menuPromoteToOffice() {
+  const ui = SpreadsheetApp.getUi();
+  ensureSchema_();
+  const codeAns = ui.prompt('把帳號設為總辦公室', '請輸入要設為總辦公室的登入代碼：', ui.ButtonSet.OK_CANCEL);
+  if (codeAns.getSelectedButton() !== ui.Button.OK) return;
+  try {
+    const s = promoteToOffice_(codeAns.getResponseText());
+    ui.alert('完成', '「' + s.name + '」已經是總辦公室層級，並且是啟用狀態。忘記密碼的話，請另一位總辦公室在帳號管理幫他設定。', ui.ButtonSet.OK);
+  } catch (err) {
+    ui.alert('無法設定', err.message, ui.ButtonSet.OK);
+  }
 }
 
 function menuShowUrl() {

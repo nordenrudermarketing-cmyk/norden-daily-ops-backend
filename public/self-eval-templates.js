@@ -2,13 +2,23 @@ const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-const CATEGORY_LABEL = { common: '全部門共同', management: '主管職專屬', housekeeping: '房務部門專屬', frontdesk: '客務部門專屬' };
+// 題目類別由伺服器提供（gas/Org.gs 的 QUESTION_CATEGORIES），之後新增類別這裡會自動跟上；拿不到時用這份
+let CATEGORY_LABEL = { common: '全部門共同', management: '經理職專屬', housekeeping: '房務部門專屬', frontdesk: '客務部門專屬' };
 
 document.getElementById('addBtn').addEventListener('click', addTemplate);
 
 loadTemplates();
 
 async function loadTemplates() {
+  try {
+    const catRes = await fetch(`${API}/api/self-eval/categories`);
+    if (catRes.ok) {
+      const cats = await catRes.json();
+      CATEGORY_LABEL = Object.fromEntries(cats.map((c) => [c.key, c.short]));
+      document.getElementById('newCategory').innerHTML =
+        cats.map((c) => `<option value="${c.key}">${c.short}</option>`).join('');
+    }
+  } catch (e) { /* 用預設的類別清單 */ }
   const res = await fetch(`${API}/api/self-eval/templates`);
   const templates = await res.json();
   renderTable(templates);

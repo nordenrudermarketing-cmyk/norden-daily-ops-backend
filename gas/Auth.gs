@@ -79,7 +79,7 @@ function sign_(payload) {
   return base64Url_(Utilities.computeHmacSha256Signature(payload, tokenSecret_()));
 }
 
-// switchedBy：測試站「切換身分」時，記下原本是哪位總公司切過來的（見 TestIdentity.gs），平常不用給
+// switchedBy：測試站「切換身分」時，記下原本是誰切過來的（見 TestIdentity.gs），平常不用給
 function issueToken_(staffId, switchedBy) {
   const data = { sid: staffId, exp: Date.now() + TOKEN_DAYS * 86400000 };
   if (switchedBy) data.by = switchedBy;
@@ -109,34 +109,48 @@ function verifyToken_(token) {
   return data ? data.sid : null;
 }
 
-// ---------- 身分與職級 ----------
-
-function levelOf_(roleName) {
-  if (roleName === '總公司') return 'hq';
-  if (roleName === '店經理') return 'manager';
-  return 'none';
-}
+// ---------- 身分與帳號層級（層級規則見 Levels.gs） ----------
 
 // 從憑證找出「目前登入的是誰」，找不到或已停用就丟 401
-// switched_by：測試站切換過來的身分才有，記著原本的總公司是誰
+// level：帳號層級（field／manager／hq_admin／office）
+// switched_by：測試站切換過來的身分才有，記著原本是誰切過來的
 function authenticate_(token) {
   const data = readToken_(token);
   if (!data) throw httpError_(401, '登入已過期，請重新登入');
   const staff = Db.first('staff', { id: data.sid });
   if (!staff || staff.is_active !== true) throw httpError_(401, '帳號已停用或不存在，請重新登入');
   const role = roleById_(staff.role_id);
-  return Object.assign(staff, { roles: role, level: levelOf_(role && role.name), switched_by: data.by || null });
+  return Object.assign(staff, { roles: role, level: levelOf_(staff, role), switched_by: data.by || null });
 }
 
 function requireLevel_(actor, levels, message) {
   if (levels.indexOf(actor.level) < 0) throw httpError_(403, message || '你沒有權限使用這個功能');
 }
 
-// 主管只能看自己館別的資料，總公司看全部
+// 看全公司資料的層級（總公司行政、總辦公室）看全部；經理只能看自己部門
 function requireBranchAccess_(actor, branchId) {
-  if (actor.level === 'hq') return;
+  if (canViewAllSelfEval_(actor.level)) return;
   if (actor.level === 'manager' && branchId === actor.branch_id) return;
-  throw httpError_(403, '你沒有權限查看這個館別的資料');
+  throw httpError_(403, '你沒有權限查看這個部門的資料');
+}
+
+// 登入、切換身分、/api/me 回傳給網頁存進 localStorage 的 staff 物件
+function sessionStaff_(staff) {
+  const role = roleById_(staff.role_id);
+  return {
+    id: staff.id,
+    name: staff.name,
+    branch_id: staff.branch_id,
+    role_id: staff.role_id,
+    is_active: staff.is_active,
+    roles: role,
+    account_level: levelOf_(staff, role),
+  };
+}
+
+// GET /api/me：目前登入的人（網頁用來補上舊登入資料沒有的 account_level）
+function apiMe_(req) {
+  return sessionStaff_(req.actor);
 }
 
 // ---------- API：登入 ----------
@@ -165,13 +179,5 @@ function apiLogin_(req) {
     throw httpError_(401, '密碼錯誤');
   }
 
-  return {
-    id: staff.id,
-    name: staff.name,
-    branch_id: staff.branch_id,
-    role_id: staff.role_id,
-    is_active: staff.is_active,
-    roles: roleById_(staff.role_id),
-    token: issueToken_(staff.id),
-  };
+  return Object.assign(sessionStaff_(staff), { token: issueToken_(staff.id) });
 }

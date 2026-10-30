@@ -16,6 +16,15 @@ function routes_() {
   return [
     { method: 'GET', path: '/api/health', handler: apiHealth_, public: true },
     { method: 'POST', path: '/api/login', handler: apiLogin_, public: true },
+    { method: 'GET', path: '/api/me', handler: apiMe_ },
+
+    // 部門、職務（限總辦公室），見 Org.gs
+    { method: 'GET', path: '/api/org/departments', handler: apiOrgDepartments_ },
+    { method: 'POST', path: '/api/org/departments', handler: apiOrgDepartmentCreate_ },
+    { method: 'PUT', path: '/api/org/departments/:id', handler: apiOrgDepartmentUpdate_ },
+    { method: 'GET', path: '/api/org/roles', handler: apiOrgRoles_ },
+    { method: 'POST', path: '/api/org/roles', handler: apiOrgRoleCreate_ },
+    { method: 'PUT', path: '/api/org/roles/:id', handler: apiOrgRoleUpdate_ },
 
     { method: 'GET', path: '/api/staff/list', handler: apiStaffList_ },
     { method: 'GET', path: '/api/staff/password-status', handler: apiPasswordStatus_ },
@@ -43,6 +52,7 @@ function routes_() {
     { method: 'PUT', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsPut_ },
 
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
+    { method: 'GET', path: '/api/self-eval/categories', handler: apiQuestionCategories_ },
     { method: 'GET', path: '/api/self-eval/templates', handler: apiSelfEvalTemplates_ },
     { method: 'POST', path: '/api/self-eval/templates', handler: apiSelfEvalTemplateCreate_ },
     { method: 'PUT', path: '/api/self-eval/templates/:id', handler: apiSelfEvalTemplateUpdate_ },

@@ -7,18 +7,17 @@
 //   每月 20 號前 主管完成面談（在審閱頁按「完成面談」）
 // 逾期只會標示提醒，不會擋住填寫或面談。
 //
-// 跟 Railway 版的差別：加上權限檢查（同仁只能填自己的表、題目管理限總公司）。
+// 跟 Railway 版的差別：加上權限檢查（同仁只能填自己的表、題目管理限總辦公室）。
 //
-// 誰面談誰（2026-10 起）：照「管轄」（Supervision.gs），不再照館別。
+// 誰要填（2026-10 起照帳號層級，見 Levels.gs）：現場人員、經理要填；總公司行政、總辦公室不用。
+// 題目：共同題目＋職務設定的專屬題目類別（Org.gs 的 questionCategoryOf_）。
+// 誰面談誰：照「管轄」（Supervision.gs），不再照館別，也沒有「代為面談」。
 //   一位同仁可以有多位主管，任何一位完成面談就算完成，自評表的 reviewed_by 記錄是誰面談的；
 //   面談草稿（主管意見、面談紀錄）多位主管共用一份，last_edited_by 記錄最後是誰存的。
-//   總公司看得到所有人，也可以替任何人完成面談（備援）。
+//   總公司行政、總辦公室看得到所有人的自評與進度（唯讀）。
 // ============================================================
 
 const SELF_EVAL_SCHEDULE = { releaseDay: 1, staffDueDay: 10, interviewDueDay: 20 };
-
-// 職務類別 → 自評題目類別（除了共同題目外，額外要加的專屬題目類別）
-const ROLE_CATEGORY_MAP = { housekeeping: 'housekeeping', frontdesk: 'frontdesk', management: 'management', headquarters: 'management' };
 
 function pad2_(n) {
   return String(n).padStart(2, '0');
@@ -61,19 +60,23 @@ function byCategoryThenSort_(a, b) {
   return c !== 0 ? c : bySortOrder_(a, b);
 }
 
-// 同仁本人、他目前的主管、總公司可以看這位同仁的自評表；
+// 同仁本人、他目前的主管、總公司行政與總辦公室（唯讀）可以看這位同仁的自評表；
 // 有給 submission 時，當初完成面談的主管也看得到那一份（主管換人後，歷史紀錄不會消失）
 function requireStaffAccess_(actor, staffId, submission) {
-  if (staffId === actor.id || actor.level === 'hq') return;
+  if (staffId === actor.id || canViewAllSelfEval_(actor.level)) return;
   if (isSupervisorOf_(actor, staffId)) return;
   if (submission && submission.reviewed_by && submission.reviewed_by === actor.id) return;
   throw httpError_(403, '你沒有權限查看這份自評表');
 }
 
-// 只有總公司或這位同仁目前的主管可以面談
+// 只有這位同仁目前的主管可以面談（總辦公室要面談，就先把他加進自己的管轄）
 function requireCanReview_(actor, staffId) {
-  if (actor.level === 'hq' || isSupervisorOf_(actor, staffId)) return;
-  throw httpError_(403, '你不是這位同仁的主管，不能進行面談');
+  if (isSupervisorOf_(actor, staffId)) return;
+  throw httpError_(403, '你不是這位同仁的面談主管，不能進行面談');
+}
+
+function requireOffice_(actor, message) {
+  requireLevelFn_(actor, isOffice_, message || '這個功能只有總辦公室可以使用');
 }
 
 function staffName_(id) {
@@ -106,7 +109,7 @@ function apiSelfEvalTemplates_(req) {
 
 // POST /api/self-eval/templates  { category, question_zh, question_id, sort_order }
 function apiSelfEvalTemplateCreate_(req) {
-  requireLevel_(req.actor, ['hq'], '自評題目只有總公司可以管理');
+  requireOffice_(req.actor, '自評題目只有總辦公室可以管理');
   const b = req.body;
   if (!b.category || !b.question_zh) throw httpError_(400, '請填寫題目類別與題目內容');
   return Db.insert('self_eval_templates', {
@@ -120,7 +123,7 @@ function apiSelfEvalTemplateCreate_(req) {
 
 // PUT /api/self-eval/templates/:id  { category, question_zh, question_id, sort_order }
 function apiSelfEvalTemplateUpdate_(req) {
-  requireLevel_(req.actor, ['hq'], '自評題目只有總公司可以管理');
+  requireOffice_(req.actor, '自評題目只有總辦公室可以管理');
   const b = req.body;
   const updated = Db.update('self_eval_templates', { id: req.params.id }, {
     category: b.category,
@@ -134,7 +137,7 @@ function apiSelfEvalTemplateUpdate_(req) {
 
 // POST /api/self-eval/templates/:id/toggle  { is_active }
 function apiSelfEvalTemplateToggle_(req) {
-  requireLevel_(req.actor, ['hq'], '自評題目只有總公司可以管理');
+  requireOffice_(req.actor, '自評題目只有總辦公室可以管理');
   const updated = Db.update('self_eval_templates', { id: req.params.id }, { is_active: !!req.body.is_active });
   if (!updated.length) throw httpError_(400, '找不到這個題目');
   return updated[0];
@@ -151,8 +154,13 @@ function apiSelfEvalForm_(req) {
   const staffRow = Db.first('staff', { id: staffId });
   if (!staffRow) throw httpError_(400, '找不到這位同仁');
   const role = roleById_(staffRow.role_id);
-  const roleCategory = ROLE_CATEGORY_MAP[role && role.category] || null;
-  const categories = roleCategory ? ['common', roleCategory] : ['common'];
+  const level = levelOf_(staffRow, role);
+  // 總公司行政、總辦公室不用填自評
+  if (!fillsSelfEval_(level)) {
+    return { not_required: true, level_label: levelLabel_(level), staff: { id: staffRow.id, name: staffRow.name } };
+  }
+  const roleCategory = questionCategoryOf_(role);
+  const categories = roleCategory && roleCategory !== 'common' ? ['common', roleCategory] : ['common'];
 
   const templates = Db.where('self_eval_templates', function (t) {
     return categories.indexOf(t.category) >= 0 && t.is_active === true;
@@ -174,6 +182,7 @@ function apiSelfEvalForm_(req) {
     release_date: schedule.release_date,
     today: taipeiDate_(),
     submission: submission ? Object.assign(submission, { reviewed_by_name: staffName_(submission.reviewed_by) }) : null,
+    category_labels: questionCategoryLabels_(),
     questions: templates.map(function (t) { return Object.assign(t, { answer: answerMap[t.id] || null }); }),
   };
 }
@@ -185,6 +194,7 @@ function apiSelfEvalSave_(req) {
   const actor = req.actor;
   const b = req.body;
   if (b.staff_id && b.staff_id !== actor.id) throw httpError_(403, '只能填寫自己的自評表');
+  if (!fillsSelfEval_(actor.level)) throw httpError_(400, '你的帳號層級（' + levelLabel_(actor.level) + '）不需要填寫自評');
   const evalMonth = normalizeEvalMonth_(b.eval_month);
   const now = nowIso_();
 
@@ -223,18 +233,18 @@ function apiSelfEvalSave_(req) {
 
 // GET /api/self-eval/my-reviewees?eval_month=2026-07-01&scope=mine|all
 // 我要面談的同仁（我管轄的人）和他們這一期的自評狀態。
-// 總公司帶 scope=all 可以看全部在職同仁（主管請假、離職時代為面談）。
+// 總公司行政、總辦公室帶 scope=all 可以看全部要填自評的在職同仁（唯讀，只有自己管轄的人才能面談）。
 function apiSelfEvalMyReviewees_(req) {
   const actor = req.actor;
   const evalMonth = normalizeEvalMonth_(req.query.eval_month);
   const all = req.query.scope === 'all';
-  if (all) requireLevel_(actor, ['hq'], '只有總公司可以查看全部同仁');
+  if (all) requireLevelFn_(actor, canViewAllSelfEval_, '只有總公司行政、總辦公室可以查看全部同仁');
 
   const supMap = supervisorMap_();
   const mine = {};
   superviseesOf_(actor.id).forEach(function (id) { mine[id] = true; });
   const people = Db.where('staff', function (s) {
-    return s.is_active === true && s.id !== actor.id && (all || mine[s.id]);
+    return s.is_active === true && s.id !== actor.id && (all || mine[s.id]) && fillsSelfEval_(levelOf_(s));
   });
 
   const subMap = {};
@@ -249,7 +259,7 @@ function apiSelfEvalMyReviewees_(req) {
       name: s.name,
       role_name: role ? role.name : null,
       branch_id: s.branch_id,
-      branch_name: branch ? branch.name : '（沒有館別）',
+      branch_name: branch ? branch.name : '（沒有部門）',
       is_mine: !!mine[s.id],
       supervisor_names: staffNames_(supMap[s.id]),
       submission: sub ? {
@@ -287,8 +297,9 @@ function apiSelfEvalSubmissionDetail_(req) {
       reviewed_by_name: staffName_(submission.reviewed_by),
       last_edited_by_name: staffName_(submission.last_edited_by),
       supervisor_names: staffNames_(supervisorsOf_(submission.staff_id)),
-      can_review: req.actor.level === 'hq' || isSupervisorOf_(req.actor, submission.staff_id),
+      can_review: isSupervisorOf_(req.actor, submission.staff_id),
     }),
+    category_labels: questionCategoryLabels_(),
     answers: answers,
   };
 }
@@ -379,10 +390,10 @@ function progressRow_(person, sub, schedule, today, supervisorIds) {
 }
 
 // GET /api/self-eval/hq-progress?eval_month=2026-08-01（選填）
-// 每個館「同仁填寫」「主管面談」兩個階段的完成人數，以及每位同仁的狀態。
+// 每個部門「同仁填寫」「主管面談」兩個階段的完成人數，以及每位同仁的狀態。
 // 不回傳作答內容——勾「否」不代表異常，那是同仁跟主管面談改善的起點。
 function apiSelfEvalHqProgress_(req) {
-  requireLevel_(req.actor, ['hq'], '各館自評進度只有總公司可以查看');
+  requireLevelFn_(req.actor, canViewAllSelfEval_, '各部門自評進度只有總公司行政、總辦公室可以查看');
   const evalMonth = normalizeEvalMonth_(req.query.eval_month);
   const schedule = scheduleFor_(evalMonth);
   const today = taipeiDate_();
@@ -402,21 +413,25 @@ function apiSelfEvalHqProgress_(req) {
   if (months.indexOf(evalMonth) < 0) months.push(evalMonth);
   months.sort().reverse();
 
-  // 應填名單：目前在職的同仁，加上這一期有填過但之後停用的同仁（歷史月份才不會少算）
-  // 館別以填寫當時存下來的為準，還沒填的就用目前所屬館別
+  // 應填名單：目前在職、要填自評的同仁（現場人員、經理），加上這一期有填過但之後停用的同仁（歷史月份才不會少算）
+  // 部門以填寫當時存下來的為準，還沒填的就用目前所屬部門
   const people = {};
   Db.where('staff', { is_active: true }).forEach(function (s) {
     const role = roleById_(s.role_id);
+    if (!fillsSelfEval_(levelOf_(s, role))) return;
     people[s.id] = { staff_id: s.id, name: s.name, role_name: role ? role.name : null, branch_id: s.branch_id };
   });
   const subByStaff = {};
   subs.forEach(function (sub) {
-    subByStaff[sub.staff_id] = sub;
     const person = people[sub.staff_id];
     if (person) {
+      subByStaff[sub.staff_id] = sub;
       if (sub.branch_id) person.branch_id = sub.branch_id;
     } else {
       const s = Db.first('staff', { id: sub.staff_id });
+      // 在職但現在不用填自評的人（例如層級改成總辦公室）以前填過的表，不算進應填人數
+      if (s && s.is_active === true) return;
+      subByStaff[sub.staff_id] = sub;
       const role = s ? roleById_(s.role_id) : null;
       people[sub.staff_id] = {
         staff_id: sub.staff_id,

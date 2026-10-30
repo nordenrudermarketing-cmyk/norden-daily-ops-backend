@@ -4,7 +4,7 @@ const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
 const STATUS_LABEL = { none: '尚未填寫', draft: '填寫中（草稿）', submitted: '待面談', reviewed: '已完成面談' };
-const CATEGORY_LABEL = { common: '全部門共同自檢項目', management: '主管職專屬自檢項目', housekeeping: '房務部門專屬自檢項目', frontdesk: '客務部門專屬自檢項目' };
+const CATEGORY_LABEL = { common: '全部門共同自檢項目', management: '經理職專屬自檢項目', housekeeping: '房務部門專屬自檢項目', frontdesk: '客務部門專屬自檢項目' };
 
 const $ = (id) => document.getElementById(id);
 const monthInput = $('monthInput');
@@ -34,13 +34,20 @@ async function fetchSchedule(evalMonth) {
 monthInput.addEventListener('change', loadList);
 $('backToList').addEventListener('click', loadList);
 $('showAll').addEventListener('change', loadList);
+let listTitle = '審閱自評表';
 
 if (staff) init();
 
 async function init() {
   $('staffLine').textContent = staff.name;
-  // 總公司可以切換「顯示全部同仁」，替不在自己管轄內的同仁面談（備援）
-  if (staff.roles?.name === '總公司') $('showAllWrap').style.display = '';
+  // 總公司行政、總辦公室可以切換「顯示全部同仁」查看所有人的自評（唯讀，只有自己管轄的人才能面談）。
+  // 總公司行政不面談、沒有管轄人員，所以一進來就直接顯示全部
+  const level = window.accountLevelOf(staff);
+  if (level === 'hq_admin' || level === 'office') $('showAllWrap').style.display = '';
+  if (level === 'hq_admin') {
+    $('showAll').checked = true;
+    listTitle = '查看同仁自評表';
+  }
   try {
     schedule = await fetchSchedule();
     monthInput.value = schedule.eval_month.slice(0, 7);
@@ -64,7 +71,7 @@ function lateLabel(status) {
 async function loadList() {
   $('listView').style.display = 'block';
   $('detailWrap').style.display = 'none';
-  $('pageTitle').textContent = '審閱自評表';
+  $('pageTitle').textContent = listTitle;
   if (!monthInput.value) return;
 
   const evalMonth = `${monthInput.value}-01`;
@@ -72,7 +79,7 @@ async function loadList() {
   listEl.innerHTML = '<p class="empty-state">載入中…</p>';
   $('scheduleBanner').innerHTML = '';
 
-  // 我管轄的同仁（總公司勾「顯示全部同仁」時是全部在職同仁），已經依館別、姓名排好
+  // 我管轄的同仁（勾「顯示全部同仁」時是全部要填自評的在職同仁），已經依部門、姓名排好
   const scope = $('showAll').checked ? 'all' : 'mine';
   let data;
   try {
@@ -105,7 +112,7 @@ async function loadList() {
   if (total === 0) {
     listEl.innerHTML = scope === 'all'
       ? '<p class="empty-state">目前沒有在職同仁</p>'
-      : '<p class="empty-state">目前沒有指定給你管轄的同仁，需要的話請總公司在「帳號管理」設定</p>';
+      : '<p class="empty-state">目前沒有指定給你管轄的同仁，需要的話請總公司行政或總辦公室在「帳號管理」設定</p>';
     return;
   }
 
@@ -203,7 +210,7 @@ function renderDetail(data) {
     if (a.template.category !== lastCategory) {
       const title = document.createElement('div');
       title.style.cssText = 'font-size:13px;font-weight:600;color:var(--ink-soft);margin:18px 0 8px;';
-      title.textContent = CATEGORY_LABEL[a.template.category] || a.template.category;
+      title.textContent = (data.category_labels || CATEGORY_LABEL)[a.template.category] || a.template.category;
       detailView.appendChild(title);
       lastCategory = a.template.category;
     }

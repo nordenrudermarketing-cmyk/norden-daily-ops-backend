@@ -396,7 +396,7 @@ const Db = {
 
 function roleById_(roleId) {
   const role = roleId ? Db.first('roles', { id: roleId }) : null;
-  return role ? { name: role.name, category: role.category } : null;
+  return role ? { name: role.name, category: role.category, template_category: role.template_category } : null;
 }
 
 function branchById_(branchId) {

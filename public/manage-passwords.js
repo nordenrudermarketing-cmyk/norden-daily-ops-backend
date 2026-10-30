@@ -1,13 +1,14 @@
 // 帳號管理（檔名沿用 manage-passwords，原本連到「密碼管理」的連結才不會壞掉）
-// 總公司：所有館別、所有職務，並且設定每位主管的「管轄人員」；
-// 店經理：自己管轄的房務、客務，自己的帳號只能改密碼
-// 權限由後端 /api/accounts 依資料庫裡的真實職務與管轄判斷，這裡只負責畫面
+// 依帳號層級（gas/Levels.gs）：只能建立、管理比自己低的層級，總辦公室可以管同級
+//   總辦公室：全部帳號；總公司行政：經理、現場人員；經理：自己管轄的現場人員
+//   總公司行政、總辦公室可以設定經理／總辦公室的「管轄人員」
+// 權限由後端 /api/accounts 依資料庫裡的真實帳號層級與管轄判斷，這裡只負責畫面
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
 const API = window.APP_CONFIG?.API_BASE_URL ?? '';
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
-const roleName = staff?.roles?.name;
-const isHQ = roleName === '總公司';
+const level = staff ? window.accountLevelOf(staff) : null;
+const isManager = level === 'manager';
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,8 +21,8 @@ let supSelected = null; // Set：勾選中的同仁 id
 
 if (!staff) {
   window.location.href = 'index.html';
-} else if (roleName !== '總公司' && roleName !== '店經理') {
-  alert('帳號管理只有總公司和店經理可以使用');
+} else if (level === 'field') {
+  alert('帳號管理只有經理以上的帳號層級可以使用');
   window.location.href = 'index.html';
 } else {
   init();
@@ -75,15 +76,16 @@ async function init() {
     return;
   }
 
-  if (isHQ) {
-    $('scopeLine').textContent = `你可以管理：全部館別、所有職務的帳號；${meta.supervisor_roles?.join('、') || '主管'}的帳號可以設定「管轄人員」`;
-  } else {
-    $('scopeLine').textContent = '你可以管理：你管轄的房務、客務帳號（自己的帳號可以改密碼）。管轄人員由總公司設定';
-  }
-  // 館別篩選：總公司看全部館別；店經理的管轄人員跨好幾個館時也顯示
-  if (isHQ || meta.branches.length > 1) {
+  const SCOPE_TEXT = {
+    office: '你可以管理：全部帳號（含其他總辦公室）；經理、總辦公室的帳號可以設定「管轄人員」',
+    hq_admin: '你可以管理：經理、現場人員的帳號；經理、總辦公室的帳號可以設定「管轄人員」',
+    manager: '你可以管理：你管轄的現場人員帳號（自己的帳號可以改姓名、密碼）。管轄人員由總公司行政或總辦公室設定',
+  };
+  $('scopeLine').textContent = `你的帳號層級：${meta.actor.level_label}。${SCOPE_TEXT[meta.actor.level] || ''}`;
+  // 部門篩選：經理的管轄人員只在一個部門時不用顯示
+  if (!isManager || meta.branches.length > 1) {
     $('branchFilter').style.display = '';
-    $('branchFilter').innerHTML = '<option value="">全部館別</option>' +
+    $('branchFilter').innerHTML = '<option value="">全部部門</option>' +
       meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
   }
 
@@ -127,6 +129,7 @@ function render() {
         <p class="acct-name">${escapeHtml(a.name)}${a.is_self ? '<span class="badge muted">你自己</span>' : ''}${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}</p>
         <p class="acct-meta">
           登入代碼：${escapeHtml(a.login_code || '—')}　${escapeHtml(a.branch_name || '')}・${escapeHtml(a.role_name || '')}
+          <span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>
           <span class="badge ${a.has_password ? 'ok' : 'warn'}">${a.has_password ? '已設定密碼' : '尚未設定密碼'}</span>
         </p>
         ${supervisionLine(a)}
@@ -150,12 +153,16 @@ function render() {
   });
 }
 
-// 「主管：A、B」或「未指定主管」；主管級帳號再加「管轄 N 人」
+// 「面談主管：A、B」或「未指定面談主管」（只有要填自評的層級才需要）；能當主管的帳號再加「管轄 N 人」
 function supervisionLine(a) {
   if (!a.is_active) return '';
   const parts = [];
-  if (a.supervisor_names?.length) parts.push(`主管：${escapeHtml(a.supervisor_names.join('、'))}`);
-  else parts.push('<span class="badge warn" style="margin-left:0;">未指定主管</span>');
+  if (a.fills_self_eval) {
+    if (a.supervisor_names?.length) parts.push(`面談主管：${escapeHtml(a.supervisor_names.join('、'))}`);
+    else parts.push('<span class="badge warn" style="margin-left:0;">未指定面談主管</span>');
+  } else {
+    parts.push('不需要自評');
+  }
   if (a.can_supervise) parts.push(`管轄 ${a.supervisee_count} 人`);
   return `<p class="acct-sup">${parts.join('　')}</p>`;
 }
@@ -200,19 +207,34 @@ function openEdit(account) {
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
 
-  // 館別：總公司可以選全部；店經理可以選自己館別和管轄人員所在的館別（只有一個時就不顯示，後端也會檢查）
-  $('fBranchField').style.display = isHQ || meta.branches.length > 1 ? '' : 'none';
-  $('fBranch').innerHTML = meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+  // 下拉選單只列出可以選的；編輯時如果原本的值不在清單裡（例如部門已停用），也保留它
+  const withCurrent = (list, current) =>
+    current && current.id && !list.some((x) => x.id === current.id) ? [...list, current] : list;
+  const isSelf = !!account?.is_self;
+
+  // 部門：經理只能選自己的部門和管轄人員所在的部門（只有一個時就不顯示，後端也會檢查）
+  const branches = withCurrent(meta.branches, account && { id: account.branch_id, name: account.branch_name });
+  $('fBranchField').style.display = !isManager || branches.length > 1 ? '' : 'none';
+  $('fBranch').innerHTML = branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
   $('fBranch').value = account?.branch_id ||
     $('branchFilter').value ||
     meta.branches.find((b) => b.code !== 'HQ')?.id ||
     meta.branches[0]?.id || '';
 
-  // 職務：店經理只會拿到房務、客務；編輯自己時鎖住（後端也會擋）
-  $('fRole').innerHTML = meta.roles.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  // 職務：只決定自評題目
+  const roles = withCurrent(meta.roles, account && { id: account.role_id, name: account.role_name });
+  $('fRole').innerHTML = roles.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
   if (account) $('fRole').value = account.role_id;
-  $('fRole').disabled = !!account?.is_self;
-  $('fRoleHint').style.display = account?.is_self ? '' : 'none';
+
+  // 帳號層級：只能設成比自己低的層級（總辦公室可以設同級）
+  const levels = withCurrent(meta.levels.map((l) => ({ id: l.key, name: l.label })),
+    account && { id: account.account_level, name: account.level_label });
+  $('fLevel').innerHTML = levels.map((l) => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
+  $('fLevel').value = account?.account_level || 'field';
+
+  // 自己的帳號：部門、職務、層級都不能自己改（後端也會擋）
+  ['fBranch', 'fRole', 'fLevel'].forEach((id) => { $(id).disabled = isSelf; });
+  $('fRoleHint').style.display = isSelf ? '' : 'none';
 
   $('editDialog').showModal();
   $('fName').focus();
@@ -225,6 +247,7 @@ async function saveEdit(event) {
     login_code: $('fLoginCode').value,
     branch_id: $('fBranch').value,
     role_id: $('fRole').value,
+    account_level: $('fLevel').value,
     is_part_time: $('fPartTime').checked,
   };
   if (!editingId && $('fPassword').value) body.password = $('fPassword').value;
@@ -247,7 +270,7 @@ async function saveEdit(event) {
   }
 }
 
-// ---------- 管轄人員（只有總公司） ----------
+// ---------- 管轄人員（總公司行政、總辦公室） ----------
 
 async function openSupervision(account) {
   supTarget = account;
@@ -272,16 +295,16 @@ async function openSupervision(account) {
   }
 }
 
-// 可以選的人：所有在職同仁（不含主管自己），依館別分組；每組可以「全選本館」
+// 可以選的人：要填自評的在職同仁（現場人員、經理，不含主管自己），依部門分組；每組可以「全選本部門」
 function renderSupList() {
   if (!supSelected) return;
   const keyword = $('supSearch').value.trim().toLowerCase();
-  const people = accounts.filter((a) => a.is_active && a.id !== supTarget.id && (!keyword ||
+  const people = accounts.filter((a) => a.is_active && a.fills_self_eval && a.id !== supTarget.id && (!keyword ||
     a.name.toLowerCase().includes(keyword) || (a.login_code || '').toLowerCase().includes(keyword)));
 
   const groups = new Map();
   people.forEach((a) => {
-    const key = a.branch_name || '（沒有館別）';
+    const key = a.branch_name || '（沒有部門）';
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(a);
   });
@@ -294,7 +317,7 @@ function renderSupList() {
       .map(([branch, list], i) => {
         const allOn = list.every((a) => supSelected.has(a.id));
         return `
-          <label class="sup-group-title"><input type="checkbox" data-group="${i}" ${allOn ? 'checked' : ''}> ${escapeHtml(branch)}（全選本館 ${list.length} 人）</label>
+          <label class="sup-group-title"><input type="checkbox" data-group="${i}" ${allOn ? 'checked' : ''}> ${escapeHtml(branch)}（全選本部門 ${list.length} 人）</label>
           ${list.map((a) => `
             <label class="sup-item"><input type="checkbox" data-id="${a.id}" data-in-group="${i}" ${supSelected.has(a.id) ? 'checked' : ''}>
               ${escapeHtml(a.name)} <small>${escapeHtml(a.role_name || '')}・${escapeHtml(a.login_code || '')}</small></label>`).join('')}`;

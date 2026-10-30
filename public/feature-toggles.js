@@ -2,15 +2,15 @@ const API = window.APP_CONFIG.API_BASE_URL;
 const staff = JSON.parse(localStorage.getItem('staff') || 'null');
 if (!staff) window.location.href = 'index.html';
 
-// 這頁只有總公司能用
-if (staff && staff.roles?.name !== '總公司') {
-  alert('這個頁面只有總公司帳號可以使用');
+// 這頁只有總辦公室能用（帳號層級，見 gas/Levels.gs）
+if (staff && window.accountLevelOf(staff) !== 'office') {
+  alert('這個頁面只有總辦公室帳號可以使用');
   window.location.href = 'index.html';
 }
 
 const MODE_TEXT = {
   all: '目前狀態：<strong>全部功能開啟</strong>——系統所有功能都可以正常使用。',
-  self_eval_only: '目前狀態：<strong>只開放自評表</strong>——除了每月自評表與總公司後台之外，其他功能全部隱藏中。',
+  self_eval_only: '目前狀態：<strong>只開放自評表</strong>——了了每月自評表與總公司後台之外，其他功能全部隱藏中。',
   custom: '目前狀態：<strong>自訂</strong>——部分功能已關閉，詳細請看下方清單。',
 };
 
