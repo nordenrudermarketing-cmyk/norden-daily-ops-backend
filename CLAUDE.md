@@ -32,10 +32,21 @@ Railway＋Supabase 保留 1～3 個月當退路（刪掉該變數就切回舊系
 - 密碼雜湊在指令碼屬性 `PW_<id>`，不在試算表；**不要在登入框替使用者輸入密碼**，
   測試站資料是正式站的複本（真實同仁），要登入請使用者自己在瀏覽器窗格輸入
 - 測試站工具：試算表選單「從正式站同步最新資料」（測試帳號保留、密碼不複製）；
-  網頁右下角「測試站」面板可以讓總公司切換成任何在職同仁（`gas/TestIdentity.gs`，正式站無效）
+  網頁右下角「測試站」面板可以讓總公司行政、總辦公室切換成任何在職同仁（`gas/TestIdentity.gs`，正式站無效）；
+  同步會覆蓋測試站的管轄關係，測試帳號（`T-` 開頭、名字有「測試」）會保留但管轄要重設
 - 本機可以用 Node 模擬 Apps Script 環境跑主要 API（模擬測試腳本放在 scratchpad，不在 repo）；
   `node --check` 可以檢查 .gs 語法
 - 不要在 Apps Script 網頁編輯器改程式（會被下次上傳蓋掉）
+- 用 PowerShell 指令（`.Replace`）直接取代中文字串曾經把字弄壞（「各」變「館」、「除」變「了」），**改中文一律用 Edit 工具**
+
+### 目前狀態與待辦（2026-10-30）
+
+- 正式站 Google 版部署 @4、測試站 @13，程式＝main（PR #5：前端瘦身＋管轄＋帳號架構）
+- 正式站只開放自評表相關功能；其他功能等要重新開放時，在 Google 版重做（第 2 階段）
+- 使用者已在正式站手動設定經理的面談主管、帳號層級
+- 待辦：使用者會提供**職務表**——新職務在「職務管理」頁新增即可；需要新的題目類別時改 `gas/Org.gs` 的 `QUESTION_CATEGORIES`
+- 測試站有測試帳號 `T-GAS-HR`（總公司行政）、`T-GAS-MGR`（經理）、`T-GAS-HK`（房務）
+- Railway＋Supabase 保留當退路，預計 2027 年 1 月前後確認沒問題再停用
 
 ---
 
@@ -60,6 +71,10 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 ## 程式架構
 
+> 下面「後端 `src/`」「功能開關」「帳號管理」「自評表」講的是 **Railway 版**（只做退路）。
+> Google 版對應的是 `gas/Catalog.gs`／`Features.gs`（功能開關）、`gas/Accounts.gs`、`gas/SelfEval.gs`，
+> 權限一律看帳號層級（見後面「帳號架構」）。`public/` 前端兩版共用。
+
 ### 後端 `src/`
 
 - `server.js` — Express 進入點，掛載所有路由；`app.use('/api', featureGuard)` 在所有路由之前
@@ -74,8 +89,9 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 - `config.js` 的 `API_BASE_URL` 部署時是**空字串**（前後端同網域）。
   ⚠ **不能用 `if (API_BASE)` 判斷有沒有設定**，空字串是 falsy，整段會被跳過（踩過一次）
-- 登入狀態就是 `localStorage` 裡的 `staff` 物件（`{ id, name, branch_id, roles: { name, category }, todayShiftCode }`），
-  **沒有 token、沒有 session**。`login.js` 依 `roles.name` 和當日班別決定登入後導到哪一頁
+- 登入狀態是 `localStorage` 裡的 `staff` 物件（`{ id, name, branch_id, roles, account_level, token, todayShiftCode }`）。
+  Google 版的 `token` 是有簽章的登入憑證（Railway 版沒有）；`login.js`、`sidebar.js` 依 `account_level`
+  （`config.js` 的 `window.accountLevelOf`）決定登入後首頁和選單，現場人員再依職務、當日班別細分
 - `sidebar.js` **每一頁都會載入**，負責：畫側邊選單、依功能開關過濾選單、攔截被關閉的頁面、
   藏掉指向已關閉功能的連結。要改選單結構就是改這支的 `NAV_SETS`
 - **2026-10-29 前端瘦身**：`public/` 只留 Google 版在用的 8 頁（`build_gas.py` 的 `PAGES`）和它們用到的
@@ -84,7 +100,7 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
   用 `git checkout b7f8a97^ -- public/<檔名>` 從刪除前的版本拿回來再改寫。
   `sidebar.js` 的 `NAV_SETS` 和 `Catalog.gs` 仍保留這些功能的定義（沒搬的功能會自動隱藏）
 
-### 功能開關（總公司可以整組隱藏功能）
+### 功能開關（Railway 版；Google 版見 `gas/Catalog.gs`，只有總辦公室能設定）
 
 `src/lib/featureCatalog.js` 是**唯一的定義**：一個功能包含哪些網頁、哪些 API 前綴。
 資料表 `feature_toggles` 只存「哪個功能被關掉」，表裡沒有的 key 一律視為開啟（fail-open）。
@@ -94,15 +110,15 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 
 **加新功能時，記得在 `featureCatalog.js` 加一筆**，前後端會自動跟上。
 
-### 帳號管理 `routes/accounts.js`
+### 帳號管理 `routes/accounts.js`（Railway 版；Google 版規則見後面「帳號架構」）
 
 總公司管全部；店經理只能管自己館別的房務、客務，自己的帳號只能改密碼。
 權限是後端拿前端送來的 `actor_id` 去資料庫查**真實職務**再判斷。
 ⚠ 這組 API **沒有登入驗證**，擋得住畫面越權，擋不住偽造 `actor_id`（使用者知道，決定之後再處理）。
 
-### 自評表 `routes/selfEval.js`
+### 自評表 `routes/selfEval.js`（Google 版是 `gas/SelfEval.gs`，時程與台灣時間規則相同）
 
-時程集中在檔案最上面的 `SCHEDULE`：每月 1 號發布上個月的表、10 號前同仁送出、20 號前主管完成面談。
+時程集中在檔案最上面的 `SCHEDULE`（Google 版叫 `SELF_EVAL_SCHEDULE`）：每月 1 號發布上個月的表、10 號前同仁送出、20 號前主管完成面談。
 **日期一律用台灣時間計算**（Railway 跑 UTC，不換算的話台灣時間 1 號早上 8 點前會被當成上個月），
 前端也要用伺服器回傳的 `today` 判斷逾期，不要用瀏覽器的 `toISOString()`。
 
@@ -148,8 +164,8 @@ GitHub（程式碼）→ Railway（把程式跑起來、給網址）→ Supabase
 4. 上傳測試站：`python tools/build_gas.py` → `clasp -P clasp-staging.json push -f` →
    **有改 Schema 就請使用者在「路得系統（測試）」按「路得系統 → 檢查資料表結構」** →
    `clasp -P clasp-staging.json redeploy <測試站部署ID> -d "說明"`
-5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：請使用者在窗格裡用總公司帳號登入測試站一次，
-   之後由 Claude 用右下角「測試站」面板切換成需要的身分（店經理、房務…）操作驗證，驗完切回總公司；
+5. 用瀏覽器窗格實測。**Claude 不能代輸密碼**：請使用者在窗格裡用總辦公室帳號登入測試站一次，
+   之後由 Claude 用右下角「測試站」面板切換成需要的身分（總公司行政、經理、現場人員…）操作驗證，驗完切回原本帳號；
    有 bug 自己修，回到第 4 步
 6. push branch、更新 README，回報「測試站驗證完成」並列出驗證了哪些項目
 
