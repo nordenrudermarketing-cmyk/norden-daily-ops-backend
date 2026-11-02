@@ -131,6 +131,7 @@ function render() {
           登入代碼：${escapeHtml(a.login_code || '—')}　${escapeHtml(a.branch_name || '')}・${escapeHtml(a.role_name || '')}
           <span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>
           <span class="badge ${a.has_password ? 'ok' : 'warn'}">${a.has_password ? '已設定密碼' : '尚未設定密碼'}</span>
+          ${a.verify_email ? '<span class="badge ok">登入要收驗證碼</span>' : ''}
         </p>
         ${supervisionLine(a)}
       </div>
@@ -236,9 +237,19 @@ function openEdit(account) {
   ['fBranch', 'fRole', 'fLevel'].forEach((id) => { $(id).disabled = isSelf; });
   $('fRoleHint').style.display = isSelf ? '' : 'none';
 
+  $('fVerifyEmail').value = account?.verify_email || '';
+  syncVerifyEmailField();
+
   $('editDialog').showModal();
   $('fName').focus();
 }
+
+// 收驗證碼的 Email：經理以上才有，自己的帳號不能改（層級欄鎖住＝編輯自己）
+function syncVerifyEmailField() {
+  const show = !$('fLevel').disabled && $('fLevel').value !== 'field';
+  $('fVerifyEmailField').style.display = show ? '' : 'none';
+}
+$('fLevel').addEventListener('change', syncVerifyEmailField);
 
 async function saveEdit(event) {
   event.preventDefault();
@@ -251,6 +262,7 @@ async function saveEdit(event) {
     is_part_time: $('fPartTime').checked,
   };
   if (!editingId && $('fPassword').value) body.password = $('fPassword').value;
+  if (!$('fLevel').disabled) body.verify_email = $('fVerifyEmail').value;
 
   $('editError').textContent = '儲存中…';
   try {

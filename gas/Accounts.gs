@@ -33,6 +33,13 @@ function accountActor_(req) {
   return actor;
 }
 
+// 收驗證碼的 Email 是選填：空白一律允許（＝只用密碼登入），有填才檢查格式
+function cleanVerifyEmail_(value) {
+  const email = cleanText_(value).toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw httpError_(400, '收驗證碼的 Email 格式不正確');
+  return email;
+}
+
 function withRelations_(s) {
   return Object.assign(s, { roles: roleById_(s.role_id), branches: branchById_(s.branch_id) });
 }
@@ -88,6 +95,8 @@ function toPublicAccount_(actor, s, hasPassword, ctx) {
     is_active: isActive,
     is_part_time: !!s.is_part_time,
     has_password: hasPassword,
+    // 只給管得到這個帳號的人看；自己的 Email 不能自己改，也就不回傳
+    verify_email: manageable ? (s.verify_email || '') : null,
     is_self: isSelf,
     // 自己的帳號可以改姓名、登入代碼（層級、職務、部門鎖住）
     can_edit: manageable || isSelf,
@@ -198,7 +207,7 @@ function apiAccountsList_(req) {
     .map(function (s) { return toPublicAccount_(actor, s, !!flags[s.id], ctx); });
 }
 
-// POST /api/accounts  { name, login_code, branch_id, role_id, account_level, is_part_time, password? }
+// POST /api/accounts  { name, login_code, branch_id, role_id, account_level, is_part_time, password?, verify_email? }
 function apiAccountsCreate_(req) {
   const actor = accountActor_(req);
   const name = cleanText_(req.body.name);
@@ -209,6 +218,7 @@ function apiAccountsCreate_(req) {
   if (!loginCode) throw httpError_(400, '請填寫登入代碼');
   const scope = resolveScope_(actor, req.body, null);
   if (loginCodeTaken_(loginCode)) throw httpError_(400, '登入代碼「' + loginCode + '」已經有人使用');
+  const verifyEmail = canHaveVerifyEmail_(scope.level) ? cleanVerifyEmail_(req.body.verify_email) : '';
 
   const created = Db.insert('staff', {
     name: name,
@@ -216,6 +226,7 @@ function apiAccountsCreate_(req) {
     branch_id: scope.branch_id,
     role_id: scope.role.id,
     account_level: scope.level,
+    verify_email: verifyEmail,
     is_active: true,
     is_part_time: !!req.body.is_part_time,
     learning_map_enabled: false,
@@ -229,8 +240,9 @@ function apiAccountsCreate_(req) {
   return accountResponse_(actor, created.id);
 }
 
-// PUT /api/accounts/:id  { name, login_code, branch_id, role_id, account_level, is_part_time }
-// 自己的帳號：只能改姓名、登入代碼、兼職（層級、職務、部門不能自己改）
+// PUT /api/accounts/:id  { name, login_code, branch_id, role_id, account_level, is_part_time, verify_email? }
+// 自己的帳號：只能改姓名、登入代碼、兼職（層級、職務、部門不能自己改；
+// 收驗證碼的 Email 也不能自己改，否則偷到登入狀態的人可以把信箱換成自己的）
 function apiAccountsUpdate_(req) {
   const actor = accountActor_(req);
   const target = loadTarget_(req.params.id);
@@ -250,6 +262,9 @@ function apiAccountsUpdate_(req) {
       throw httpError_(400, '這是最後一個在職的總辦公室帳號，不能改成其他層級');
     }
     Object.assign(patch, { branch_id: scope.branch_id, role_id: scope.role.id, account_level: scope.level });
+    // 網頁沒送這個欄位就維持原本的；降成現場人員時一併清掉
+    if (!canHaveVerifyEmail_(scope.level)) patch.verify_email = '';
+    else if (req.body.verify_email !== undefined) patch.verify_email = cleanVerifyEmail_(req.body.verify_email);
   }
   Db.update('staff', { id: target.id }, patch);
   return accountResponse_(actor, target.id);

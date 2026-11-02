@@ -57,9 +57,11 @@
       body: body,
       token: currentToken(),
     }).then(function (r) {
-      if (path === '/api/login' && r.status === 200 && r.body && r.body.token) lastLoginToken = r.body.token;
+      // /api/login 和 /api/login/verify 都算登入流程
+      var isLoginCall = path.indexOf('/api/login') === 0;
+      if (isLoginCall && r.status === 200 && r.body && r.body.token) lastLoginToken = r.body.token;
       // 登入過期或帳號被停用：清掉登入狀態，回登入頁
-      if (r.status === 401 && path !== '/api/login') {
+      if (r.status === 401 && !isLoginCall) {
         localStorage.removeItem('staff');
         app.navigate('index.html', { replace: true });
       }

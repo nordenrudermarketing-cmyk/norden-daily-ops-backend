@@ -89,6 +89,18 @@ function assignableLevels_(actorLevel) {
   });
 }
 
+// 可以設定「收驗證碼的 Email」的層級（經理以上）
+function canHaveVerifyEmail_(level) {
+  return levelRank_(level) >= levelRank_('manager');
+}
+
+// 這個帳號登入時要不要收信箱驗證碼（Auth.gs）：經理以上而且有填 Email；沒填就只用密碼
+function requiresEmailVerify_(staff, level) {
+  if (!canHaveVerifyEmail_(level) || !String(staff.verify_email || '').trim()) return false;
+  // 測試站的資料是正式站的複本，只寄給測試帳號，避免打擾真實同仁
+  return !isStaging_() || isTestAccount_(staff);
+}
+
 function requireLevelFn_(actor, check, message) {
   if (!check(actor.level)) throw httpError_(403, message || '你沒有權限使用這個功能');
 }

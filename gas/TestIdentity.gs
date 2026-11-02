@@ -68,7 +68,7 @@ function apiTestSwitch_(req) {
   }
   const shift = Db.first('staff_schedule', { staff_id: target.id, work_date: taipeiDate_() });
   return Object.assign(sessionStaff_(target), {
-    token: issueToken_(target.id, backToOrigin ? null : origin.id),
+    token: issueToken_(target.id, { by: backToOrigin ? null : origin.id, switched: true }),
     todayShiftCode: shift ? shift.shift_code : null,
   });
 }

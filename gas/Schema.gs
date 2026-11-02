@@ -34,11 +34,13 @@ const SCHEMA = {
     columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool' },
   },
   // account_level：帳號層級，決定權限（field 現場人員／manager 經理／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
+  // verify_email：收登入驗證碼的 Email（選填、限經理以上，空白＝只用密碼，見 Auth.gs）
   staff: {
     cache: true,
     columns: {
       id: 'text', name: 'text', branch_id: 'text', role_id: 'text', login_code: 'text',
       is_active: 'bool', is_part_time: 'bool', learning_map_enabled: 'bool', account_level: 'text',
+      verify_email: 'text',
     },
   },
   self_eval_templates: {
