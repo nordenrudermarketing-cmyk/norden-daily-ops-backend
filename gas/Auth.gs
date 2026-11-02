@@ -16,6 +16,10 @@
 
 const TOKEN_DAYS = 90;
 
+// 同一個登入代碼連錯幾次就暫時鎖定（時間到自動解除）
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_SECONDS = 15 * 60;
+
 function bcrypt_() {
   const lib = globalThis.dcodeIO.bcrypt;
   // Apps Script 沒有瀏覽器的亂數產生器，產生 salt 用 Math.random 代替
@@ -155,6 +159,22 @@ function apiMe_(req) {
 
 // ---------- API：登入 ----------
 
+// 輸入的代碼可能是任何內容，而且不管代碼存不存在都要計數（鎖定訊息才不會透露代碼是否存在），所以 key 一律用雜湊
+function loginFailKey_(loginCode) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(loginCode), Utilities.Charset.UTF_8);
+  return 'login_fail_' + base64Url_(digest);
+}
+
+function loginFailCount_(key) {
+  return Number(CacheService.getScriptCache().get(key)) || 0;
+}
+
+// 記一次失敗，並回傳統一的錯誤：不透露是代碼錯、密碼錯還是帳號已停用
+function loginFailed_(key) {
+  CacheService.getScriptCache().put(key, String(loginFailCount_(key) + 1), LOGIN_LOCK_SECONDS);
+  return httpError_(401, '登入代碼或密碼錯誤');
+}
+
 // POST /api/login  { login_code, password }
 // 一頁式登入：登入代碼＋密碼一起送出
 function apiLogin_(req) {
@@ -164,11 +184,18 @@ function apiLogin_(req) {
   if (!loginCode) throw httpError_(400, '缺少 login_code');
   if (!password) throw httpError_(400, '請輸入密碼');
 
+  const failKey = loginFailKey_(loginCode);
+  if (loginFailCount_(failKey) >= LOGIN_MAX_FAILS) throw httpError_(429, '嘗試次數過多，請 15 分鐘後再試');
+
   // Railway 版用 .single()：同一個登入代碼對到兩個人時也算登入失敗
   const matches = Db.where('staff', function (s) {
     return s.login_code === String(loginCode) && s.is_active === true;
   });
-  if (matches.length !== 1) throw httpError_(401, '登入代碼錯誤或帳號已停用');
+  if (matches.length !== 1) {
+    // 找不到帳號也花一樣的時間算一次密碼，否則外人可以從回應快慢判斷代碼是否存在
+    hashPassword_(password);
+    throw loginFailed_(failKey);
+  }
   const staff = matches[0];
 
   const hash = getPasswordHash_(staff.id);
@@ -176,8 +203,9 @@ function apiLogin_(req) {
     // 第一次登入：這次輸入的密碼直接設成新密碼
     setPasswordHash_(staff.id, hashPassword_(password));
   } else if (!checkPassword_(password, hash)) {
-    throw httpError_(401, '密碼錯誤');
+    throw loginFailed_(failKey);
   }
 
+  CacheService.getScriptCache().remove(failKey);
   return Object.assign(sessionStaff_(staff), { token: issueToken_(staff.id) });
 }
