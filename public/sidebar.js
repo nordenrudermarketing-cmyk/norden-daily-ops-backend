@@ -313,6 +313,8 @@
     });
   }
   renderSubmenu(defaultCategoryIdx);
+  // 手機版的子選單是蓋在頁面上的；帳號管理頁一進來要看得到自己的帳號，先收起來（點上方分類就會打開）
+  if (window.innerWidth <= 700 && currentPage === 'manage-passwords.html') submenu.style.display = 'none';
 
   wrap.appendChild(sidebar);
   wrap.appendChild(submenu);

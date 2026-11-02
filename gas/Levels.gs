@@ -6,10 +6,11 @@
 //   帳號層級（staff.account_level）＝能看到哪些頁面、能管誰——就是這支檔案
 //   職務（roles）＝工作內容，只決定自評表有哪些題目（見 Org.gs）
 //
-// 四個層級，由低到高：
+// 四個層級，由低到高（manager 畫面上叫「主管」，2026-11 以前叫「經理」，容易跟職務的經理搞混；
+// 資料裡的值沿用 manager，所以改名不用轉換資料）：
 //   field    現場人員    要填自評；只能改自己的密碼
-//   manager  經理        要填自評；可以當面談主管；帳號管理＝自己管轄的現場人員
-//   hq_admin 總公司行政  人事專用帳號，不填自評、不面談；可以管理經理以下所有帳號、設定管轄、
+//   manager  主管        要填自評；可以當面談主管；帳號管理＝自己管轄的現場人員
+//   hq_admin 總公司行政  人事專用帳號，不填自評、不面談；可以管理主管以下所有帳號、設定管轄、
 //                        看所有人的自評（唯讀）和各部門進度
 //   office   總辦公室    最高權限（股東、董事），不填自評；可以管理所有帳號（含同級）、設定管轄，
 //                        需要時把人加進自己的管轄就能面談；部門、職務、自評題目、功能開關只有這一級能改
@@ -20,7 +21,7 @@
 
 const LEVELS = {
   field: { rank: 1, label: '現場人員' },
-  manager: { rank: 2, label: '經理' },
+  manager: { rank: 2, label: '主管' },
   hq_admin: { rank: 3, label: '總公司行政' },
   office: { rank: 4, label: '總辦公室' },
 };
@@ -71,7 +72,7 @@ function isOffice_(level) {
   return level === 'office';
 }
 
-// 可以使用帳號管理頁（經理以上）
+// 可以使用帳號管理頁（主管以上）
 function canUseAccounts_(level) {
   return levelRank_(level) >= levelRank_('manager');
 }
@@ -89,12 +90,12 @@ function assignableLevels_(actorLevel) {
   });
 }
 
-// 可以設定「收驗證碼的 Email」的層級（經理以上）
+// 可以設定「收驗證碼的 Email」的層級（主管以上）
 function canHaveVerifyEmail_(level) {
   return levelRank_(level) >= levelRank_('manager');
 }
 
-// 這個帳號登入時要不要收信箱驗證碼（Auth.gs）：經理以上而且有填 Email；沒填就只用密碼
+// 這個帳號登入時要不要收信箱驗證碼（Auth.gs）：主管以上而且有填 Email；沒填就只用密碼
 function requiresEmailVerify_(staff, level) {
   if (!canHaveVerifyEmail_(level) || !String(staff.verify_email || '').trim()) return false;
   // 測試站的資料是正式站的複本，只寄給測試帳號，避免打擾真實同仁

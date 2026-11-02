@@ -54,7 +54,7 @@ function savePendingVerify(pending) {
   } catch (e) { /* 存不了就算了，只是切回來時要重新登入 */ }
 }
 
-// 第二步：輸入信箱驗證碼（經理以上、有填 Email 的帳號才會走到這裡）
+// 第二步：輸入信箱驗證碼（主管以上、有填 Email 的帳號才會走到這裡）
 function showVerifyStep(pending) {
   pendingVerify = pending;
   savePendingVerify(pending);

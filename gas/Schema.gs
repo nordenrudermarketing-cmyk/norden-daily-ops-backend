@@ -33,8 +33,8 @@ const SCHEMA = {
     cache: true,
     columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool' },
   },
-  // account_level：帳號層級，決定權限（field 現場人員／manager 經理／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
-  // verify_email：收登入驗證碼的 Email（選填、限經理以上，空白＝只用密碼，見 Auth.gs）
+  // account_level：帳號層級，決定權限（field 現場人員／manager 主管／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
+  // verify_email：收登入驗證碼的 Email（選填、限主管以上，空白＝只用密碼，見 Auth.gs）
   staff: {
     cache: true,
     columns: {
@@ -64,6 +64,11 @@ const SCHEMA = {
   supervisions: {
     cache: true,
     columns: { id: 'text', supervisor_id: 'text', staff_id: 'text', created_at: 'text', created_by: 'text' },
+  },
+  // 管轄部門：哪位主管管哪個部門（多對多）。目前只存設定、不影響權限，給之後的新功能用，見 Supervision.gs
+  branch_supervisions: {
+    cache: true,
+    columns: { id: 'text', supervisor_id: 'text', branch_id: 'text', created_at: 'text', created_by: 'text' },
   },
   self_eval_answers: {
     columns: {

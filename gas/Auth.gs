@@ -13,7 +13,7 @@
 //   簽章用的密鑰 TOKEN_SECRET 也在指令碼屬性，第一次使用時自動產生。
 //   改掉 TOKEN_SECRET（或刪掉讓它重新產生）＝所有人都要重新登入。
 //
-// 信箱驗證碼（經理以上、而且有填 staff.verify_email 的帳號，判斷在 Levels.gs 的 requiresEmailVerify_）：
+// 信箱驗證碼（主管以上、而且有填 staff.verify_email 的帳號，判斷在 Levels.gs 的 requiresEmailVerify_）：
 //   密碼對了之後不發憑證，改寄 6 位數驗證碼到那個信箱，填對才發憑證（憑證上記 mfa: true）。
 //   沒有 mfa 標記的憑證不被接受，所以一填好 Email，他原本的登入狀態就失效，下次登入開始要驗證碼；
 //   Email 清空就恢復只用密碼。收不到信時，試算表擁有者可以直接清空 staff 分頁的 verify_email。
@@ -150,7 +150,7 @@ function requireLevel_(actor, levels, message) {
   if (levels.indexOf(actor.level) < 0) throw httpError_(403, message || '你沒有權限使用這個功能');
 }
 
-// 看全公司資料的層級（總公司行政、總辦公室）看全部；經理只能看自己部門
+// 看全公司資料的層級（總公司行政、總辦公室）看全部；主管只能看自己部門
 function requireBranchAccess_(actor, branchId) {
   if (canViewAllSelfEval_(actor.level)) return;
   if (actor.level === 'manager' && branchId === actor.branch_id) return;

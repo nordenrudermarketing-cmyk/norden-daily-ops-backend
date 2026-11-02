@@ -1,7 +1,7 @@
 // 帳號管理（檔名沿用 manage-passwords，原本連到「密碼管理」的連結才不會壞掉）
 // 依帳號層級（gas/Levels.gs）：只能建立、管理比自己低的層級，總辦公室可以管同級
-//   總辦公室：全部帳號；總公司行政：經理、現場人員；經理：自己管轄的現場人員
-//   總公司行政、總辦公室可以設定經理／總辦公室的「管轄人員」
+//   總辦公室：全部帳號；總公司行政：主管、現場人員；主管：自己管轄的現場人員
+//   總公司行政、總辦公室可以設定主管／總辦公室的「管轄部門」「管轄人員」
 // 權限由後端 /api/accounts 依資料庫裡的真實帳號層級與管轄判斷，這裡只負責畫面
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
@@ -16,13 +16,17 @@ let meta = { branches: [], roles: [] };
 let accounts = [];
 let editingId = null; // null 代表新增
 let pwTargetId = null;
-let supTarget = null;   // 正在設定管轄人員的主管
+let supTarget = null;   // 正在設定管轄的主管
 let supSelected = null; // Set：勾選中的同仁 id
+let supBranchSelected = null; // Set：勾選中的部門 id
+
+// 同一個部門裡，層級高的排前面
+const LEVEL_ORDER = { office: 0, hq_admin: 1, manager: 2, field: 3 };
 
 if (!staff) {
   window.location.href = 'index.html';
 } else if (level === 'field') {
-  alert('帳號管理只有經理以上的帳號層級可以使用');
+  alert('帳號管理只有主管以上的帳號層級可以使用');
   window.location.href = 'index.html';
 } else {
   init();
@@ -53,10 +57,16 @@ function setStatus(text, isError = false) {
 }
 
 async function init() {
-  $('staffLine').textContent = staff.name;
   $('search').addEventListener('input', render);
   $('branchFilter').addEventListener('change', render);
+  $('levelFilter').addEventListener('change', render);
   $('showInactive').addEventListener('change', render);
+  // 點「更多」選單以外的地方就收起來
+  document.addEventListener('click', (event) => {
+    document.querySelectorAll('details.more[open]').forEach((menu) => {
+      if (!menu.contains(event.target)) menu.open = false;
+    });
+  });
   $('addBtn').addEventListener('click', () => openEdit(null));
   document.querySelectorAll('[data-close]').forEach((btn) => {
     btn.addEventListener('click', () => btn.closest('dialog').close());
@@ -77,16 +87,23 @@ async function init() {
   }
 
   const SCOPE_TEXT = {
-    office: '你可以管理：全部帳號（含其他總辦公室）；經理、總辦公室的帳號可以設定「管轄人員」',
-    hq_admin: '你可以管理：經理、現場人員的帳號；經理、總辦公室的帳號可以設定「管轄人員」',
-    manager: '你可以管理：你管轄的現場人員帳號（自己的帳號可以改姓名、密碼）。管轄人員由總公司行政或總辦公室設定',
+    office: '你可以管理所有帳號（含其他總辦公室），也可以設定主管、總辦公室的管轄。',
+    hq_admin: '你可以管理主管、現場人員的帳號，也可以設定主管、總辦公室的管轄。',
+    manager: '你可以管理你管轄的現場人員帳號。管轄由總公司行政或總辦公室設定。',
   };
   $('scopeLine').textContent = `你的帳號層級：${meta.actor.level_label}。${SCOPE_TEXT[meta.actor.level] || ''}`;
-  // 部門篩選：經理的管轄人員只在一個部門時不用顯示
+  $('listTitle').textContent = isManager ? '我管轄的同仁' : '所有帳號';
+  // 部門篩選：主管的管轄人員只在一個部門時不用顯示
   if (!isManager || meta.branches.length > 1) {
     $('branchFilter').style.display = '';
     $('branchFilter').innerHTML = '<option value="">全部部門</option>' +
       meta.branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+  }
+  // 層級篩選：主管只會看到現場人員，不用顯示
+  if (!isManager) {
+    $('levelFilter').style.display = '';
+    $('levelFilter').innerHTML = '<option value="">全部層級</option>' +
+      [...meta.levels].reverse().map((l) => `<option value="${l.key}">${escapeHtml(l.label)}</option>`).join('');
   }
 
   await load();
@@ -106,47 +123,46 @@ async function load() {
 function render() {
   const keyword = $('search').value.trim().toLowerCase();
   const branchId = $('branchFilter').value;
+  const levelKey = $('levelFilter').value;
   const showInactive = $('showInactive').checked;
 
-  $('inactiveCount').textContent = accounts.filter((a) => !a.is_active).length;
+  // 自己的帳號固定放最上面，不受搜尋、篩選影響
+  const self = accounts.find((a) => a.is_self);
+  $('selfSection').style.display = self ? '' : 'none';
+  $('selfCard').innerHTML = self ? accountCard(self, true) : '';
 
-  const rows = accounts.filter((a) =>
+  const others = accounts.filter((a) => !a.is_self);
+  $('inactiveCount').textContent = others.filter((a) => !a.is_active).length;
+
+  const rows = others.filter((a) =>
     (showInactive || a.is_active) &&
     (!branchId || a.branch_id === branchId) &&
+    (!levelKey || a.account_level === levelKey) &&
     (!keyword ||
       a.name.toLowerCase().includes(keyword) ||
       (a.login_code || '').toLowerCase().includes(keyword))
   );
 
   if (rows.length === 0) {
-    $('list').innerHTML = '<p class="empty-state">沒有符合條件的帳號</p>';
-    return;
+    const noOne = others.length === 0 && isManager;
+    $('list').innerHTML = `<p class="empty-state">${noOne ? '你目前沒有管轄的同仁' : '沒有符合條件的帳號'}</p>`;
+  } else {
+    // 依部門分組；同一組裡層級高的在前面，同層級照姓名（後端已排好）
+    const groups = new Map();
+    rows.forEach((a) => {
+      const key = a.branch_name || '（沒有部門）';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(a);
+    });
+    $('list').innerHTML = [...groups.entries()]
+      .sort((x, y) => x[0].localeCompare(y[0], 'zh-Hant'))
+      .map(([branch, list]) => `
+        <h3 class="group-title">${escapeHtml(branch)}<small>${list.length} 人</small></h3>
+        ${list.sort((x, y) => LEVEL_ORDER[x.account_level] - LEVEL_ORDER[y.account_level]).map((a) => accountCard(a, false)).join('')}`)
+      .join('');
   }
 
-  $('list').innerHTML = rows.map((a) => `
-    <div class="acct-row ${a.is_active ? '' : 'inactive'}" data-id="${a.id}">
-      <div>
-        <p class="acct-name">${escapeHtml(a.name)}${a.is_self ? '<span class="badge muted">你自己</span>' : ''}${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}</p>
-        <p class="acct-meta">
-          登入代碼：${escapeHtml(a.login_code || '—')}　${escapeHtml(a.branch_name || '')}・${escapeHtml(a.role_name || '')}
-          <span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>
-          <span class="badge ${a.has_password ? 'ok' : 'warn'}">${a.has_password ? '已設定密碼' : '尚未設定密碼'}</span>
-          ${a.verify_email ? '<span class="badge ok">登入要收驗證碼</span>' : ''}
-        </p>
-        ${supervisionLine(a)}
-      </div>
-      <div class="acct-actions">
-        ${a.can_set_supervision && a.is_active ? '<button data-act="supervise">管轄人員</button>' : ''}
-        ${a.can_edit ? '<button data-act="edit">編輯</button>' : ''}
-        ${a.can_set_password ? '<button data-act="password">設定密碼</button>' : ''}
-        ${a.can_edit && a.has_password && !a.is_self ? '<button data-act="reset">清空密碼</button>' : ''}
-        ${a.can_deactivate && a.is_active ? '<button data-act="deactivate" class="danger">停用</button>' : ''}
-        ${a.can_deactivate && !a.is_active ? '<button data-act="activate">重新啟用</button>' : ''}
-        ${a.can_hard_delete ? '<button data-act="delete" class="danger">永久刪除</button>' : ''}
-      </div>
-    </div>`).join('');
-
-  $('list').querySelectorAll('[data-act]').forEach((btn) => {
+  document.querySelectorAll('#selfCard [data-act], #list [data-act]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const account = accounts.find((a) => a.id === btn.closest('.acct-row').dataset.id);
       if (account) ACTIONS[btn.dataset.act](account);
@@ -154,18 +170,51 @@ function render() {
   });
 }
 
-// 「面談主管：A、B」或「未指定面談主管」（只有要填自評的層級才需要）；能當主管的帳號再加「管轄 N 人」
+// 一個帳號的卡片。showBranch：不在部門分組裡（自己的帳號）才需要寫部門
+function accountCard(a, showBranch) {
+  const place = [showBranch ? a.branch_name : '', a.role_name].filter(Boolean).map(escapeHtml).join('・');
+  // 需要注意的狀況才標出來；「已設定密碼」是常態就不顯示
+  const flags = [
+    a.has_password ? '' : '<span class="badge warn">尚未設定密碼</span>',
+    a.is_active && a.fills_self_eval && !a.supervisor_names?.length ? '<span class="badge warn">未指定面談主管</span>' : '',
+    a.verify_email ? '<span class="badge ok">登入要收驗證碼</span>' : '',
+  ].join('');
+
+  // 不常用、會影響對方的動作收進「更多」
+  const more = [
+    a.can_edit && a.has_password && !a.is_self ? '<button data-act="reset">清空密碼</button>' : '',
+    a.can_deactivate && a.is_active ? '<button data-act="deactivate" class="danger">停用</button>' : '',
+    a.can_hard_delete ? '<button data-act="delete" class="danger">永久刪除</button>' : '',
+  ].join('');
+
+  return `
+    <div class="acct-row ${a.is_self ? 'self' : ''} ${a.is_active ? '' : 'inactive'}" data-id="${a.id}">
+      <div>
+        <p class="acct-name">${escapeHtml(a.name)}<span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}</p>
+        <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}</p>
+        ${supervisionLine(a)}
+        ${flags ? `<p class="acct-flags">${flags}</p>` : ''}
+      </div>
+      <div class="acct-actions">
+        ${a.can_deactivate && !a.is_active ? '<button data-act="activate">重新啟用</button>' : ''}
+        ${a.can_set_supervision && a.is_active ? '<button data-act="supervise">管轄設定</button>' : ''}
+        ${a.can_edit ? '<button data-act="edit">編輯</button>' : ''}
+        ${a.can_set_password ? `<button data-act="password">${a.is_self ? '修改密碼' : '設定密碼'}</button>` : ''}
+        ${more ? `<details class="more"><summary>更多</summary><div class="more-menu">${more}</div></details>` : ''}
+      </div>
+    </div>`;
+}
+
+// 「面談主管：A、B」（只有要填自評的層級才有）；能當主管的帳號再加「管轄 N 人」「管轄部門」
 function supervisionLine(a) {
   if (!a.is_active) return '';
   const parts = [];
-  if (a.fills_self_eval) {
-    if (a.supervisor_names?.length) parts.push(`面談主管：${escapeHtml(a.supervisor_names.join('、'))}`);
-    else parts.push('<span class="badge warn" style="margin-left:0;">未指定面談主管</span>');
-  } else {
-    parts.push('不需要自評');
+  if (a.supervisor_names?.length) parts.push(`面談主管：${escapeHtml(a.supervisor_names.join('、'))}`);
+  if (a.can_supervise) {
+    parts.push(`管轄 ${a.supervisee_count} 人`);
+    if (a.supervised_branch_names?.length) parts.push(`管轄部門：${escapeHtml(a.supervised_branch_names.join('、'))}`);
   }
-  if (a.can_supervise) parts.push(`管轄 ${a.supervisee_count} 人`);
-  return `<p class="acct-sup">${parts.join('　')}</p>`;
+  return parts.length ? `<p class="acct-sup">${parts.join('　')}</p>` : '';
 }
 
 const ACTIONS = {
@@ -213,7 +262,7 @@ function openEdit(account) {
     current && current.id && !list.some((x) => x.id === current.id) ? [...list, current] : list;
   const isSelf = !!account?.is_self;
 
-  // 部門：經理只能選自己的部門和管轄人員所在的部門（只有一個時就不顯示，後端也會檢查）
+  // 部門：主管只能選自己的部門和管轄人員所在的部門（只有一個時就不顯示，後端也會檢查）
   const branches = withCurrent(meta.branches, account && { id: account.branch_id, name: account.branch_name });
   $('fBranchField').style.display = !isManager || branches.length > 1 ? '' : 'none';
   $('fBranch').innerHTML = branches.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
@@ -244,7 +293,7 @@ function openEdit(account) {
   $('fName').focus();
 }
 
-// 收驗證碼的 Email：經理以上才有，自己的帳號不能改（層級欄鎖住＝編輯自己）
+// 收驗證碼的 Email：主管以上才有，自己的帳號不能改（層級欄鎖住＝編輯自己）
 function syncVerifyEmailField() {
   const show = !$('fLevel').disabled && $('fLevel').value !== 'field';
   $('fVerifyEmailField').style.display = show ? '' : 'none';
@@ -282,14 +331,16 @@ async function saveEdit(event) {
   }
 }
 
-// ---------- 管轄人員（總公司行政、總辦公室） ----------
+// ---------- 管轄設定（總公司行政、總辦公室） ----------
 
 async function openSupervision(account) {
   supTarget = account;
   supSelected = null;
-  $('supTitle').textContent = `「${account.name}」的管轄人員`;
+  supBranchSelected = null;
+  $('supTitle').textContent = `「${account.name}」的管轄設定`;
   $('supSearch').value = '';
   $('supError').textContent = '';
+  $('supBranches').innerHTML = '';
   $('supList').innerHTML = '<p class="empty-state">載入中…</p>';
   $('supCount').textContent = '';
   $('supDialog').showModal();
@@ -298,8 +349,10 @@ async function openSupervision(account) {
     const res = await fetch(`${API}/api/supervisions/${encodeURIComponent(account.id)}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || '載入失敗');
-    // 停用中的同仁也保留在名單裡（畫面上不列出），儲存時才不會把他們拿掉
+    // 停用中的同仁、部門也保留在名單裡（畫面上不列出），儲存時才不會把他們拿掉
     supSelected = new Set(data.staff_ids || []);
+    supBranchSelected = new Set(data.branch_ids || []);
+    renderSupBranches();
     renderSupList();
   } catch (err) {
     $('supList').innerHTML = '';
@@ -307,7 +360,28 @@ async function openSupervision(account) {
   }
 }
 
-// 可以選的人：要填自評的在職同仁（現場人員、經理，不含主管自己），依部門分組；每組可以「全選本部門」
+// 管轄部門：列出啟用中的部門（meta.branches）
+function renderSupBranches() {
+  $('supBranches').innerHTML = meta.branches.map((b) => `
+    <label><input type="checkbox" data-branch="${b.id}" ${supBranchSelected.has(b.id) ? 'checked' : ''}> ${escapeHtml(b.name)}</label>`).join('');
+  $('supBranches').querySelectorAll('input[data-branch]').forEach((box) => {
+    box.addEventListener('change', () => {
+      if (box.checked) supBranchSelected.add(box.dataset.branch);
+      else supBranchSelected.delete(box.dataset.branch);
+      renderSupCount();
+    });
+  });
+}
+
+function renderSupCount() {
+  const activeIds = new Set(accounts.filter((a) => a.is_active).map((a) => a.id));
+  const activeBranchIds = new Set(meta.branches.map((b) => b.id));
+  const people = [...supSelected].filter((id) => activeIds.has(id)).length;
+  const branches = [...supBranchSelected].filter((id) => activeBranchIds.has(id)).length;
+  $('supCount').textContent = `已選 ${branches} 個部門、${people} 位在職同仁`;
+}
+
+// 可以選的人：要填自評的在職同仁（現場人員、主管，不含主管自己），依部門分組；每組可以「全選本部門」
 function renderSupList() {
   if (!supSelected) return;
   const keyword = $('supSearch').value.trim().toLowerCase();
@@ -353,9 +427,7 @@ function renderSupList() {
     });
   });
 
-  const activeIds = new Set(accounts.filter((a) => a.is_active).map((a) => a.id));
-  const count = [...supSelected].filter((id) => activeIds.has(id)).length;
-  $('supCount').textContent = `已選 ${count} 位在職同仁`;
+  renderSupCount();
 }
 
 async function saveSupervision(event) {
@@ -366,12 +438,12 @@ async function saveSupervision(event) {
     const res = await fetch(`${API}/api/supervisions/${encodeURIComponent(supTarget.id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staff_ids: [...supSelected] }),
+      body: JSON.stringify({ staff_ids: [...supSelected], branch_ids: [...supBranchSelected] }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || '儲存失敗');
     $('supDialog').close();
-    setStatus(`已更新「${supTarget.name}」的管轄人員（新增 ${data.added} 人、移除 ${data.removed} 人）`);
+    setStatus(`已更新「${supTarget.name}」的管轄設定（人員新增 ${data.added}、移除 ${data.removed}；部門新增 ${data.branches_added}、移除 ${data.branches_removed}）`);
     await load();
   } catch (err) {
     $('supError').textContent = err.message;

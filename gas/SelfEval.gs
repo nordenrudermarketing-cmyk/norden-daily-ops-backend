@@ -9,7 +9,7 @@
 //
 // 跟 Railway 版的差別：加上權限檢查（同仁只能填自己的表、題目管理限總辦公室）。
 //
-// 誰要填（2026-10 起照帳號層級，見 Levels.gs）：現場人員、經理要填；總公司行政、總辦公室不用。
+// 誰要填（2026-10 起照帳號層級，見 Levels.gs）：現場人員、主管要填；總公司行政、總辦公室不用。
 // 題目：共同題目＋職務設定的專屬題目類別（Org.gs 的 questionCategoryOf_）。
 // 誰面談誰：照「管轄」（Supervision.gs），不再照館別，也沒有「代為面談」。
 //   一位同仁可以有多位主管，任何一位完成面談就算完成，自評表的 reviewed_by 記錄是誰面談的；
@@ -413,7 +413,7 @@ function apiSelfEvalHqProgress_(req) {
   if (months.indexOf(evalMonth) < 0) months.push(evalMonth);
   months.sort().reverse();
 
-  // 應填名單：目前在職、要填自評的同仁（現場人員、經理），加上這一期有填過但之後停用的同仁（歷史月份才不會少算）
+  // 應填名單：目前在職、要填自評的同仁（現場人員、主管），加上這一期有填過但之後停用的同仁（歷史月份才不會少算）
   // 部門以填寫當時存下來的為準，還沒填的就用目前所屬部門
   const people = {};
   Db.where('staff', { is_active: true }).forEach(function (s) {

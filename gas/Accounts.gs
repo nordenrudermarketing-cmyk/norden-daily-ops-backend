@@ -1,14 +1,14 @@
 // ============================================================
-// 帳號管理（經理以上使用）
+// 帳號管理（主管以上使用）
 //
 // 「目前登入的是誰」由登入憑證決定（Auth.gs），網頁送來的 actor_id 一律忽略，所以沒辦法偽造身分。
 //
-// 權限規則（2026-10 起照「帳號層級」，見 Levels.gs；經理另外照「管轄」，見 Supervision.gs）：
+// 權限規則（2026-10 起照「帳號層級」，見 Levels.gs；主管另外照「管轄」，見 Supervision.gs）：
 //   只能建立、管理比自己低的層級；總辦公室是唯一例外，可以管同級（避免系統被鎖死）
 //   總辦公室：全部帳號
-//   總公司行政：經理、現場人員的帳號
-//   經理：自己管轄的現場人員；新增的帳號自動列入自己的管轄，部門只能選自己的或管轄人員所在的部門
-//   現場人員：不能使用（自己的密碼在這裡也改不了，請經理幫忙）
+//   總公司行政：主管、現場人員的帳號
+//   主管：自己管轄的現場人員；新增的帳號自動列入自己的管轄，部門只能選自己的或管轄人員所在的部門
+//   現場人員：不能使用（自己的密碼在這裡也改不了，請主管幫忙）
 //   每個人都能改自己的密碼，但不能改自己的層級、職務；最後一個在職的總辦公室帳號不能停用或降級
 //
 // 刪除：一律先「停用」（不能登入，但所有紀錄保留，之後可以再啟用）。
@@ -29,7 +29,7 @@ function cleanText_(value) {
 
 function accountActor_(req) {
   const actor = req.actor;
-  if (!canUseAccounts_(actor.level)) throw httpError_(403, '帳號管理只有經理以上的帳號層級可以使用');
+  if (!canUseAccounts_(actor.level)) throw httpError_(403, '帳號管理只有主管以上的帳號層級可以使用');
   return actor;
 }
 
@@ -45,7 +45,7 @@ function withRelations_(s) {
 }
 
 // 能不能管理這個帳號（不含自己）
-// mySupervisees：經理管轄的同仁 { id: true }（列表時先算好傳進來；沒給就現場查）
+// mySupervisees：主管管轄的同仁 { id: true }（列表時先算好傳進來；沒給就現場查）
 function canManage_(actor, target, mySupervisees) {
   if (target.id === actor.id) return false;
   if (!outranks_(actor.level, levelOf_(target, target.roles))) return false;
@@ -61,7 +61,7 @@ function idSet_(ids) {
   return set;
 }
 
-// 經理新增／修改帳號時可以選的部門：自己的部門＋管轄人員所在的部門
+// 主管新增／修改帳號時可以選的部門：自己的部門＋管轄人員所在的部門
 function managerBranchIds_(actor) {
   const ids = idSet_([actor.branch_id]);
   superviseesOf_(actor.id).forEach(function (id) {
@@ -72,7 +72,7 @@ function managerBranchIds_(actor) {
 }
 
 // 回傳給網頁的樣子：不含密碼，並附上「目前登入的人對這個帳號能做什麼」
-// ctx：{ mySupervisees, supMap, countMap }，列表時先算好；單筆回應時沒給就現場算
+// ctx：{ mySupervisees, supMap, countMap, branchMap }，列表時先算好；單筆回應時沒給就現場算
 function toPublicAccount_(actor, s, hasPassword, ctx) {
   ctx = ctx || {};
   const manageable = canManage_(actor, s, ctx.mySupervisees);
@@ -103,10 +103,11 @@ function toPublicAccount_(actor, s, hasPassword, ctx) {
     can_set_password: manageable || isSelf,
     can_deactivate: manageable,
     can_hard_delete: manageable && !isActive && !hasPassword,
-    // 管轄：他的主管是誰；他能不能當面談主管、管轄幾個人
+    // 管轄：他的主管是誰；他能不能當面談主管、管轄幾個人、哪些部門
     supervisor_names: staffNames_(supervisorIds),
     can_supervise: canSupervise,
     supervisee_count: canSupervise ? (ctx.countMap ? (ctx.countMap[s.id] || 0) : superviseesOf_(s.id).length) : 0,
+    supervised_branch_names: canSupervise ? branchNames_(ctx.branchMap ? ctx.branchMap[s.id] : supervisedBranchIdsOf_(s.id)) : [],
     can_set_supervision: canSetSupervision_(actor.level) && canSupervise,
   };
 }
@@ -199,7 +200,7 @@ function apiAccountsList_(req) {
     supMap[staffId].forEach(function (supId) { countMap[supId] = (countMap[supId] || 0) + 1; });
   });
   const mySupervisees = actor.level === 'manager' ? idSet_(superviseesOf_(actor.id)) : null;
-  const ctx = { mySupervisees: mySupervisees, supMap: supMap, countMap: countMap };
+  const ctx = { mySupervisees: mySupervisees, supMap: supMap, countMap: countMap, branchMap: supervisedBranchMap_() };
   return Db.all('staff')
     .map(withRelations_)
     .sort(byName_)
@@ -233,7 +234,7 @@ function apiAccountsCreate_(req) {
   })[0];
   // 沒給密碼就留空：同仁第一次登入時輸入的密碼會直接變成他的密碼
   if (password.trim()) setPasswordHash_(created.id, hashPassword_(password));
-  // 經理建立的帳號自動列入他的管轄（否則建好之後他就看不到、也管不到了）
+  // 主管建立的帳號自動列入他的管轄（否則建好之後他就看不到、也管不到了）
   if (actor.level === 'manager') {
     Db.insert('supervisions', { supervisor_id: actor.id, staff_id: created.id, created_by: actor.id });
   }
@@ -330,5 +331,6 @@ function apiAccountsDelete_(req) {
   Db.remove('staff', { id: target.id });
   // 他的管轄關係（當主管的、被管轄的）一起刪掉
   Db.remove('supervisions', function (r) { return r.supervisor_id === target.id || r.staff_id === target.id; });
+  Db.remove('branch_supervisions', { supervisor_id: target.id });
   return { ok: true, deleted: target.id };
 }
