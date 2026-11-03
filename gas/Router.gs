@@ -16,6 +16,7 @@ function routes_() {
   return [
     { method: 'GET', path: '/api/health', handler: apiHealth_, public: true },
     { method: 'POST', path: '/api/login', handler: apiLogin_, public: true },
+    { method: 'POST', path: '/api/login/verify', handler: apiLoginVerify_, public: true },
     { method: 'GET', path: '/api/me', handler: apiMe_ },
 
     // 部門、職務（限總辦公室），見 Org.gs
