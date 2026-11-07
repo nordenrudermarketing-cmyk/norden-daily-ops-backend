@@ -195,10 +195,11 @@ function rtInstance_(item, branch, key, ctx) {
   // 月任務的時間點：本月的話標出「現在進行到哪一步」
   const steps = rtSteps_(item.steps);
   if (item.period === 'month' && key === today.slice(0, 7)) {
+    // 同一天可能有好幾個時間點，都算「現在」
     const day = Number(today.slice(8, 10));
-    let current = -1;
-    steps.forEach(function (s, i) { if (s.day <= day) current = i; });
-    steps.forEach(function (s, i) { s.current = i === current; s.past = i < current; });
+    let currentDay = 0;
+    steps.forEach(function (s) { if (s.day <= day) currentDay = s.day; });
+    steps.forEach(function (s) { s.current = s.day === currentDay; s.past = s.day < currentDay; });
   }
 
   return {
