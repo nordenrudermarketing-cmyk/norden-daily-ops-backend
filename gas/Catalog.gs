@@ -30,11 +30,11 @@ const FEATURE_CATALOG = [
     key: 'system_admin',
     label: '系統與帳號管理',
     group: '保留（不可關閉）',
-    description: '總辦公室儀表板（頁面本身）、功能開關、帳號管理、部門管理、職務管理',
+    description: '總辦公室儀表板、主管首頁（頁面本身）、功能開關、帳號管理、部門管理、職務管理',
     locked: true,
     ported: true,
-    pages: ['hq-dashboard.html', 'feature-toggles.html', 'manage-passwords.html', 'org-departments.html', 'org-roles.html'],
-    apis: ['/api/features', '/api/accounts', '/api/org', '/api/supervisions'],
+    pages: ['hq-dashboard.html', 'manager-home.html', 'feature-toggles.html', 'manage-passwords.html', 'org-departments.html', 'org-roles.html'],
+    apis: ['/api/features', '/api/accounts', '/api/org', '/api/supervisions', '/api/home'],
   },
 
   // ---------- 房務 ----------

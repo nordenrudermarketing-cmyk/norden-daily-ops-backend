@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首頁 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .home-card { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; color: inherit; text-decoration: none; cursor: pointer; }
+  .home-card:active { opacity: 0.85; }
+  .home-card.warn { border-color: #e3bfae; }
+  .home-card h2 { font-size: 15px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+  .home-card h2 .go { font-size: 12px; font-weight: 400; color: var(--accent); }
+  .nums { display: flex; gap: 8px; margin-bottom: 10px; }
+  .num { flex: 1; text-align: center; background: var(--bg); border-radius: 10px; padding: 8px 4px; }
+  .num b { display: block; font-size: 20px; font-weight: 600; }
+  .num span { font-size: 11px; color: var(--ink-soft); }
+  .num.warn b { color: var(--danger); }
+  .rows { margin: 0; padding: 0; list-style: none; }
+  .rows li { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 7px 0; border-top: 1px solid var(--line); }
+  .rows li:first-child { border-top: none; }
+  .rows .sub { font-size: 11.5px; color: var(--ink-soft); }
+  .rows .late { color: var(--danger); font-size: 11.5px; white-space: nowrap; }
+  .rows .right { font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+  .more { font-size: 12px; color: var(--ink-soft); margin: 6px 0 0; }
+  .line { font-size: 13px; margin: 0 0 8px; line-height: 1.6; }
+  .line .tag { font-size: 11.5px; padding: 2px 8px; border-radius: 8px; margin-left: 4px; }
+  .tag.ok { background: var(--accent-soft); color: var(--accent); }
+  .tag.warn { background: var(--danger-soft); color: var(--danger); }
+  .tag.muted { background: #efece5; color: var(--ink-soft); }
+  .group { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 8px 0 2px; }
+  .names { font-size: 13px; line-height: 1.7; margin: 0; }
+  .names small { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1 id="hello">首頁</h1>
+        <p id="todayLine">—</p>
+      </div>
+    </div>
+    <p class="error-msg" id="statusLine" style="min-height:0;"></p>
+    <div id="cards"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="manager-home.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

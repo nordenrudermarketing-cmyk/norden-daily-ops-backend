@@ -18,6 +18,8 @@ function routes_() {
     { method: 'POST', path: '/api/login', handler: apiLogin_, public: true },
     { method: 'POST', path: '/api/login/verify', handler: apiLoginVerify_, public: true },
     { method: 'GET', path: '/api/me', handler: apiMe_ },
+    // 主管首頁（一次回傳例行任務、自評進度、管轄），見 Home.gs
+    { method: 'GET', path: '/api/home/manager', handler: apiHomeManager_ },
 
     // 部門、職務（限總辦公室），見 Org.gs
     { method: 'GET', path: '/api/org/departments', handler: apiOrgDepartments_ },

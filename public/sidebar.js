@@ -96,7 +96,7 @@
       ] },
     ],
     manager: [
-      { label: '總覽', icon: 'home', items: [{ label: '儀表板', url: 'dashboard.html' }] },
+      { label: '首頁', icon: 'home', items: [{ label: '我的首頁', url: 'manager-home.html' }] },
       { label: '例行', icon: 'calendar', items: [{ label: '例行任務', url: 'routine-tasks.html' }] },
       { label: '排班人力', icon: 'calendar', items: [
         { label: '排班表', url: 'schedule.html' },
@@ -321,7 +321,7 @@
   }
   renderSubmenu(defaultCategoryIdx);
   // 手機版的子選單是蓋在頁面上的；帳號管理、例行任務頁一進來要看得到內容，先收起來（點上方分類就會打開）
-  const COLLAPSED_ON_PHONE = ['manage-passwords.html', 'routine-tasks.html', 'routine-tasks-overview.html', 'routine-tasks-settings.html'];
+  const COLLAPSED_ON_PHONE = ['manager-home.html', 'manage-passwords.html', 'routine-tasks.html', 'routine-tasks-overview.html', 'routine-tasks-settings.html'];
   if (window.innerWidth <= 700 && COLLAPSED_ON_PHONE.includes(currentPage)) submenu.style.display = 'none';
 
   wrap.appendChild(sidebar);

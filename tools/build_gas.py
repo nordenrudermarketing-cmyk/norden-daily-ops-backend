@@ -34,6 +34,7 @@ PAGES = [
     "self-eval-templates",
     "self-eval-hq-flagged",
     "hq-dashboard",
+    "manager-home",
     "feature-toggles",
     "manage-passwords",
     "org-departments",
