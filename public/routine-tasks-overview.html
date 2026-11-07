@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>例行任務執行狀況 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 960px; }
+  .tabs { display: flex; gap: 6px; margin: 0 0 10px; }
+  .tabs button { font-size: 13px; padding: 7px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: inherit; }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+  .nav button { font-size: 13px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit; }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+  .nav .label { font-size: 15px; font-weight: 600; }
+  .nav .now { font-size: 11px; color: var(--accent); }
+
+  .branch-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .bstat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .bstat h3 { font-size: 14px; margin: 0 0 2px; }
+  .bstat .who { font-size: 11px; color: var(--ink-soft); margin: 0 0 6px; }
+  .bstat .nums { font-size: 12.5px; }
+  .bstat .warn { color: var(--danger); font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  table.board { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.board th, table.board td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.board th { background: var(--accent-soft); font-weight: 500; white-space: nowrap; }
+  table.board td.task-name { min-width: 150px; }
+  table.board td.task-name small { display: block; color: var(--ink-soft); font-size: 11px; }
+  table.board tr.cat td { background: #f3f1ec; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); padding: 5px 10px; }
+  table.board td.cell { white-space: nowrap; cursor: pointer; }
+  table.board td.cell.na { color: #c9c5bb; cursor: default; }
+  .c-done { color: var(--accent); font-weight: 600; }
+  .c-warn { color: var(--danger); font-weight: 600; }
+  .c-muted { color: var(--ink-soft); }
+  .legend { font-size: 11.5px; color: var(--ink-soft); margin: 8px 0 0; }
+
+  dialog { border: none; border-radius: 14px; padding: 20px; width: min(460px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
+  dialog h2 { font-size: 16px; margin: 0 0 4px; }
+  dialog .sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; }
+  .report { font-size: 13px; line-height: 1.6; padding: 8px 0; border-top: 1px solid var(--line); }
+  .report:first-of-type { border-top: none; }
+  .report .late { color: var(--danger); }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>例行任務執行狀況</h1>
+        <p>各部門主管的例行任務完成情形。點表格裡的狀態可以看回報內容。</p>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <button type="button" data-period="week">每週</button>
+      <button type="button" data-period="month">每月</button>
+      <button type="button" data-period="year">每年</button>
+    </div>
+    <div class="nav">
+      <button type="button" id="prevBtn">‹ 上一期</button>
+      <span class="label" id="periodLabel">—</span>
+      <span class="now" id="nowTag"></span>
+      <button type="button" id="nextBtn">下一期 ›</button>
+    </div>
+
+    <p class="error-msg" id="statusLine" style="min-height:0;"></p>
+    <div class="branch-stats" id="branchStats"></div>
+    <div id="board"><p class="empty-state">載入中…</p></div>
+    <p class="legend">✓ 完成　1/2 進行中的次數　逾期／積壓：過了期限還沒回報　✕ 未能完成（有寫原因）　— 不適用這個部門</p>
+  </div>
+
+  <dialog id="detailDialog">
+    <h2 id="dTitle"></h2>
+    <p class="sub" id="dSub"></p>
+    <div id="dBody"></div>
+    <div style="margin-top:12px;"><button type="button" class="secondary" style="width:100%;" data-close>關閉</button></div>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="routine-tasks-overview.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

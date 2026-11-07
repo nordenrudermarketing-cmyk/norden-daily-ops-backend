@@ -72,6 +72,11 @@ function isOffice_(level) {
   return level === 'office';
 }
 
+// 例行任務：設定任務內容、看各部門執行狀況（總公司行政、總辦公室）
+function canManageRoutine_(level) {
+  return level === 'hq_admin' || level === 'office';
+}
+
 // 可以使用帳號管理頁（主管以上）
 function canUseAccounts_(level) {
   return levelRank_(level) >= levelRank_('manager');

@@ -52,6 +52,16 @@ function routes_() {
     { method: 'GET', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsGet_ },
     { method: 'PUT', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsPut_ },
 
+    // 例行任務（主管回報、總公司查看與設定），見 Routine.gs
+    { method: 'GET', path: '/api/routine-tasks/mine', handler: apiRoutineMine_ },
+    { method: 'POST', path: '/api/routine-tasks/report', handler: apiRoutineReport_ },
+    { method: 'DELETE', path: '/api/routine-tasks/reports/:id', handler: apiRoutineReportDelete_ },
+    { method: 'GET', path: '/api/routine-tasks/overview', handler: apiRoutineOverview_ },
+    { method: 'GET', path: '/api/routine-tasks/summary', handler: apiRoutineSummary_ },
+    { method: 'GET', path: '/api/routine-tasks/items', handler: apiRoutineItems_ },
+    { method: 'POST', path: '/api/routine-tasks/items', handler: apiRoutineItemCreate_ },
+    { method: 'PUT', path: '/api/routine-tasks/items/:id', handler: apiRoutineItemUpdate_ },
+
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
     { method: 'GET', path: '/api/self-eval/categories', handler: apiQuestionCategories_ },
     { method: 'GET', path: '/api/self-eval/templates', handler: apiSelfEvalTemplates_ },

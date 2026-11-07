@@ -6,6 +6,7 @@
 //   從正式站同步最新資料 只有測試站才有：把「路得系統（正式）」的最新資料複製過來（正式站只讀不改）
 //   帳號層級轉換（一次性） 職務改名（店經理→經理、總公司→總辦公室經理），依職務補上每個人的帳號層級（見 Org.gs）
 //   依部門建立初始管轄 每位主管（帳號層級）管轄同部門的現場人員（管轄表已有資料時會先問要不要清空重建）
+//   匯入主管例行任務   把 RoutineSeed.gs 的任務匯入 routine_items（分頁是空的才匯入）
 //   新增總辦公室帳號／把帳號設為總辦公室 後門：系統裡的總辦公室帳號都不能用時，由試算表擁有者處理
 //   顯示系統網址       目前部署的網頁網址
 //
@@ -25,6 +26,7 @@ function onOpen() {
   menu.addSeparator()
     .addItem('帳號層級轉換（一次性）', 'menuMigrateAccountLevels')
     .addItem('依部門建立初始管轄', 'menuSeedSupervisions')
+    .addItem('匯入主管例行任務', 'menuSeedRoutineItems')
     .addSeparator()
     .addItem('新增總辦公室帳號', 'menuCreateOfficeAccount')
     .addItem('把帳號設為總辦公室', 'menuPromoteToOffice')

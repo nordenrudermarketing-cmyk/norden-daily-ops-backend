@@ -113,14 +113,6 @@ const FEATURE_CATALOG = [
     apis: ['/api/review-checks'],
   },
   {
-    key: 'routine_tasks',
-    label: '例行事項',
-    group: '客務',
-    description: '個人例行事項、例行事項管理與匯入',
-    pages: ['routine-tasks.html', 'routine-tasks-manage.html', 'routine-tasks-import.html'],
-    apis: ['/api/routine-tasks'],
-  },
-  {
     key: 'shift_templates',
     label: '客務任務範本管理',
     group: '客務',
@@ -172,6 +164,16 @@ const FEATURE_CATALOG = [
   },
 
   // ---------- 主管 ----------
+  {
+    // 2026-11 起改成「主管例行任務」（Routine.gs）；功能代碼沿用舊的「例行事項」，開關設定才接得上
+    key: 'routine_tasks',
+    label: '例行任務',
+    group: '主管',
+    description: '主管的週／月／年例行任務與回報、總公司查看執行狀況與設定任務',
+    ported: true,
+    pages: ['routine-tasks.html', 'routine-tasks-overview.html', 'routine-tasks-settings.html'],
+    apis: ['/api/routine-tasks'],
+  },
   {
     key: 'manager_dashboard',
     label: '店經理儀表板',

@@ -89,7 +89,6 @@
       ] },
       { label: '其他', icon: 'dots', items: [
         { label: '每月自評表', url: 'self-eval.html' },
-        { label: '我的例行事項', url: 'routine-tasks.html' },
         { label: '個人清潔配額', url: 'staff-cleaning.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
@@ -98,6 +97,7 @@
     ],
     manager: [
       { label: '總覽', icon: 'home', items: [{ label: '儀表板', url: 'dashboard.html' }] },
+      { label: '例行', icon: 'calendar', items: [{ label: '例行任務', url: 'routine-tasks.html' }] },
       { label: '排班人力', icon: 'calendar', items: [
         { label: '排班表', url: 'schedule.html' },
         { label: '從 Excel 匯入班表', url: 'schedule-import.html' },
@@ -106,7 +106,6 @@
       { label: '任務管理', icon: 'leaf', items: [
         { label: '保養排程管理', url: 'zone-maintenance.html' },
         { label: '公區任務分配', url: 'public-area-assign.html' },
-        { label: '例行事項管理', url: 'routine-tasks-manage.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
         { label: '店經理巡館', url: 'manager-checklist.html' },
         { label: '客務任務範本管理', url: 'templates.html' },
@@ -136,10 +135,18 @@
         { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },
         { label: '查看同仁自評表', url: 'self-eval-review.html' },
       ] },
+      { label: '例行', icon: 'calendar', items: [
+        { label: '例行任務執行狀況', url: 'routine-tasks-overview.html' },
+        { label: '例行任務設定', url: 'routine-tasks-settings.html' },
+      ] },
       { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     office: [
       { label: '總覽', icon: 'home', items: [{ label: '總辦公室儀表板', url: 'hq-dashboard.html' }] },
+      { label: '例行', icon: 'calendar', items: [
+        { label: '例行任務執行狀況', url: 'routine-tasks-overview.html' },
+        { label: '例行任務設定', url: 'routine-tasks-settings.html' },
+      ] },
       { label: '自評', icon: 'branch', items: [
         { label: '自評題目管理', url: 'self-eval-templates.html' },
         { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },

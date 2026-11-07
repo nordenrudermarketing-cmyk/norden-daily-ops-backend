@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>例行任務 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+  .chips button { font-size: 12.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: inherit; }
+  .chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sec-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; display: flex; align-items: baseline; gap: 6px; }
+  .sec-title small { font-weight: 400; font-size: 11.5px; }
+  .sec-title.warn { color: var(--danger); }
+  .sec-hint { font-size: 11.5px; color: var(--ink-soft); margin: -4px 0 8px; }
+
+  .task { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; }
+  .task.warn { border-color: #e3bfae; }
+  .task.closed { opacity: 0.6; }
+  .task-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .task-cat { font-size: 11px; color: var(--ink-soft); }
+  .task-title { font-size: 15px; font-weight: 500; margin: 2px 0 4px; }
+  .task-due { font-size: 12px; color: var(--ink-soft); }
+  .task-due.late { color: var(--danger); }
+  .st { font-size: 11px; padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+  .st.done { background: var(--accent-soft); color: var(--accent); }
+  .st.warn { background: var(--danger-soft); color: var(--danger); }
+  .st.muted { background: #efece5; color: var(--ink-soft); }
+  .steps { list-style: none; padding: 0; margin: 8px 0 0; font-size: 12.5px; }
+  .steps li { display: flex; gap: 8px; padding: 3px 0; color: var(--ink-soft); }
+  .steps li .day { flex: 0 0 38px; font-weight: 600; }
+  .steps li.current { color: var(--ink); }
+  .steps li.current .day { color: var(--accent); }
+  .steps li.past { text-decoration: line-through; text-decoration-color: rgba(0,0,0,0.25); }
+  details.how { font-size: 12.5px; margin-top: 6px; }
+  details.how summary { color: var(--accent); cursor: pointer; }
+  details.how p { white-space: pre-line; margin: 6px 0 0; line-height: 1.6; color: var(--ink); }
+  .reports { margin: 8px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--line); font-size: 12px; }
+  .report { margin: 2px 0; line-height: 1.55; }
+  .report .who { font-weight: 600; }
+  .report .late { color: var(--danger); }
+  .report button { font-size: 11px; border: none; background: none; color: var(--ink-soft); text-decoration: underline; cursor: pointer; padding: 0 0 0 4px; font-family: inherit; }
+  .task .action-row button { font-size: 13.5px; padding: 9px 10px; }
+  .task .action-row button.secondary { flex: 0 0 auto; }
+  details.later summary { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; cursor: pointer; }
+
+  dialog { border: none; border-radius: 14px; padding: 20px; width: min(420px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
+  dialog h2 { font-size: 16px; margin: 0 0 4px; }
+  dialog .sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 14px; }
+  .dialog-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .dialog-actions button { flex: 1; }
+  .dialog-error { font-size: 12px; color: var(--danger); min-height: 16px; margin: 4px 0 0; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>例行任務</h1>
+        <p id="todayLine">—</p>
+      </div>
+    </div>
+
+    <div class="chips" id="branchChips" style="display:none;"></div>
+    <p class="error-msg" id="statusLine" style="min-height:0;"></p>
+    <div id="list"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <dialog id="reportDialog">
+    <form id="reportForm">
+      <h2 id="rTitle">回報</h2>
+      <p class="sub" id="rSub"></p>
+      <div class="field" id="rLateField">
+        <label for="rLate">逾期原因（已經超過期限，必填）</label>
+        <textarea id="rLate"></textarea>
+      </div>
+      <div class="field">
+        <label for="rNote" id="rNoteLabel">說明</label>
+        <textarea id="rNote"></textarea>
+      </div>
+      <p class="dialog-error" id="rError"></p>
+      <div class="dialog-actions">
+        <button type="button" class="secondary" data-close>取消</button>
+        <button type="submit" class="primary" id="rSubmit">送出</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="routine-tasks.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

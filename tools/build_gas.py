@@ -38,6 +38,9 @@ PAGES = [
     "manage-passwords",
     "org-departments",
     "org-roles",
+    "routine-tasks",
+    "routine-tasks-overview",
+    "routine-tasks-settings",
 ]
 
 SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>', re.I)
