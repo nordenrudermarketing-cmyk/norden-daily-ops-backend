@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>例行任務設定 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 860px; }
+  .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+  .tabs button { font-size: 13px; padding: 7px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: inherit; }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .toolbar label { font-size: 12.5px; color: var(--ink-soft); display: flex; align-items: center; gap: 4px; cursor: pointer; margin-left: 6px; }
+  .add-btn { margin-left: auto; padding: 8px 14px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .status-line { font-size: 12px; min-height: 18px; margin: 0 0 8px; color: var(--accent); }
+  .status-line.err { color: var(--danger); }
+
+  .cat-title { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; }
+  .item-row.inactive { background: #f3f1ec; color: var(--ink-soft); }
+  .item-name { font-size: 14px; margin: 0; }
+  .item-meta { font-size: 11.5px; color: var(--ink-soft); margin: 3px 0 0; }
+  .item-actions { display: flex; gap: 6px; }
+  .item-actions button { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit; color: var(--ink); }
+
+  dialog { border: none; border-radius: 14px; padding: 20px; width: min(520px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
+  dialog h2 { font-size: 16px; margin: 0 0 14px; }
+  .form-field { margin-bottom: 12px; }
+  .form-field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .form-field input[type="text"], .form-field input[type="number"], .form-field select, .form-field textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--ink); }
+  .form-field textarea { min-height: 70px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-field { flex: 1; }
+  .hint { font-size: 11px; color: var(--ink-soft); margin: 4px 0 0; line-height: 1.5; }
+  .branch-checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .branch-checks label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); cursor: pointer; }
+  .check-field { font-size: 13px; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; cursor: pointer; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .dialog-actions button { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .dialog-actions .cancel { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .dialog-actions .save { border: none; background: var(--accent); color: #fff; }
+  .dialog-error { font-size: 12px; color: var(--danger); min-height: 16px; margin: 4px 0 0; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>例行任務設定</h1>
+        <p>主管的週／月／年例行任務。改了之後，主管重新整理就會看到；已經回報的紀錄不受影響。</p>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button type="button" data-period="week">每週</button>
+        <button type="button" data-period="month">每月</button>
+        <button type="button" data-period="year">每年</button>
+      </div>
+      <label><input type="checkbox" id="showInactive"> 顯示已停用</label>
+      <button class="add-btn" id="addBtn">＋ 新增任務</button>
+    </div>
+    <p class="status-line" id="statusLine"></p>
+    <div id="list"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <dialog id="editDialog">
+    <form id="editForm">
+      <h2 id="editTitle">新增任務</h2>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="fPeriod">週期</label>
+          <select id="fPeriod">
+            <option value="week">每週</option>
+            <option value="month">每月</option>
+            <option value="year">每年</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fCategory">類別</label>
+          <input type="text" id="fCategory" list="categoryList" autocomplete="off">
+          <datalist id="categoryList"></datalist>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="fTitle">任務名稱</label>
+        <input type="text" id="fTitle" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="fDescription">怎麼做</label>
+        <textarea id="fDescription"></textarea>
+        <p class="hint">簡單寫步驟就好，主管在任務上點「怎麼做」會看到。</p>
+      </div>
+
+      <!-- 每週 -->
+      <div class="form-row" data-for="week">
+        <div class="form-field">
+          <label for="fTimesWeek">每週要做幾次</label>
+          <input type="number" id="fTimesWeek" min="1" max="7">
+        </div>
+        <div class="form-field">
+          <label for="fWeekday">期限</label>
+          <select id="fWeekday">
+            <option value="1">週一前</option><option value="2">週二前</option><option value="3">週三前</option>
+            <option value="4">週四前</option><option value="5">週五前</option><option value="6">週六前</option>
+            <option value="7">週日前</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 每月 -->
+      <div data-for="month">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="fStartDay">幾號出現</label>
+            <input type="number" id="fStartDay" min="1" max="31">
+          </div>
+          <div class="form-field">
+            <label for="fDueDay">期限（幾號前）</label>
+            <input type="number" id="fDueDay" min="1" max="31">
+          </div>
+          <div class="form-field">
+            <label for="fTimesMonth">每月幾次</label>
+            <input type="number" id="fTimesMonth" min="1" max="31">
+          </div>
+        </div>
+        <p class="hint" style="margin-top:-6px;margin-bottom:12px;">期限填 31＝月底（2 月、小月會自動算到月底）。</p>
+        <div class="form-field">
+          <label for="fSteps">時間點（選填）</label>
+          <textarea id="fSteps" placeholder="1｜發空白班表給同事畫假&#10;10｜依假表排班"></textarea>
+          <p class="hint">同一類的事合併成一個任務時用：每行寫「日｜要做的事」，到了那天主管會看到標示。最後一個時間點做完再回報完成。</p>
+        </div>
+      </div>
+
+      <!-- 每年 -->
+      <div class="form-row" data-for="year">
+        <div class="form-field">
+          <label for="fRemindMonth">幾月開始提醒</label>
+          <select id="fRemindMonth"></select>
+        </div>
+        <div class="form-field">
+          <label for="fDueHint">期限提示（選填）</label>
+          <input type="text" id="fDueHint" placeholder="例如：10/31 前">
+        </div>
+      </div>
+      <p class="hint" data-for="year" style="margin-top:-6px;margin-bottom:12px;">年度任務不壓期限，做完才會消失；沒做會一直留在主管的「要補回報」。</p>
+
+      <div class="form-field">
+        <label for="fReportHint">回報要寫什麼（選填）</label>
+        <input type="text" id="fReportHint" placeholder="例如：抽查的房號、同事" autocomplete="off">
+        <p class="hint">有填的話，主管按完成時一定要寫說明；沒填就是選填。</p>
+      </div>
+      <div class="form-field">
+        <label>適用部門</label>
+        <div class="branch-checks" id="fBranches"></div>
+        <p class="hint">都不勾＝所有部門。實際由誰做，看主管「管轄設定」裡的管轄部門。</p>
+      </div>
+      <label class="check-field"><input type="checkbox" id="fActive"> 啟用</label>
+
+      <p class="dialog-error" id="editError"></p>
+      <div class="dialog-actions">
+        <button type="button" class="cancel" data-close>取消</button>
+        <button type="submit" class="save">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="routine-tasks-settings.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

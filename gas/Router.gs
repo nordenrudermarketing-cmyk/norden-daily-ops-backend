@@ -18,6 +18,8 @@ function routes_() {
     { method: 'POST', path: '/api/login', handler: apiLogin_, public: true },
     { method: 'POST', path: '/api/login/verify', handler: apiLoginVerify_, public: true },
     { method: 'GET', path: '/api/me', handler: apiMe_ },
+    // 主管首頁（一次回傳例行任務、自評進度、管轄），見 Home.gs
+    { method: 'GET', path: '/api/home/manager', handler: apiHomeManager_ },
 
     // 部門、職務（限總辦公室），見 Org.gs
     { method: 'GET', path: '/api/org/departments', handler: apiOrgDepartments_ },
@@ -51,6 +53,16 @@ function routes_() {
     // 管轄（限總公司），見 Supervision.gs
     { method: 'GET', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsGet_ },
     { method: 'PUT', path: '/api/supervisions/:supervisorId', handler: apiSupervisionsPut_ },
+
+    // 例行任務（主管回報、總公司查看與設定），見 Routine.gs
+    { method: 'GET', path: '/api/routine-tasks/mine', handler: apiRoutineMine_ },
+    { method: 'POST', path: '/api/routine-tasks/report', handler: apiRoutineReport_ },
+    { method: 'DELETE', path: '/api/routine-tasks/reports/:id', handler: apiRoutineReportDelete_ },
+    { method: 'GET', path: '/api/routine-tasks/overview', handler: apiRoutineOverview_ },
+    { method: 'GET', path: '/api/routine-tasks/summary', handler: apiRoutineSummary_ },
+    { method: 'GET', path: '/api/routine-tasks/items', handler: apiRoutineItems_ },
+    { method: 'POST', path: '/api/routine-tasks/items', handler: apiRoutineItemCreate_ },
+    { method: 'PUT', path: '/api/routine-tasks/items/:id', handler: apiRoutineItemUpdate_ },
 
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
     { method: 'GET', path: '/api/self-eval/categories', handler: apiQuestionCategories_ },

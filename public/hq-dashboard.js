@@ -25,15 +25,50 @@ async function init() {
 
   const showOverview = !disabledKeys.includes('hq_overview');
   const showTasks = !disabledKeys.includes('hq_tasks');
+  const showRoutine = !disabledKeys.includes('routine_tasks');
   // .branch-grid 在 CSS 裡有 display:grid，hidden 屬性會被蓋掉，所以直接改 style
   document.getElementById('branchGrid').style.display = showOverview ? '' : 'none';
   document.getElementById('hqTasksSection').style.display = showTasks ? '' : 'none';
-  document.getElementById('hqEmptyHint').style.display = showOverview || showTasks ? 'none' : '';
+  document.getElementById('routineSection').style.display = showRoutine ? '' : 'none';
+  document.getElementById('hqEmptyHint').style.display = showOverview || showTasks || showRoutine ? 'none' : '';
 
+  if (showRoutine) loadRoutineSummary();
   if (showOverview) await loadOverview();
   if (showTasks) {
     if (!showOverview) await loadBranchOptions();
     await loadTasks();
+  }
+}
+
+// 主管例行任務：各部門本週、本月完成幾項，逾期和年度積壓幾項（詳細在 routine-tasks-overview.html）
+async function loadRoutineSummary() {
+  const grid = document.getElementById('routineGrid');
+  grid.innerHTML = '<p class="empty-state">載入中…</p>';
+  try {
+    const res = await fetch(`${API}/api/routine-tasks/summary`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '載入失敗');
+    if (data.branches.length === 0) {
+      grid.innerHTML = '<p class="empty-state">還沒有部門設定負責的主管（帳號管理 → 管轄設定）。</p>';
+      return;
+    }
+    const line = (label, s) => `<div class="metric-line"><span>${label}</span><span class="val">${s.done} / ${s.total}${s.missed ? `（未能完成 ${s.missed}）` : ''}</span></div>`;
+    grid.innerHTML = data.branches.map((b) => {
+      const overdue = b.week.overdue + b.month.overdue + b.year.overdue + b.backlog;
+      return `<div class="branch-card" data-href="routine-tasks-overview.html">
+        <h3>${b.name}${overdue ? ' ⚠' : ''}</h3>
+        ${line('本週完成', b.week)}
+        ${line('本月完成', b.month)}
+        ${line('今年完成（已提醒的）', b.year)}
+        <div class="metric-line"><span>逾期待補回報</span><span class="val ${overdue ? 'warn' : ''}">${overdue}</span></div>
+        <p style="font-size:10.5px;color:var(--ink-soft);margin:8px 0 0;">主管：${b.executors.join('、')}</p>
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('[data-href]').forEach((card) => {
+      card.addEventListener('click', () => { window.location.href = card.dataset.href; });
+    });
+  } catch (err) {
+    grid.innerHTML = `<p class="empty-state">${err.message}</p>`;
   }
 }
 

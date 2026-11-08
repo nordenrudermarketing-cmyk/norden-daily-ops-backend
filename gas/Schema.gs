@@ -70,6 +70,24 @@ const SCHEMA = {
     cache: true,
     columns: { id: 'text', supervisor_id: 'text', branch_id: 'text', created_at: 'text', created_by: 'text' },
   },
+  // 例行任務（見 Routine.gs）。表名刻意不用舊系統的 routine_tasks，避免從 Supabase 備份匯入時被舊資料蓋掉
+  //   period：week／month／year；branch_ids：逗號分隔，空白＝所有部門；steps：每行「日｜要做的事」（月任務）
+  routine_items: {
+    cache: true,
+    columns: {
+      id: 'text', audience: 'text', period: 'text', category: 'text', title: 'text', description: 'text',
+      report_hint: 'text', branch_ids: 'text', times: 'number', due_weekday: 'number', start_day: 'number',
+      due_day: 'number', steps: 'text', remind_month: 'number', due_hint: 'text', sort_order: 'number',
+      is_active: 'bool', created_at: 'text', updated_at: 'text', updated_by: 'text',
+    },
+  },
+  // 例行任務的回報：一次回報一列。kind：done 完成／missed 未能完成；period_key：週＝那週週一、月＝YYYY-MM、年＝YYYY
+  routine_reports: {
+    columns: {
+      id: 'text', item_id: 'text', branch_id: 'text', period_key: 'text', kind: 'text',
+      note: 'text', late_reason: 'text', staff_id: 'text', created_at: 'text',
+    },
+  },
   self_eval_answers: {
     columns: {
       id: 'text', submission_id: 'text', template_id: 'text', staff_answer: 'text',

@@ -180,7 +180,7 @@ function landingPageFor(staff) {
   const level = window.accountLevelOf(staff);
   if (level === 'office') return 'hq-dashboard.html';
   if (level === 'hq_admin') return 'manage-passwords.html';
-  if (level === 'manager') return 'dashboard.html';
+  if (level === 'manager') return 'manager-home.html';
 
   const code = staff.todayShiftCode;
   const roleName = staff.roles?.name || '';
