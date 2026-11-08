@@ -9,6 +9,8 @@
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
   .chips button { font-size: 12.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: inherit; }
   .chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pending-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); cursor: pointer; margin: 0 0 4px; }
+  .pending-toggle span { font-size: 11.5px; color: var(--ink-soft); }
   .sec-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; display: flex; align-items: baseline; gap: 6px; }
   .sec-title small { font-weight: 400; font-size: 11.5px; }
   .sec-title.warn { color: var(--danger); }
@@ -63,6 +65,7 @@
     </div>
 
     <div class="chips" id="branchChips" style="display:none;"></div>
+    <label class="pending-toggle"><input type="checkbox" id="pendingOnly" checked> 只看待辦<span id="pendingNote"></span></label>
     <p class="error-msg" id="statusLine" style="min-height:0;"></p>
     <div id="list"><p class="empty-state">載入中…</p></div>
   </div>

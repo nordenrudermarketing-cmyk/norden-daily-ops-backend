@@ -1226,8 +1226,9 @@ Railway 正式站 Variables 加上 `REDIRECT_TO_URL` ＝ Google 版正式站網�
 
 | 頁面 | 誰用 | 內容 |
 |---|---|---|
-| `routine-tasks.html` | 主管（登入後的首頁） | 要補回報、本週、本月、今年；本月稍後開始的收合起來 |
-| `routine-tasks-overview.html` | 總公司行政、總辦公室 | 週／月／年切換，各部門 × 任務的狀態表，點格子看回報內容 |
+| `manager-home.html` | 主管（登入後的首頁） | 還沒做完的例行任務、自評與面談進度、管轄清單，點卡片到對應頁面（`gas/Home.gs`） |
+| `routine-tasks.html` | 主管 | 要補回報、本週、本月、今年；本月稍後開始的收合起來；「只看待辦」預設打開，已完成的先收起來 |
+| `routine-tasks-overview.html` | 總公司行政、總辦公室 | 週／月／年切換，各部門 × 任務的狀態表，點格子看回報內容；下方列出這一期所有逾期與未能完成的原因 |
 | `routine-tasks-settings.html` | 總公司行政、總辦公室 | 新增、修改、停用任務（不提供刪除） |
 | `hq-dashboard.html` | 總辦公室 | 各部門本週、本月、今年完成數與逾期數的摘要卡 |
 

@@ -11,6 +11,10 @@ const $ = (id) => document.getElementById(id);
 let data = null;          // /api/routine-tasks/mine 的結果
 let branchFilter = '';    // 空白＝全部部門
 let reporting = null;     // 正在回報的任務 { inst, kind }
+// 「只看待辦」預設打開；這台裝置記住上次的選擇（瀏覽器不讓存也沒關係）
+const PENDING_ONLY_KEY = 'routinePendingOnly';
+let pendingOnly = true;
+try { pendingOnly = localStorage.getItem(PENDING_ONLY_KEY) !== 'false'; } catch (e) { /* 用預設值 */ }
 
 if (!staff) {
   window.location.href = 'index.html';
@@ -44,6 +48,12 @@ function init() {
     btn.addEventListener('click', () => btn.closest('dialog').close());
   });
   $('reportForm').addEventListener('submit', submitReport);
+  $('pendingOnly').checked = pendingOnly;
+  $('pendingOnly').addEventListener('change', () => {
+    pendingOnly = $('pendingOnly').checked;
+    try { localStorage.setItem(PENDING_ONLY_KEY, String(pendingOnly)); } catch (e) { /* 存不了就算了 */ }
+    if (data) render();
+  });
   load();
 }
 
@@ -86,7 +96,11 @@ function render() {
     $('list').innerHTML = '<p class="empty-state">你還沒有管轄的部門。<br>請總公司在「帳號管理」→「管轄設定」勾選你負責的部門。</p>';
     return;
   }
-  const list = data.instances.filter((i) => !branchFilter || i.branch_id === branchFilter);
+  const inBranch = data.instances.filter((i) => !branchFilter || i.branch_id === branchFilter);
+  // 「只看待辦」：已完成、未能完成的先收起來
+  const closedCount = inBranch.filter((i) => i.status === 'done' || i.status === 'missed').length;
+  const list = pendingOnly ? inBranch.filter((i) => i.status !== 'done' && i.status !== 'missed') : inBranch;
+  $('pendingNote').textContent = pendingOnly && closedCount ? `（已完成 ${closedCount} 項先收起來）` : '';
   const multi = data.branches.length > 1 && !branchFilter;
   const sort = (a, b) => (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]) || String(a.due || a.start).localeCompare(String(b.due || b.start));
 
@@ -106,7 +120,7 @@ function render() {
     section('今年', '年度任務沒有硬性期限，做完再回報；沒做完會一直留著。', ofPeriod('year')),
     later.length ? `<details class="later"><summary>本月稍後開始（${later.length}）</summary>${later.map((i) => card(i, multi)).join('')}</details>` : '',
   ].join('');
-  $('list').innerHTML = html || '<p class="empty-state">目前沒有要做的例行任務 🎉</p>';
+  $('list').innerHTML = html || `<p class="empty-state">${closedCount ? '目前的例行任務都完成了 🎉' : '目前沒有要做的例行任務'}</p>`;
 
   $('list').querySelectorAll('[data-act]').forEach((btn) => {
     btn.addEventListener('click', () => {
