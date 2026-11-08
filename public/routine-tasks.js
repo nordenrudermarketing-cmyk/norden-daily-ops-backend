@@ -151,8 +151,12 @@ function card(i, multi) {
   let actions = '';
   if (!closed && i.status !== 'upcoming') {
     const next = i.times > 1 ? `完成 (${i.done_count + 1}/${i.times})` : '完成';
+    // 一週要做好幾次的任務，同一天只能完成一次（後端也會擋）
+    const done = i.done_today
+      ? '<button class="primary" disabled style="opacity:0.45;cursor:default;">今天已完成，下一次請改天</button>'
+      : `<button class="primary" data-act="done">${next}</button>`;
     actions = `<div class="action-row">
-      <button class="primary" data-act="done">${next}</button>
+      ${done}
       <button class="secondary" data-act="missed">未能完成</button>
     </div>`;
   }

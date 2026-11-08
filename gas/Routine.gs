@@ -184,6 +184,9 @@ function rtInstance_(item, branch, key, ctx) {
   const times = item.period === 'year' ? 1 : Math.max(1, item.times || 1);
   const doneCount = list.filter(function (r) { return r.kind === 'done'; }).length;
   const missed = list.some(function (r) { return r.kind === 'missed'; });
+  // 週任務一週要做好幾次時，同一天只能完成一次（避免一天連按好幾次）
+  const oncePerDay = item.period === 'week' && times > 1;
+  const doneToday = oncePerDay && list.some(function (r) { return r.kind === 'done' && taipeiDate_(r.created_at) === today; });
 
   let status = 'open';
   if (doneCount >= times) status = 'done';
@@ -215,6 +218,7 @@ function rtInstance_(item, branch, key, ctx) {
     report_hint: item.report_hint || '',
     times: times,
     done_count: doneCount,
+    done_today: doneToday,
     status: status,
     start: d.start,
     due: d.due,
@@ -339,6 +343,7 @@ function apiRoutineReport_(req) {
     if (inst.status === 'missed') throw httpError_(400, '這一輪已經回報未能完成，請重新整理');
     if (inst.status === 'upcoming') throw httpError_(400, '這個任務還沒開始');
     if (kind === 'missed' && !note) throw httpError_(400, '請寫下未能完成的原因');
+    if (kind === 'done' && inst.done_today) throw httpError_(400, '這個任務今天已經完成一次了，下一次請改天再做');
     if (kind === 'done' && inst.late && !lateReason) throw httpError_(400, '已經超過期限，請寫下逾期原因');
     if (kind === 'done' && item.report_hint && !note) throw httpError_(400, '請填寫說明：' + item.report_hint);
     Db.insert('routine_reports', {
