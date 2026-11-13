@@ -78,13 +78,15 @@ function isJuniorStaff_(s) {
 
 // 一次把要用的資料讀好（每個 API 呼叫一次），避免每個人各算一次
 function appraisalContext_() {
-  const ctx = { staffById: {}, roles: {}, groupActive: {}, itemsByGroup: {}, itemById: {} };
+  const ctx = { staffById: {}, roles: {}, groupActive: {}, itemsByGroup: {}, itemsByStaff: {}, itemById: {} };
   Db.all('staff').forEach(function (s) { ctx.staffById[s.id] = s; });
   Db.all('roles').forEach(function (r) { ctx.roles[r.id] = r; });
   Db.all('appraisal_groups').forEach(function (g) { if (g.is_active !== false) ctx.groupActive[g.id] = g; });
   Db.all('appraisal_items').filter(function (i) { return i.is_active !== false; }).sort(bySortOrder_).forEach(function (i) {
     ctx.itemById[i.id] = i;
-    (ctx.itemsByGroup[i.group_id] = ctx.itemsByGroup[i.group_id] || []).push(i);
+    // 個人項目（只有某位同仁有的額外項目）另外放
+    if (i.staff_id) (ctx.itemsByStaff[i.staff_id] = ctx.itemsByStaff[i.staff_id] || []).push(i);
+    else (ctx.itemsByGroup[i.group_id] = ctx.itemsByGroup[i.group_id] || []).push(i);
   });
   ctx.levelOf = function (s) { return levelOf_(s, ctx.roles[s.role_id]); };
   // 管轄：{ 主管: [同仁] }、{ 部門: [主管] }
@@ -103,11 +105,13 @@ function appraisalContext_() {
   return ctx;
 }
 
-// 這位同仁要被評的項目（職務沒有指定評核類別、或類別停用時是空的）
+// 這位同仁要被評的項目：職務的評核類別的項目（沒指定類別、或類別停用時沒有），再加上他的個人項目
+// 個人項目只給已經在評核名單裡的人（職務有評核類別），職務改成不評核時個人項目也不算
 function appraisalItemsOf_(ctx, s) {
   const role = ctx.roles[s.role_id];
   const gid = role && role.appraisal_group_id;
-  return gid && ctx.groupActive[gid] ? (ctx.itemsByGroup[gid] || []) : [];
+  if (!gid || !ctx.groupActive[gid]) return [];
+  return (ctx.itemsByGroup[gid] || []).concat(ctx.itemsByStaff[s.id] || []);
 }
 
 // 要被評核的人：在職、要填自評的層級（現場人員、主管），而且職務有評核項目
@@ -536,11 +540,16 @@ function apiAppraisalRoleUpdate_(req) {
 
 // ---------- 個人獎金基數（總辦公室） ----------
 
-// 實際使用的基數：有個人設定用個人的；沒有的話兼職、實習生是 0，其他人用項目預設
+// 項目的預設基數：兼職、實習生的共通項目預設 0；個人項目是特別為這個人加的，照項目設定的基數
+function defaultBaseFor_(s, item) {
+  return isJuniorStaff_(s) && !item.staff_id ? 0 : (item.default_base || 0);
+}
+
+// 實際使用的基數：有個人設定用個人的，沒有就用預設
 function effectiveBase_(s, item, overrides) {
   const key = s.id + '|' + item.id;
   if (overrides && Object.prototype.hasOwnProperty.call(overrides, key)) return overrides[key];
-  return isJuniorStaff_(s) ? 0 : (item.default_base || 0);
+  return defaultBaseFor_(s, item);
 }
 
 function baseOverrides_() {
@@ -551,11 +560,18 @@ function baseOverrides_() {
   return map;
 }
 
-// GET /api/appraisal/bases：每位要評核的同仁、他的項目、預設與實際基數
+// GET /api/appraisal/bases：每位要評核的同仁、他的項目（含個人項目）、預設與實際基數
 function apiAppraisalBases_(req) {
   requireAppraisalAdmin_(req.actor);
   const ctx = appraisalContext_();
   const overrides = baseOverrides_();
+  return {
+    sources: APPRAISAL_SOURCES,
+    people: appraisalBasePeople_(ctx, overrides),
+  };
+}
+
+function appraisalBasePeople_(ctx, overrides) {
   return Object.keys(ctx.staffById).map(function (id) { return ctx.staffById[id]; })
     .filter(function (s) { return isAppraisee_(ctx, s); })
     .map(function (s) {
@@ -571,14 +587,48 @@ function apiAppraisalBases_(req) {
           const key = s.id + '|' + i.id;
           return {
             id: i.id, name: i.name,
-            default_base: isJuniorStaff_(s) ? 0 : (i.default_base || 0),
+            default_base: defaultBaseFor_(s, i),
             base: effectiveBase_(s, i, overrides),
             custom: Object.prototype.hasOwnProperty.call(overrides, key),
+            // 個人項目：網頁上可以改名稱、誰來評、基數、說明，或移除
+            personal: !!i.staff_id,
+            source: i.source || 'main',
+            description: i.description || '',
           };
         }),
       };
     })
     .sort(function (a, b) { return String(a.branch_name).localeCompare(String(b.branch_name), 'zh-Hant') || byName_(a, b); });
+}
+
+// ---------- 個人項目（某位同仁多一個評核項目、有對應的獎金；人事行政、總辦公室） ----------
+// 存在 appraisal_items，staff_id＝這位同仁、沒有 group_id；評分、彙整、獎金計算都跟一般項目一樣
+// 「移除」＝停用（is_active=false），已經評過的分數和定案的資料都留著
+
+// POST /api/appraisal/personal-items  { staff_id, name, source, default_base, description, grade_desc }
+function apiAppraisalPersonalItemCreate_(req) {
+  requireAppraisalAdmin_(req.actor);
+  const ctx = appraisalContext_();
+  const s = ctx.staffById[req.body.staff_id];
+  if (!s || !isAppraisee_(ctx, s)) throw httpError_(400, '只能幫要評核的同仁新增項目（職務要先對應評核類別）');
+  const patch = itemPatch_(Object.assign({ source: 'main', default_base: 0 }, req.body, { takes_reward: false }));
+  if (!patch.name) throw httpError_(400, '請填寫項目名稱');
+  if (appraisalItemsOf_(ctx, s).some(function (i) { return i.name === patch.name; })) {
+    throw httpError_(400, s.name + ' 已經有叫「' + patch.name + '」的項目');
+  }
+  return Db.insert('appraisal_items', Object.assign({
+    staff_id: s.id, group_id: null, is_active: true, sort_order: 100 + (ctx.itemsByStaff[s.id] || []).length,
+  }, patch))[0];
+}
+
+// PUT /api/appraisal/personal-items/:id  { name?, source?, default_base?, description?, grade_desc?, is_active? }
+function apiAppraisalPersonalItemUpdate_(req) {
+  requireAppraisalAdmin_(req.actor);
+  const item = Db.first('appraisal_items', { id: req.params.id });
+  if (!item || !item.staff_id) throw httpError_(404, '找不到這個個人項目');
+  const patch = itemPatch_(req.body);
+  delete patch.takes_reward;
+  return Db.update('appraisal_items', { id: item.id }, patch)[0];
 }
 
 // PUT /api/appraisal/bases/:staffId  { bases: { 項目 id: 金額 或 null（改回預設） } }

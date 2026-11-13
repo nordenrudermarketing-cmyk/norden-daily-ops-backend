@@ -108,9 +108,11 @@ const SCHEMA = {
     columns: {
       id: 'text', group_id: 'text', name: 'text', description: 'text', grade_desc: 'text', source: 'text',
       default_base: 'number', takes_reward: 'bool', sort_order: 'number', is_active: 'bool',
+      // 個人項目（2026-11-14 起）：有填 staff_id＝只有這位同仁有的額外項目（沒有 group_id），在「獎金基數」頁新增
+      staff_id: 'text',
     },
   },
-  // 個人獎金基數（總辦公室調整）：沒有資料＝用項目的預設基數（兼職、實習生預設 0）
+  // 個人獎金基數（人事行政、總辦公室調整）：沒有資料＝用項目的預設基數（兼職、實習生預設 0）
   appraisal_bases: {
     cache: true,
     columns: { id: 'text', staff_id: 'text', item_id: 'text', base: 'number', updated_at: 'text', updated_by: 'text' },

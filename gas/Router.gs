@@ -79,6 +79,8 @@ function routes_() {
     { method: 'PUT', path: '/api/appraisal/roles/:id', handler: apiAppraisalRoleUpdate_ },
     { method: 'GET', path: '/api/appraisal/bases', handler: apiAppraisalBases_ },
     { method: 'PUT', path: '/api/appraisal/bases/:staffId', handler: apiAppraisalBasesUpdate_ },
+    { method: 'POST', path: '/api/appraisal/personal-items', handler: apiAppraisalPersonalItemCreate_ },
+    { method: 'PUT', path: '/api/appraisal/personal-items/:id', handler: apiAppraisalPersonalItemUpdate_ },
     // 評核彙整、客戶評價輸入、送審、審核定案，見 AppraisalSummary.gs
     { method: 'GET', path: '/api/appraisal/summary', handler: apiAppraisalSummary_ },
     { method: 'POST', path: '/api/appraisal/summary/submit', handler: apiAppraisalSubmit_ },
