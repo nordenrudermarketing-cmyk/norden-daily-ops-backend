@@ -108,10 +108,20 @@ function bind() {
   document.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
     openItem(data.groups.find((x) => x.id === b.dataset.add), null);
   }));
+  // 改名：把標題換成輸入框（Apps Script 網頁裡 prompt() 可能被瀏覽器擋掉，不用它）
   document.querySelectorAll('[data-rename]').forEach((b) => b.addEventListener('click', () => {
     const g = data.groups.find((x) => x.id === b.dataset.rename);
-    const name = prompt('評核類別的新名稱', g.name);
-    if (name && name.trim() !== g.name) run(() => api(`/groups/${g.id}`, 'PUT', { name }), '已改名');
+    const head = b.closest('.group-head');
+    head.innerHTML = `<input type="text" value="${escapeHtml(g.name)}" style="flex:1;min-width:140px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;">
+      <button type="button" class="small-btn primary" data-ok>儲存名稱</button><button type="button" class="small-btn" data-cancel>取消</button>`;
+    const input = head.querySelector('input');
+    input.focus();
+    head.querySelector('[data-cancel]').addEventListener('click', render);
+    head.querySelector('[data-ok]').addEventListener('click', () => {
+      const name = input.value.trim();
+      if (!name || name === g.name) { render(); return; }
+      run(() => api(`/groups/${g.id}`, 'PUT', { name }), '已改名');
+    });
   }));
   document.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
     const g = data.groups.find((x) => x.id === b.dataset.toggle);
