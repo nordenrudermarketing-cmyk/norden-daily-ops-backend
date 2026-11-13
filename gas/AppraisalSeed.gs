@@ -75,6 +75,12 @@ const APPRAISAL_SEED = [
       description: '整合工作節奏、時間規劃、可持續性與自我提升的態度。',
       grade_desc: 'A｜能良好規劃時間、保持穩定節奏，遇到挑戰也主動學習新技能並快速吸收。\nB｜多數能按時完成，工作習慣穩定；能接受回饋並持續改善。\nC｜時間掌控不佳，經常延遲或需補件；學習態度較被動。\nD｜缺乏規劃，多次延誤或未完成；抗拒學習與改進。' },
   ] },
+  // 咖啡廳店經理：2026-11 使用者決定保留「管理職務分數」原名（另一項已經叫影響力分數），獎懲加在管理職務分數
+  { group: '咖啡廳主管', items: [
+    { name: '管理職務分數', source: 'main', default_base: 60, takes_reward: true, description: APPRAISAL_DESC_MANAGEMENT },
+    { name: '影響力分數', source: 'main', default_base: 30, takes_reward: false,
+      description: '評估在日常工作中，對團隊與咖啡廳營運帶來的正向影響。' },
+  ] },
   { group: '咖啡廳', items: [
     { name: '影響力分數', source: 'main', default_base: 30, takes_reward: true, description: APPRAISAL_DESC_CAFE },
   ] },
@@ -139,7 +145,7 @@ function menuSeedAppraisal() {
   ensureSchema_();
   const answer = ui.alert(
     '匯入評核項目預設值',
-    '會新增房務、客務、主管、品牌、咖啡廳五個評核類別和它們的項目（已經有的不會被改），' +
+    '會新增房務、客務、主管、品牌、咖啡廳主管、咖啡廳六個評核類別和它們的項目（已經有的不會被改），' +
     '並把還沒設定的職務依自評題目類別對應到評核類別。可以重複執行。要繼續嗎？',
     ui.ButtonSet.OK_CANCEL
   );
