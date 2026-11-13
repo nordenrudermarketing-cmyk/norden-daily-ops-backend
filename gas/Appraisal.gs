@@ -252,9 +252,12 @@ function apiAppraisalMine_(req) {
   }) : null;
   const required = ratees.filter(function (r) { return r.required; });
 
+  // 這個月已經定案（AppraisalSummary.gs）：評分頁只能看、不能改
+  const locked = appraisalMonthStatus_(evalMonth) === 'approved';
   return {
     window: win,
-    can_rate_now: canRateNow_(win),
+    locked: locked,
+    can_rate_now: canRateNow_(win) && !locked,
     grade_guide: APPRAISAL_GRADE_GUIDE,
     is_junior: isJuniorStaff_(me),
     can_feedback: canFeedback,

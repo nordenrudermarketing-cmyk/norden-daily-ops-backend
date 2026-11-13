@@ -65,7 +65,10 @@ function renderBanner() {
     cls = 'muted';
     text = `${monthText(w.eval_month)}評核已經在 ${shortDate(w.close_date)} 截止。`;
   }
-  if (w.testing_override) text += '<br>測試站：不受開放時間限制，現在就可以評分。';
+  if (data.locked) {
+    cls = 'muted';
+    text = `${monthText(w.eval_month)}評核已經定案，不能再修改評分。`;
+  } else if (w.testing_override) text += '<br>測試站：不受開放時間限制，現在就可以評分。';
   text += '<br>每一項選 A～D；留言會<b>具名</b>讓對方看到，請具體寫出值得肯定和可以更好的地方。';
   $('windowBanner').innerHTML = `<div class="banner ${cls}">${text}</div>`;
 }
