@@ -33,6 +33,7 @@ PAGES = [
     "self-eval-review",
     "self-eval-templates",
     "self-eval-hq-flagged",
+    "staff-home",
     "hq-dashboard",
     "manager-home",
     "feature-toggles",
@@ -43,7 +44,7 @@ PAGES = [
     "routine-tasks-overview",
     "routine-tasks-settings",
     "appraisal",
-    "appraisal-progress",
+    "appraisal-summary",
     "appraisal-settings",
     "appraisal-bases",
 ]

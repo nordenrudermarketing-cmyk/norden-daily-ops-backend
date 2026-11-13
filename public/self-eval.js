@@ -27,7 +27,7 @@ async function load() {
   const res = await fetch(`${API}/api/self-eval/form?staff_id=${staff.id}`);
   formData = await res.json();
 
-  // 總公司行政、總辦公室不用填自評（帳號層級，見 gas/Levels.gs）
+  // 人事行政、總辦公室不用填自評（帳號層級，見 gas/Levels.gs）
   if (formData.not_required) {
     document.getElementById('staffLine').textContent = formData.staff?.name || staff.name;
     document.getElementById('dueBanner').innerHTML =

@@ -268,21 +268,14 @@ function selfEvalHtml(detail) {
 
 function renderFeedback() {
   if (!data.can_feedback) { $('feedbackArea').innerHTML = ''; return; }
-  const fb = data.feedback || { feedback: '', learn_depts: [] };
+  const fb = data.feedback || { feedback: '' };
   const editable = data.can_rate_now;
-  const options = data.learn_dept_options;
-  const others = fb.learn_depts.filter((d) => !options.includes(d)).join(' ');
   $('feedbackArea').innerHTML = `
     <h2 class="sec-title">我有話要說<small>選填</small></h2>
     <div class="feedback-box">
       <p class="hint">歡迎對公司或主管給予任何意見和建議，具體寫下你的看法。內容會提供給總公司和主管做為改進參考，詳盡的建議會斟酌加點。</p>
       <label class="comment-label" for="fbText" style="margin-top:0;">回饋與期望</label>
       <textarea id="fbText" ${editable ? '' : 'disabled'}>${escapeHtml(fb.feedback)}</textarea>
-      <label class="comment-label">想學習其他部門嗎？（可複選，公司與主管會視營運需求和個人表現安排）</label>
-      <div class="learn">
-        ${options.map((o) => `<label><input type="checkbox" value="${escapeHtml(o)}" ${fb.learn_depts.includes(o) ? 'checked' : ''} ${editable ? '' : 'disabled'}> ${escapeHtml(o)}</label>`).join('')}
-      </div>
-      <input type="text" id="fbOther" placeholder="其他（選填）" value="${escapeHtml(others)}" ${editable ? '' : 'disabled'}>
       ${editable ? '<div class="action-row"><button type="button" class="btn" id="fbSave">儲存</button></div>' : ''}
       <p class="save-msg" id="fbMsg">${fb.updated_at ? '上次儲存：' + new Date(fb.updated_at).toLocaleString('zh-TW', { hour12: false }) : ''}</p>
     </div>`;
@@ -290,13 +283,10 @@ function renderFeedback() {
 }
 
 async function saveFeedback() {
-  const depts = [...document.querySelectorAll('#feedbackArea .learn input:checked')].map((i) => i.value);
-  const other = $('fbOther').value.trim();
-  if (other) depts.push(other);
   $('fbMsg').className = 'save-msg';
   $('fbMsg').textContent = '儲存中…';
   try {
-    await api('/api/appraisal/feedback', 'POST', { feedback: $('fbText').value, learn_depts: depts });
+    await api('/api/appraisal/feedback', 'POST', { feedback: $('fbText').value });
     $('fbMsg').className = 'save-msg ok';
     $('fbMsg').textContent = '已儲存';
   } catch (err) {

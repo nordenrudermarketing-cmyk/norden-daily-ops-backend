@@ -50,11 +50,18 @@
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.7 3.86a2 2 0 0 0-3.4 0z"/></svg>',
     branch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>',
     lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    // 自評與評核：寫字板＋打勾
+    clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 12.5l2 2 4-4.5"/></svg>',
+    // 設定：齒輪
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   };
 
+  // 每個分類的 items 可以帶 section（子類別）：同一個 section 的項目排在一起，子選單裡會顯示小標題。
+  // 原本只有總公司（人事行政、總辦公室）用的設定頁，一律放在 section「設定」
   const NAV_SETS = {
     housekeeping: [
-      { label: '今日任務', icon: 'home', items: [
+      { label: '總覽', icon: 'home', items: [{ label: '我的總覽', url: 'staff-home.html' }] },
+      { label: '今日任務', icon: 'calendar', items: [
         { label: '今日房號打卡', url: 'checklist.html' },
         { label: '今日房號分配（小隊長）', url: 'assign.html' },
         { label: '公區任務分配（小隊長）', url: 'public-area-assign.html' },
@@ -67,15 +74,18 @@
         { label: '我的學習地圖', url: 'learning-map.html' },
         { label: '我的教學任務', url: 'my-teaching.html' },
       ] },
-      { label: '其他', icon: 'dots', items: [
+      { label: '自評評核', icon: 'clipboard', items: [
         { label: '每月自評表', url: 'self-eval.html' },
         { label: '每月評核', url: 'appraisal.html' },
+      ] },
+      { label: '其他', icon: 'dots', items: [
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
       ] },
     ],
     frontdesk: [
-      { label: '今日任務', icon: 'home', items: [
+      { label: '總覽', icon: 'home', items: [{ label: '我的總覽', url: 'staff-home.html' }] },
+      { label: '今日任務', icon: 'calendar', items: [
         { label: '今日班別任務', url: 'shift.html' },
         { label: '巡房檢查', url: 'inspect.html' },
       ] },
@@ -88,9 +98,11 @@
         { label: '我的教學任務', url: 'my-teaching.html' },
         { label: '櫃檯考核筆試', url: 'written-exam-take.html' },
       ] },
-      { label: '其他', icon: 'dots', items: [
+      { label: '自評評核', icon: 'clipboard', items: [
         { label: '每月自評表', url: 'self-eval.html' },
         { label: '每月評核', url: 'appraisal.html' },
+      ] },
+      { label: '其他', icon: 'dots', items: [
         { label: '個人清潔配額', url: 'staff-cleaning.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
@@ -121,59 +133,59 @@
         { label: '開班收班日報', url: 'manager-daily-report.html' },
         { label: '主管每日工作表', url: 'manager-worksheet.html' },
       ] },
-      { label: '自評', icon: 'dots', items: [
-        { label: '我的每月自評表', url: 'self-eval.html' },
-        { label: '審閱同仁自評表', url: 'self-eval-review.html' },
+      { label: '自評評核', icon: 'clipboard', items: [
+        { label: '我的每月自評表', url: 'self-eval.html', section: '自評' },
+        { label: '審閱同仁自評表', url: 'self-eval-review.html', section: '自評' },
+        { label: '每月評核', url: 'appraisal.html', section: '評核' },
       ] },
-      { label: '評核', icon: 'coin', items: [{ label: '每月評核', url: 'appraisal.html' }] },
-      { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
+      { label: '設定', icon: 'gear', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
-    // 其他職務的現場人員（例如之後的行銷、咖啡廳）：目前只有自評表
+    // 其他職務的現場人員（例如品牌、咖啡廳）
     field: [
-      { label: '自評', icon: 'dots', items: [
+      { label: '總覽', icon: 'home', items: [{ label: '我的總覽', url: 'staff-home.html' }] },
+      { label: '自評評核', icon: 'clipboard', items: [
         { label: '每月自評表', url: 'self-eval.html' },
         { label: '每月評核', url: 'appraisal.html' },
       ] },
     ],
-    // 總公司行政：人事專用帳號，不填自評、不面談，只看（唯讀）和管理帳號
+    // 人事行政：人事專用帳號，不填自評、不被評核，看（唯讀）全部自評、管理帳號、彙整評核並送審
     hq_admin: [
-      { label: '自評', icon: 'branch', items: [
-        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },
-        { label: '查看同仁自評表', url: 'self-eval-review.html' },
-      ] },
+      { label: '總覽', icon: 'home', items: [{ label: '我的總覽', url: 'staff-home.html' }] },
       { label: '例行', icon: 'calendar', items: [
         { label: '例行任務執行狀況', url: 'routine-tasks-overview.html' },
-        { label: '例行任務設定', url: 'routine-tasks-settings.html' },
+        { label: '例行任務設定', url: 'routine-tasks-settings.html', section: '設定' },
       ] },
-      { label: '評核', icon: 'coin', items: [{ label: '評分進度', url: 'appraisal-progress.html' }] },
-      { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
+      { label: '自評評核', icon: 'clipboard', items: [
+        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html', section: '自評' },
+        { label: '查看同仁自評表', url: 'self-eval-review.html', section: '自評' },
+        { label: '評核彙整', url: 'appraisal-summary.html', section: '評核' },
+        { label: '評核項目設定', url: 'appraisal-settings.html', section: '設定' },
+        { label: '獎金基數', url: 'appraisal-bases.html', section: '設定' },
+      ] },
+      { label: '設定', icon: 'gear', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     office: [
       { label: '總覽', icon: 'home', items: [{ label: '總辦公室儀表板', url: 'hq-dashboard.html' }] },
       { label: '例行', icon: 'calendar', items: [
         { label: '例行任務執行狀況', url: 'routine-tasks-overview.html' },
-        { label: '例行任務設定', url: 'routine-tasks-settings.html' },
+        { label: '例行任務設定', url: 'routine-tasks-settings.html', section: '設定' },
       ] },
-      { label: '自評', icon: 'branch', items: [
-        { label: '自評題目管理', url: 'self-eval-templates.html' },
-        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html' },
-        { label: '審閱同仁自評表', url: 'self-eval-review.html' },
-        { label: '各館週報', url: 'weekly-report.html' },
-        { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
+      { label: '自評評核', icon: 'clipboard', items: [
+        { label: '各部門自評進度', url: 'self-eval-hq-flagged.html', section: '自評' },
+        { label: '審閱同仁自評表', url: 'self-eval-review.html', section: '自評' },
+        { label: '各館週報', url: 'weekly-report.html', section: '自評' },
+        { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html', section: '自評' },
+        { label: '每月評核', url: 'appraisal.html', section: '評核' },
+        { label: '評核彙整', url: 'appraisal-summary.html', section: '評核' },
+        { label: '自評題目管理', url: 'self-eval-templates.html', section: '設定' },
+        { label: '評核項目設定', url: 'appraisal-settings.html', section: '設定' },
+        { label: '獎金基數', url: 'appraisal-bases.html', section: '設定' },
       ] },
-      { label: '評核', icon: 'coin', items: [
-        { label: '每月評核', url: 'appraisal.html' },
-        { label: '評分進度', url: 'appraisal-progress.html' },
-        { label: '評核項目設定', url: 'appraisal-settings.html' },
-        { label: '獎金基數', url: 'appraisal-bases.html' },
-      ] },
-      { label: '組織', icon: 'doc', items: [
-        { label: '部門管理', url: 'org-departments.html' },
-        { label: '職務管理', url: 'org-roles.html' },
-      ] },
-      { label: '帳號', icon: 'lock', items: [
-        { label: '帳號管理', url: 'manage-passwords.html' },
-        { label: '功能開關', url: 'feature-toggles.html' },
+      { label: '設定', icon: 'gear', items: [
+        { label: '帳號管理', url: 'manage-passwords.html', section: '帳號' },
+        { label: '部門管理', url: 'org-departments.html', section: '組織' },
+        { label: '職務管理', url: 'org-roles.html', section: '組織' },
+        { label: '功能開關', url: 'feature-toggles.html', section: '系統' },
       ] },
     ],
   };
@@ -252,6 +264,8 @@
     #ldSidebarWrap .ld-cat-btn.active { background: var(--accent-soft, #E4EDE9); color: var(--accent, #2F5D4F); }
     #ldSidebarWrap .ld-submenu { width: 150px; background: var(--surface, #fff); border-right: 1px solid var(--line, #e3e0d8); padding: 16px 10px; height: 100%; overflow-y: auto; position: relative; }
     #ldSidebarWrap .ld-submenu h3 { font-size: 11.5px; color: var(--ink-soft, #6B6F63); margin: 0 0 10px; font-weight: 600; }
+    #ldSidebarWrap .ld-section { font-size: 10.5px; color: var(--ink-soft, #6B6F63); margin: 14px 4px 4px; font-weight: 600; letter-spacing: .05em; border-top: 1px solid var(--line, #e3e0d8); padding-top: 10px; }
+    #ldSidebarWrap .ld-submenu h3 + .ld-section { margin-top: 0; border-top: none; padding-top: 0; }
     #ldSidebarWrap .ld-sub-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 9px; border: none; background: transparent; font-size: 12.5px; color: var(--ink, #23291F); cursor: pointer; margin-bottom: 4px; }
     #ldSidebarWrap .ld-sub-item.active { background: var(--accent, #2F5D4F); color: #fff; }
     #ldSidebarWrap .ld-foot { margin-top: auto; text-align: center; font-size: 10px; color: var(--ink-soft, #6B6F63); padding-top: 10px; }
@@ -324,7 +338,16 @@
     const cat = categories[idx];
     submenu.innerHTML = `<button class="ld-submenu-close" aria-label="收合">✕</button><h3>${cat.label}</h3>`;
     submenu.querySelector('.ld-submenu-close').addEventListener('click', closeSubmenu);
+    let lastSection = null;
     cat.items.forEach((item) => {
+      // 子類別小標題（例如「自評」「評核」「設定」）
+      if (item.section && item.section !== lastSection) {
+        const h = document.createElement('h4');
+        h.className = 'ld-section';
+        h.textContent = item.section;
+        submenu.appendChild(h);
+      }
+      lastSection = item.section || null;
       const btn = document.createElement('button');
       btn.className = 'ld-sub-item' + (item.url === currentPage ? ' active' : '');
       btn.textContent = item.label;
@@ -334,7 +357,7 @@
   }
   renderSubmenu(defaultCategoryIdx);
   // 手機版的子選單是蓋在頁面上的；帳號管理、例行任務頁一進來要看得到內容，先收起來（點上方分類就會打開）
-  const COLLAPSED_ON_PHONE = ['manager-home.html', 'manage-passwords.html', 'routine-tasks.html', 'routine-tasks-overview.html', 'routine-tasks-settings.html'];
+  const COLLAPSED_ON_PHONE = ['staff-home.html', 'hq-dashboard.html', 'appraisal-summary.html', 'manager-home.html', 'manage-passwords.html', 'routine-tasks.html', 'routine-tasks-overview.html', 'routine-tasks-settings.html'];
   if (window.innerWidth <= 700 && COLLAPSED_ON_PHONE.includes(currentPage)) submenu.style.display = 'none';
 
   wrap.appendChild(sidebar);

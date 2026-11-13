@@ -1,4 +1,4 @@
-// 評核項目設定（只有總辦公室）——後端見 gas/Appraisal.gs
+// 評核項目設定（人事行政、總辦公室）——後端見 gas/Appraisal.gs
 // 評核類別、項目（誰來評、預設獎金基數、說明、接獎懲）、職務對應的類別
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
@@ -11,8 +11,8 @@ let editing = null; // { groupId, item }
 
 if (!staff) {
   window.location.href = 'index.html';
-} else if (window.accountLevelOf(staff) !== 'office') {
-  alert('評核項目設定只有總辦公室帳號可以使用');
+} else if (!['hq_admin', 'office'].includes(window.accountLevelOf(staff))) {
+  alert('評核項目設定只有人事行政、總辦公室帳號可以使用');
   window.location.href = 'index.html';
 } else {
   $('staffLine').textContent = staff.name;

@@ -16,7 +16,7 @@ if (!staff) {
 } else if (level === 'office') {
   window.location.href = 'hq-dashboard.html';
 } else if (level !== 'manager') {
-  window.location.href = 'self-eval.html';
+  window.location.href = 'staff-home.html';
 } else {
   load();
 }

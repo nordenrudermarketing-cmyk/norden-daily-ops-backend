@@ -2,12 +2,12 @@
 // 測試站專用：切換身分
 //
 // 測試或除錯時，常常需要「用某位同仁的身分看他看到的畫面」，每換一次都輸入密碼很花時間。
-// 這裡讓「已經用總公司行政或總辦公室帳號登入」的人，在測試站右下角直接切換成任何一位在職同仁，看完再切回來。
+// 這裡讓「已經用人事行政或總辦公室帳號登入」的人，在測試站右下角直接切換成任何一位在職同仁，看完再切回來。
 // 測試站的資料是正式站的複本（見 Setup.gs 的「從正式站同步最新資料」），在這裡操作不會影響正式資料。
 //
 // 安全限制（全部都要符合）：
 //   1. 只在測試站有效（試算表名稱含「測試」）；正式站這兩支 API 一律回 404
-//   2. 只有總公司行政、總辦公室本人，或「由他們切換過來」的身分（登入憑證上記著是誰切的）才能切換
+//   2. 只有人事行政、總辦公室本人，或「由他們切換過來」的身分（登入憑證上記著是誰切的）才能切換
 //   3. 只能切換成在職的同仁，或切回原本的帳號
 // 切換後拿到一張新的登入憑證，憑證上記著原本是誰（有簽章，改不了），所以隨時能切回去。
 // ============================================================
@@ -17,12 +17,12 @@ function isTestAccount_(staff) {
   return !!staff && /^T-/i.test(String(staff.login_code || '')) && String(staff.name || '').indexOf('測試') >= 0;
 }
 
-// 能切換身分的層級：總公司行政、總辦公室（測試站專用）
+// 能切換身分的層級：人事行政、總辦公室（測試站專用）
 function canSwitchIdentity_(level) {
   return level === 'hq_admin' || level === 'office';
 }
 
-// 回傳「原本的帳號」（總公司行政或總辦公室）；不能切換就丟錯誤
+// 回傳「原本的帳號」（人事行政或總辦公室）；不能切換就丟錯誤
 function switchOrigin_(actor) {
   if (!isStaging_()) throw httpError_(404, '找不到這個 API');
   if (actor.switched_by) {
@@ -31,7 +31,7 @@ function switchOrigin_(actor) {
     throw httpError_(403, '原本的帳號已停用或不存在，請重新登入');
   }
   if (canSwitchIdentity_(actor.level)) return actor;
-  throw httpError_(403, '要先用總公司行政或總辦公室的帳號登入，才能切換身分');
+  throw httpError_(403, '要先用人事行政或總辦公室的帳號登入，才能切換身分');
 }
 
 // GET /api/test/identities
@@ -60,7 +60,7 @@ function apiTestIdentities_(req) {
 // 測試站「從正式站同步最新資料」之後要補做的整理，不用登入 Google 試算表也能在網頁右下角面板按：
 //   relabel：自評表月份改名（同試算表選單「自評表月份改名（一次性）」）
 //   seed-appraisal：匯入評核項目預設值（同步會覆蓋職務表，職務的評核類別要重新對應）
-// 只限測試站、原本身分是總公司行政或總辦公室（跟切換身分同一套檢查）
+// 只限測試站、原本身分是人事行政或總辦公室（跟切換身分同一套檢查）
 function apiTestMaintenance_(req) {
   switchOrigin_(req.actor);
   const action = req.body.action;

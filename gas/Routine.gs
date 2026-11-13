@@ -369,7 +369,7 @@ function apiRoutineReportDelete_(req) {
 // ---------- API：總公司看執行狀況 ----------
 
 function rtRequireManager_(actor) {
-  requireLevelFn_(actor, canManageRoutine_, '只有總公司行政、總辦公室可以查看與設定例行任務');
+  requireLevelFn_(actor, canManageRoutine_, '只有人事行政、總辦公室可以查看與設定例行任務');
 }
 
 // 有執行人的部門（管轄部門裡有主管）

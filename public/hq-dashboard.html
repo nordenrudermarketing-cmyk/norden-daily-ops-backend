@@ -53,6 +53,9 @@
       <a href="feature-toggles.html" style="font-size:12px;color:var(--accent);">功能開關 →</a>
     </div>
 
+    <!-- 我的待辦（例如評核已送審、等審核），見 todos.js -->
+    <div id="todosBox" style="max-width:640px;"></div>
+
     <!-- 例行任務各部門摘要（功能開關 routine_tasks），關閉時由 hq-dashboard.js 藏起來 -->
     <div id="routineSection" style="display:none;margin-bottom:24px;">
       <p style="font-weight:500;margin:0 0 10px;">主管例行任務　<a href="routine-tasks-overview.html" style="font-size:12px;font-weight:400;color:var(--accent);">查看執行狀況 →</a></p>
@@ -89,6 +92,7 @@
   <script src="config.js"></script>
   <script src="self-eval-reminder.js"></script>
   <script src="hq-dashboard.js"></script>
+  <script src="todos.js"></script>
 <script>
   if (window.self !== window.top) {
     document.addEventListener('DOMContentLoaded', () => {

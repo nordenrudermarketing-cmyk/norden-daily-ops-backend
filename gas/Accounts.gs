@@ -6,7 +6,7 @@
 // 權限規則（2026-10 起照「帳號層級」，見 Levels.gs；主管另外照「管轄」，見 Supervision.gs）：
 //   只能建立、管理比自己低的層級；總辦公室是唯一例外，可以管同級（避免系統被鎖死）
 //   總辦公室：全部帳號
-//   總公司行政：主管、現場人員的帳號
+//   人事行政：主管、現場人員的帳號
 //   主管：自己管轄的現場人員；新增的帳號自動列入自己的管轄，部門只能選自己的或管轄人員所在的部門
 //   現場人員：不能使用（自己的密碼在這裡也改不了，請主管幫忙）
 //   每個人都能改自己的密碼，但不能改自己的層級、職務；最後一個在職的總辦公室帳號不能停用或降級
@@ -95,9 +95,6 @@ function toPublicAccount_(actor, s, hasPassword, ctx) {
     is_active: isActive,
     is_part_time: !!s.is_part_time,
     is_intern: !!s.is_intern,
-    // 所屬公司：company 是帳號自己填的（空白＝跟部門），effective_company 是實際用的
-    company: s.company || '',
-    effective_company: companyOf_(s),
     has_password: hasPassword,
     // 只給管得到這個帳號的人看；自己的 Email 不能自己改，也就不回傳
     verify_email: manageable ? (s.verify_email || '') : null,
@@ -177,7 +174,7 @@ function apiAccountsMeta_(req) {
   const branches = Db.all('branches')
     .filter(function (b) { return b.is_active !== false && (!allowed || allowed[b.id]); })
     .sort(byName_)
-    .map(function (b) { return { id: b.id, name: b.name, code: b.code, company: b.company || '' }; });
+    .map(function (b) { return { id: b.id, name: b.name, code: b.code }; });
   const roles = Db.all('roles')
     .filter(function (r) { return r.is_active !== false; })
     .sort(byName_)
@@ -212,13 +209,6 @@ function apiAccountsList_(req) {
     .map(function (s) { return toPublicAccount_(actor, s, !!flags[s.id], ctx); });
 }
 
-// 同仁實際的所屬公司：帳號有填就用帳號的，沒填跟部門（評核薪資 Excel 依公司分組用）
-function companyOf_(staff) {
-  if (staff.company) return staff.company;
-  const branch = staff.branches || branchById_(staff.branch_id);
-  return (branch && branch.company) || '';
-}
-
 // POST /api/accounts  { name, login_code, branch_id, role_id, account_level, is_part_time, is_intern, password?, verify_email? }
 function apiAccountsCreate_(req) {
   const actor = accountActor_(req);
@@ -242,7 +232,6 @@ function apiAccountsCreate_(req) {
     is_active: true,
     is_part_time: !!req.body.is_part_time,
     is_intern: !!req.body.is_intern,
-    company: actor.level === 'manager' ? null : (cleanText_(req.body.company) || null),
     learning_map_enabled: false,
   })[0];
   // 沒給密碼就留空：同仁第一次登入時輸入的密碼會直接變成他的密碼
@@ -278,8 +267,6 @@ function apiAccountsUpdate_(req) {
     Object.assign(patch, { branch_id: scope.branch_id, role_id: scope.role.id, account_level: scope.level });
     // 實習生會影響評核獎金，自己不能改
     if (req.body.is_intern !== undefined) patch.is_intern = !!req.body.is_intern;
-    // 所屬公司（發薪用）：自己不能改，主管也不能改
-    if (req.body.company !== undefined && actor.level !== 'manager') patch.company = cleanText_(req.body.company) || null;
     // 網頁沒送這個欄位就維持原本的；降成現場人員時一併清掉
     if (!canHaveVerifyEmail_(scope.level)) patch.verify_email = '';
     else if (req.body.verify_email !== undefined) patch.verify_email = cleanVerifyEmail_(req.body.verify_email);

@@ -1,5 +1,5 @@
-// 獎金基數（只有總辦公室）——後端見 gas/Appraisal.gs 的 apiAppraisalBases_
-// 每位同仁每個項目一格；留空＝用預設值
+// 獎金基數（人事行政、總辦公室）——後端見 gas/Appraisal.gs 的 apiAppraisalBases_
+// 每位同仁每個項目一格；留空＝用預設值。項目和預設基數在「評核項目設定」新增、修改
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
 const API = window.APP_CONFIG?.API_BASE_URL ?? '';
@@ -10,8 +10,8 @@ let people = [];
 
 if (!staff) {
   window.location.href = 'index.html';
-} else if (window.accountLevelOf(staff) !== 'office') {
-  alert('獎金基數只有總辦公室帳號可以設定');
+} else if (!['hq_admin', 'office'].includes(window.accountLevelOf(staff))) {
+  alert('獎金基數只有人事行政、總辦公室帳號可以設定');
   window.location.href = 'index.html';
 } else {
   $('staffLine').textContent = staff.name;

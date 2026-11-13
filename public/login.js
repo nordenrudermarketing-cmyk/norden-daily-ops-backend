@@ -174,22 +174,12 @@ async function routeByRole(staff) {
   window.location.href = disabledPages.includes(target) ? 'self-eval.html' : target;
 }
 
-// 登入後的首頁看帳號層級（gas/Levels.gs）；現場人員再依職務、當日班別決定
-// 還沒搬到新系統的頁面屬於關閉中的功能，routeByRole 會改導到自評表
+// 登入後的首頁看帳號層級（gas/Levels.gs）
+// 現場人員、人事行政：「我的總覽」（自己還有哪些事要做）。
+// 以前現場人員依職務、當日班別直接進房務打卡／客務班別任務頁，那些功能重新開放時，可以從總覽的待辦連過去
 function landingPageFor(staff) {
   const level = window.accountLevelOf(staff);
   if (level === 'office') return 'hq-dashboard.html';
-  if (level === 'hq_admin') return 'manage-passwords.html';
   if (level === 'manager') return 'manager-home.html';
-
-  const code = staff.todayShiftCode;
-  const roleName = staff.roles?.name || '';
-  if (roleName.includes('房務')) return 'checklist.html';
-  if (roleName === '客務人員') {
-    if (code === 'A' || code === 'B' || code === 'C') return 'shift.html';
-    if (code === '1') return 'offday.html';
-    return 'unscheduled.html';
-  }
-  // 其他職務（例如之後的行銷、咖啡廳）目前只有自評表
-  return 'self-eval.html';
+  return 'staff-home.html';
 }

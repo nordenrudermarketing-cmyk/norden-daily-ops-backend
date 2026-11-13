@@ -150,7 +150,7 @@ function requireLevel_(actor, levels, message) {
   if (levels.indexOf(actor.level) < 0) throw httpError_(403, message || '你沒有權限使用這個功能');
 }
 
-// 看全公司資料的層級（總公司行政、總辦公室）看全部；主管只能看自己部門
+// 看全公司資料的層級（人事行政、總辦公室）看全部；主管只能看自己部門
 function requireBranchAccess_(actor, branchId) {
   if (canViewAllSelfEval_(actor.level)) return;
   if (actor.level === 'manager' && branchId === actor.branch_id) return;

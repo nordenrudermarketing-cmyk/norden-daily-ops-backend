@@ -4,7 +4,7 @@
 // 時程（台灣時間，月份＝評分當下的月份）：
 //   每月 1～10 號  同仁填自評、20 號前主管面談（SelfEval.gs）
 //   每月 21 號～月底 評核評分（這支檔案）；主管評分時看得到這位同仁當月的自評和面談紀錄
-//   隔月 5 號前    總公司行政填客戶評價、總辦公室核定獎懲並發布（第二批，之後做）
+//   隔月 5 號前    人事行政填客戶評價、總辦公室核定獎懲並發布（第二批，之後做）
 //   測試站不受開放時間限制，方便測試
 //
 // 評核項目：每個職務指定一個「評核類別」（roles.appraisal_group_id），類別底下有幾個項目（appraisal_items）。
@@ -12,7 +12,7 @@
 //     main  主要項目（例如影響力分數）：管轄他的主管評；總辦公室可以評任何人；
 //           兼職、實習生的主要項目，同部門的現場正職也要評（一人一票平均）
 //     peer  同事內評：管轄這個部門的主管，由部門裡的現場正職評
-//     input 不用評分，由總公司行政輸入（例如客戶評價，第二批）
+//     input 不用評分，由人事行政輸入（例如客戶評價，第二批）
 //
 // 名單每次都依「目前」的帳號、部門、管轄設定即時算出來，不用每個月改表單。
 // 分數：A=100、B=80、C=60、D=0，同一個項目所有人的評分直接平均（第二批計算時使用）。
@@ -24,9 +24,8 @@ const APPRAISAL_GRADE_POINTS = { A: 100, B: 80, C: 60, D: 0 };
 const APPRAISAL_SOURCES = [
   { key: 'main', label: '主要項目', hint: '管轄的主管評；總辦公室可以評；兼職、實習生另由同部門正職一起評' },
   { key: 'peer', label: '同事內評', hint: '管轄這個部門的主管，由部門裡的現場正職評' },
-  { key: 'input', label: '總公司行政輸入', hint: '不用評分，由總公司行政每月輸入（例如客戶評價）' },
+  { key: 'input', label: '人事行政輸入', hint: '不用評分，由人事行政每月輸入（例如客戶評價）' },
 ];
-const APPRAISAL_LEARN_DEPTS = ['管理部門', '櫃台客務部門', '房務部門', '咖啡餐飲部門'];
 
 // 共通的 A～D 說明（項目沒有自己的說明時使用，內容同原本評核表的「分數說明」）
 const APPRAISAL_GRADE_GUIDE = [
@@ -208,7 +207,7 @@ function apiAppraisalMine_(req) {
   Db.whereEq('appraisal_ratings', 'rater_id', actor.id).forEach(function (r) {
     if (r.eval_month === evalMonth) ratings[r.ratee_id] = r;
   });
-  // 看得到自評的人：管轄的主管、總公司行政、總辦公室（同 SelfEval.gs 的 requireStaffAccess_）
+  // 看得到自評的人：管轄的主管、人事行政、總辦公室（同 SelfEval.gs 的 requireStaffAccess_）
   const canSeeAllSelfEval = canViewAllSelfEval_(actor.level);
   const subs = {};
   Db.where('self_eval_submissions', { eval_month: evalMonth }).forEach(function (s) { subs[s.staff_id] = s; });
@@ -257,14 +256,9 @@ function apiAppraisalMine_(req) {
     window: win,
     can_rate_now: canRateNow_(win),
     grade_guide: APPRAISAL_GRADE_GUIDE,
-    learn_dept_options: APPRAISAL_LEARN_DEPTS,
     is_junior: isJuniorStaff_(me),
     can_feedback: canFeedback,
-    feedback: feedback ? {
-      feedback: feedback.feedback || '',
-      learn_depts: String(feedback.learn_depts || '').split('、').filter(Boolean),
-      updated_at: feedback.updated_at,
-    } : null,
+    feedback: feedback ? { feedback: feedback.feedback || '', updated_at: feedback.updated_at } : null,
     required_total: required.length,
     required_done: required.filter(function (r) { return r.done; }).length,
     ratees: ratees,
@@ -273,6 +267,7 @@ function apiAppraisalMine_(req) {
 
 function requireRatingOpen_() {
   const win = appraisalWindow_(currentAppraisalMonth_());
+  requireMonthEditable_(win.eval_month);
   if (!canRateNow_(win)) {
     throw httpError_(400, win.state === 'upcoming'
       ? '這個月的評核 ' + win.open_date.slice(5).replace('-', '/') + ' 才開放評分'
@@ -311,34 +306,34 @@ function apiAppraisalRate_(req) {
   return { ok: true, rating: { grades: grades, comment: comment, updated_at: saved.updated_at } };
 }
 
-// POST /api/appraisal/feedback  { feedback, learn_depts: [...] }
+// POST /api/appraisal/feedback  { feedback }
 function apiAppraisalFeedback_(req) {
   const actor = req.actor;
   const win = requireRatingOpen_();
   const ctx = appraisalContext_();
   const me = ctx.staffById[actor.id];
   if (!isPeerRater_(ctx, me)) throw httpError_(403, '回饋與期望由現場正職同仁填寫');
-  const depts = (Array.isArray(req.body.learn_depts) ? req.body.learn_depts : [])
-    .map(function (d) { return String(d || '').replace(/、/g, ' ').trim(); })
-    .filter(Boolean);
   const saved = Db.upsert('appraisal_feedback', ['eval_month', 'staff_id'], {
     eval_month: win.eval_month,
     staff_id: actor.id,
     branch_id: me.branch_id,
     feedback: String(req.body.feedback || '').trim(),
-    learn_depts: depts.join('、'),
-  }, { scope: { column: 'staff_id', value: actor.id } })[0];
+  },{ scope: { column: 'staff_id', value: actor.id } })[0];
   return { ok: true, updated_at: saved.updated_at };
 }
 
-// ---------- 評分進度（總公司行政、總辦公室） ----------
+// ---------- 評分進度（人事行政、總辦公室） ----------
 
-// GET /api/appraisal/progress
-// 每位評分者「一定要評」的人數與完成人數，還沒評的名單；另外列出「沒有任何人評」的同仁，避免漏評
+// GET /api/appraisal/progress?eval_month=
 function apiAppraisalProgress_(req) {
-  requireLevelFn_(req.actor, canViewAllSelfEval_, '評分進度只有總公司行政、總辦公室可以查看');
-  const evalMonth = currentAppraisalMonth_();
-  const ctx = appraisalContext_();
+  requireLevelFn_(req.actor, canManageAppraisal_, '評分進度只有人事行政、總辦公室可以查看');
+  const evalMonth = cleanEvalMonth_(req.query.eval_month) || currentAppraisalMonth_();
+  return appraisalProgress_(appraisalContext_(), evalMonth);
+}
+
+// 每位評分者「一定要評」的人數與完成人數，還沒評的名單；另外列出「沒有任何人評」的同仁，避免漏評
+// （名單依目前的帳號與管轄設定計算）
+function appraisalProgress_(ctx, evalMonth) {
   const ratingsBy = {};
   const ratedPeople = {};
   Db.where('appraisal_ratings', { eval_month: evalMonth }).forEach(function (r) {
@@ -400,7 +395,13 @@ function apiAppraisalProgress_(req) {
 // ---------- 評核項目設定（總辦公室） ----------
 
 function requireAppraisalAdmin_(actor) {
-  requireOffice_(actor, '評核項目設定只有總辦公室可以使用');
+  requireLevelFn_(actor, canManageAppraisal_, '評核項目與獎金基數只有人事行政、總辦公室可以設定');
+}
+
+// 網頁送來的評核月份（2026-11 或 2026-11-01）→ '2026-11-01'；格式不對回 null
+function cleanEvalMonth_(value) {
+  const m = String(value || '').match(/^(\d{4})-(\d{2})/);
+  return m ? m[1] + '-' + m[2] + '-01' : null;
 }
 
 function cleanNumber_(value) {

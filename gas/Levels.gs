@@ -10,7 +10,7 @@
 // 資料裡的值沿用 manager，所以改名不用轉換資料）：
 //   field    現場人員    要填自評；只能改自己的密碼
 //   manager  主管        要填自評；可以當面談主管；帳號管理＝自己管轄的現場人員
-//   hq_admin 總公司行政  人事專用帳號，不填自評、不面談；可以管理主管以下所有帳號、設定管轄、
+//   hq_admin 人事行政  人事專用帳號，不填自評、不面談；可以管理主管以下所有帳號、設定管轄、
 //                        看所有人的自評（唯讀）和各部門進度
 //   office   總辦公室    最高權限（股東、董事），不填自評；可以管理所有帳號（含同級）、設定管轄，
 //                        需要時把人加進自己的管轄就能面談；部門、職務、自評題目、功能開關只有這一級能改
@@ -22,7 +22,7 @@
 const LEVELS = {
   field: { rank: 1, label: '現場人員' },
   manager: { rank: 2, label: '主管' },
-  hq_admin: { rank: 3, label: '總公司行政' },
+  hq_admin: { rank: 3, label: '人事行政' },
   office: { rank: 4, label: '總辦公室' },
 };
 const LEVEL_KEYS = ['field', 'manager', 'hq_admin', 'office'];
@@ -72,9 +72,19 @@ function isOffice_(level) {
   return level === 'office';
 }
 
-// 例行任務：設定任務內容、看各部門執行狀況（總公司行政、總辦公室）
+// 例行任務：設定任務內容、看各部門執行狀況（人事行政、總辦公室）
 function canManageRoutine_(level) {
   return level === 'hq_admin' || level === 'office';
+}
+
+// 每月評核：評核項目、獎金基數、客戶評價、評核彙整與送審（人事行政、總辦公室）
+function canManageAppraisal_(level) {
+  return level === 'hq_admin' || level === 'office';
+}
+
+// 每月評核：審核定案、定案後改回可修改（總辦公室）
+function canApproveAppraisal_(level) {
+  return level === 'office';
 }
 
 // 可以使用帳號管理頁（主管以上）

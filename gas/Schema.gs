@@ -25,8 +25,7 @@ const SCHEMA = {
   branches: {
     manual: true,
     cache: true,
-    // company：所屬公司（評核匯出薪資用 Excel 時依公司分組，2026-11 起）
-    columns: { id: 'text', name: 'text', code: 'text', is_active: 'bool', company: 'text' },
+    columns: { id: 'text', name: 'text', code: 'text', is_active: 'bool' },
   },
   // 職務：只決定自評題目。template_category＝要加哪一類專屬題目（見 Org.gs 的 QUESTION_CATEGORIES）
   roles: {
@@ -35,7 +34,7 @@ const SCHEMA = {
     // appraisal_group_id：每月評核用哪一組評核項目（見 Appraisal.gs，2026-11 起）
     columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool', appraisal_group_id: 'text' },
   },
-  // account_level：帳號層級，決定權限（field 現場人員／manager 主管／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
+  // account_level：帳號層級，決定權限（field 現場人員／manager 主管／hq_admin 人事行政／office 總辦公室，見 Levels.gs）
   // verify_email：收登入驗證碼的 Email（選填、限主管以上，空白＝只用密碼，見 Auth.gs）
   staff: {
     cache: true,
@@ -45,8 +44,6 @@ const SCHEMA = {
       verify_email: 'text',
       // 實習生（2026-11 起）：跟兼職一樣，評核時由同部門正職一起評分、自己不用評別人、沒有評核獎金
       is_intern: 'bool',
-      // 所屬公司（選填，2026-11 起）：空白＝跟部門的所屬公司；管理部的主管分屬不同公司時個別填
-      company: 'text',
     },
   },
   self_eval_templates: {
@@ -103,7 +100,7 @@ const SCHEMA = {
     cache: true,
     columns: { id: 'text', name: 'text', sort_order: 'number', is_active: 'bool' },
   },
-  // 評核項目。source：main 主要項目（主管、總辦公室評；兼職、實習生另加同部門正職）／peer 同事內評／input 總公司行政輸入
+  // 評核項目。source：main 主要項目（主管、總辦公室評；兼職、實習生另加同部門正職）／peer 同事內評／input 人事行政輸入
   //   default_base：預設獎金基數（每 1 分多少元）；takes_reward：獎懲加減在這一項；grade_desc：這一項專屬的 A～D 說明（空白＝用共通說明）
   appraisal_items: {
     manual: true,
@@ -125,10 +122,33 @@ const SCHEMA = {
       created_at: 'text', updated_at: 'text',
     },
   },
-  // 回饋與期望、期望學習部門（現場正職每月填一次）
+  // 我有話要說：回饋與期望（現場正職每月填一次）
   appraisal_feedback: {
     columns: {
-      id: 'text', eval_month: 'text', staff_id: 'text', branch_id: 'text', feedback: 'text', learn_depts: 'text',
+      id: 'text', eval_month: 'text', staff_id: 'text', branch_id: 'text', feedback: 'text',
+      created_at: 'text', updated_at: 'text',
+    },
+  },
+  // 不用評分、由人事行政輸入的項目（例如客戶評價）：一位同仁一個項目一個月一列，score 0～100
+  appraisal_inputs: {
+    columns: {
+      id: 'text', eval_month: 'text', staff_id: 'text', item_id: 'text', score: 'number', note: 'text',
+      updated_by: 'text', created_at: 'text', updated_at: 'text',
+    },
+  },
+  // 每個月評核的狀態（見 AppraisalSummary.gs）：draft 彙整中／submitted 已送審／approved 已定案
+  //   history：送審、核准、改回可修改的紀錄（JSON 陣列）
+  appraisal_months: {
+    columns: {
+      id: 'text', eval_month: 'text', status: 'text', submitted_by: 'text', submitted_at: 'text',
+      approved_by: 'text', approved_at: 'text', history: 'text', updated_at: 'text',
+    },
+  },
+  // 送審當下的結果（每位同仁一列）：data＝各項目平均、誰給幾分、留言、基數、獎金（JSON）
+  //   送審後評分有變動也不影響這裡，要重新送審才會更新；定案後就是當月的正式結果
+  appraisal_results: {
+    columns: {
+      id: 'text', eval_month: 'text', staff_id: 'text', data: 'text', total_bonus: 'number',
       created_at: 'text', updated_at: 'text',
     },
   },

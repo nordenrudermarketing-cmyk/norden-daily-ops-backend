@@ -18,6 +18,90 @@ function apiHomeManager_(req) {
   };
 }
 
+// ---------- 我的待辦（所有人的總覽頁共用） ----------
+
+// GET /api/home/todos
+// todos：還沒做完的事（due＝期限，overdue＝已逾期）；done：這個月已經做完的事。url 是點下去要去的頁面
+// 例行任務不在這裡（主管首頁另外顯示）
+function apiHomeTodos_(req) {
+  const actor = req.actor;
+  const today = taipeiDate_();
+  const features = getFeatureState_();
+  const todos = [];
+  const done = [];
+  const monthText = function (evalMonth) { return Number(evalMonth.slice(5, 7)) + ' 月'; };
+
+  // 自評：自己這個月的表
+  if (fillsSelfEval_(actor.level)) {
+    const evalMonth = currentEvalMonth_();
+    const schedule = scheduleFor_(evalMonth);
+    const own = Db.first('self_eval_submissions', { staff_id: actor.id, eval_month: evalMonth });
+    const status = own ? own.status : 'not_started';
+    if (status === 'not_started' || status === 'draft') {
+      todos.push({
+        title: '填寫 ' + monthText(evalMonth) + '自評表' + (status === 'draft' ? '（已存草稿，還沒送出）' : ''),
+        due: schedule.staff_due_date, overdue: today > schedule.staff_due_date, url: 'self-eval.html',
+      });
+    } else {
+      done.push({ title: monthText(evalMonth) + '自評表' + (status === 'reviewed' ? '：已完成面談' : '：已送出，等主管面談'), url: 'self-eval.html' });
+    }
+  }
+
+  // 面談：管轄的同仁已送出、還沒面談的自評
+  if (canSuperviseLevel_(actor.level) && superviseesOf_(actor.id).length) {
+    const evalMonth = currentEvalMonth_();
+    const schedule = scheduleFor_(evalMonth);
+    const people = apiSelfEvalMyReviewees_({ actor: actor, query: { eval_month: evalMonth } });
+    const waiting = people.filter(function (p) { return p.submission && p.submission.status === 'submitted'; }).length;
+    if (waiting) {
+      todos.push({
+        title: '還有 ' + waiting + ' 位同仁的' + monthText(evalMonth) + '自評等你面談',
+        due: schedule.interview_due_date, overdue: today > schedule.interview_due_date, url: 'self-eval-review.html',
+      });
+    }
+  }
+
+  if (features.appraisal) {
+    // 評核評分：這個月要評的人
+    const mine = apiAppraisalMine_({ actor: actor, query: {}, body: {} });
+    const win = mine.window;
+    const left = mine.required_total - mine.required_done;
+    if (mine.ratees.length && win.state === 'upcoming' && !win.testing_override) {
+      todos.push({
+        title: monthText(win.eval_month) + '評核 ' + win.open_date.slice(5).replace('-', '/') + ' 開放評分（要評 ' + mine.ratees.length + ' 位）',
+        due: win.close_date, overdue: false, upcoming: true, url: 'appraisal.html',
+      });
+    } else if (mine.can_rate_now && left > 0) {
+      todos.push({
+        title: monthText(win.eval_month) + '評核：還有 ' + left + ' 位要評分',
+        due: win.close_date, overdue: false, url: 'appraisal.html',
+      });
+    } else if (mine.can_rate_now && mine.required_total > 0) {
+      done.push({ title: monthText(win.eval_month) + '評核：' + mine.required_total + ' 位都評完了', url: 'appraisal.html' });
+    }
+
+    // 評核彙整：人事行政送審、總辦公室審核
+    if (canManageAppraisal_(actor.level)) {
+      summaryMonthOptions_().slice(0, 3).forEach(function (evalMonth) {
+        const status = appraisalMonthStatus_(evalMonth);
+        const w = appraisalWindow_(evalMonth);
+        // month：網頁點下去時記住要看哪個月（內框網頁拿不到網址參數）
+        const link = { url: 'appraisal-summary.html', month: evalMonth.slice(0, 7) };
+        if (status === 'submitted' && canApproveAppraisal_(actor.level)) {
+          todos.push(Object.assign({ title: monthText(evalMonth) + '評核已送審，等你審核', due: w.publish_due_date, overdue: today > w.publish_due_date }, link));
+        } else if (status === 'draft' && today > w.close_date) {
+          todos.push(Object.assign({ title: monthText(evalMonth) + '評核還沒送審', due: w.publish_due_date, overdue: today > w.publish_due_date }, link));
+        } else if (status === 'approved' && today <= addMonths_(evalMonth.slice(0, 7), 2) + '-01') {
+          done.push(Object.assign({ title: monthText(evalMonth) + '評核已定案' }, link));
+        }
+      });
+    }
+  }
+
+  todos.sort(function (a, b) { return (b.overdue ? 1 : 0) - (a.overdue ? 1 : 0) || String(a.due || '9999').localeCompare(String(b.due || '9999')); });
+  return { today: today, name: actor.name, todos: todos, done: done };
+}
+
 // 例行任務：還沒回報的（逾期的排前面），加上各區數量
 function homeRoutine_(req) {
   const mine = apiRoutineMine_(req);

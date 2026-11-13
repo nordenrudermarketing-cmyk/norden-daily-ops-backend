@@ -40,8 +40,8 @@ if (staff) init();
 
 async function init() {
   $('staffLine').textContent = staff.name;
-  // 總公司行政、總辦公室可以切換「顯示全部同仁」查看所有人的自評（唯讀，只有自己管轄的人才能面談）。
-  // 總公司行政不面談、沒有管轄人員，所以一進來就直接顯示全部
+  // 人事行政、總辦公室可以切換「顯示全部同仁」查看所有人的自評（唯讀，只有自己管轄的人才能面談）。
+  // 人事行政不面談、沒有管轄人員，所以一進來就直接顯示全部
   const level = window.accountLevelOf(staff);
   if (level === 'hq_admin' || level === 'office') $('showAllWrap').style.display = '';
   if (level === 'hq_admin') {
@@ -110,7 +110,7 @@ async function loadList() {
   if (total === 0) {
     listEl.innerHTML = scope === 'all'
       ? '<p class="empty-state">目前沒有在職同仁</p>'
-      : '<p class="empty-state">目前沒有指定給你管轄的同仁，需要的話請總公司行政或總辦公室在「帳號管理」設定</p>';
+      : '<p class="empty-state">目前沒有指定給你管轄的同仁，需要的話請人事行政或總辦公室在「帳號管理」設定</p>';
     return;
   }
 

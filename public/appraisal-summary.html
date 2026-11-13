@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>評核彙整 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 900px; }
+  .month-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .month-bar select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--ink); }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 10px; }
+  .pill.draft { background: #efece5; color: var(--ink-soft); }
+  .pill.submitted { background: #fff6e0; color: #8a6d00; }
+  .pill.approved { background: var(--accent-soft); color: var(--accent); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .card h2 small { font-size: 12px; font-weight: 400; color: var(--ink-soft); }
+  .status-text { font-size: 13px; line-height: 1.8; margin: 0; }
+  .status-text b { font-weight: 600; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { border: none; background: var(--accent); color: #fff; border-radius: 9px; padding: 9px 16px; font-size: 14px; font-family: inherit; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.warn { background: #b3462c; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .notice { background: #fff6e0; color: #8a6d00; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.7; margin-top: 10px; }
+  details.history { margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
+  details.history li { line-height: 1.8; }
+
+  .check-sum { font-size: 13px; margin: 0 0 6px; line-height: 1.7; }
+  .check-sum .ok { color: var(--accent); }
+  .check-sum .bad { color: var(--danger); }
+  details.check { border-top: 1px solid var(--line); padding: 8px 0 2px; font-size: 13px; }
+  details.check summary { cursor: pointer; font-weight: 500; }
+  details.check ul { margin: 6px 0 4px; padding-left: 18px; line-height: 1.8; color: var(--ink-soft); }
+  details.check ul b { color: var(--ink); font-weight: 500; }
+
+  .input-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .input-row:first-of-type { border-top: none; }
+  .input-row .who { flex: 1; min-width: 120px; }
+  .input-row .who small { color: var(--ink-soft); }
+  .input-row input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .input-row input.score { width: 70px; }
+  .input-row input.note { flex: 1; min-width: 140px; }
+  .input-row .msg { font-size: 12px; color: var(--accent); min-width: 40px; }
+  .input-row .msg.err { color: var(--danger); }
+  .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 6px; }
+
+  .totals { display: flex; gap: 8px; margin-bottom: 10px; }
+  .totals div { flex: 1; text-align: center; background: var(--bg); border-radius: 10px; padding: 8px 4px; }
+  .totals b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .totals span { font-size: 11px; color: var(--ink-soft); }
+  .branch { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; }
+  .person { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: var(--surface); }
+  .person-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; flex-wrap: wrap; }
+  .person-head .name { font-size: 14px; font-weight: 500; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 8px; background: #efece5; color: var(--ink-soft); }
+  .chips { flex: 1; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip { font-size: 11.5px; padding: 2px 8px; border-radius: 8px; background: var(--bg); font-variant-numeric: tabular-nums; }
+  .chip.low { background: var(--danger-soft); color: var(--danger); }
+  .chip.none { background: #fff6e0; color: #8a6d00; }
+  .money { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+  .person-body { display: none; padding: 0 12px 12px; border-top: 1px solid var(--line); overflow-x: auto; }
+  table.calc { min-width: 520px; }
+  .person.open .person-body { display: block; }
+  table.calc { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  table.calc th, table.calc td { padding: 6px 6px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; vertical-align: top; }
+  table.calc th:first-child, table.calc td:first-child { text-align: left; }
+  table.calc th { font-weight: 500; color: var(--ink-soft); font-size: 11.5px; }
+  table.calc td.raters { text-align: left; color: var(--ink-soft); font-size: 12px; line-height: 1.7; }
+  .formula { font-size: 11.5px; color: var(--ink-soft); }
+  .comments { margin-top: 10px; font-size: 12.5px; line-height: 1.7; }
+  .comments p { margin: 0 0 6px; }
+  .comments b { font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>評核彙整</h1>
+        <p id="staffLine">—</p>
+      </div>
+    </div>
+
+    <div class="month-bar">
+      <label for="monthSelect" style="font-size:13px;">月份</label>
+      <select id="monthSelect"></select>
+      <span id="statusPill"></span>
+    </div>
+    <p class="error-msg" id="statusLine" style="min-height:0;"></p>
+
+    <div id="statusCard"></div>
+    <div id="checkCard"></div>
+    <div id="inputCard"></div>
+    <div id="resultCard"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="appraisal-summary.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

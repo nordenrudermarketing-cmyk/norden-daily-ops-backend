@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的總覽 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+  .plan h2 { font-size: 15px; margin: 0 0 8px; }
+  .plan ol { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.9; color: var(--ink-soft); }
+  .plan li.now { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1 id="hello">我的總覽</h1>
+        <p id="todayLine">—</p>
+      </div>
+    </div>
+
+    <div id="todosBox"></div>
+
+    <div class="plan">
+      <h2>每個月的時程</h2>
+      <ol id="plan">
+        <li data-from="1" data-to="10">1～10 號：填這個月的自評表</li>
+        <li data-from="11" data-to="20">11～20 號：主管面談</li>
+        <li data-from="21" data-to="31">21 號～月底：每月評核評分</li>
+      </ol>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="staff-home.js"></script>
+  <script src="todos.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

@@ -13,12 +13,12 @@
 //
 // 跟 Railway 版的差別：加上權限檢查（同仁只能填自己的表、題目管理限總辦公室）。
 //
-// 誰要填（2026-10 起照帳號層級，見 Levels.gs）：現場人員、主管要填；總公司行政、總辦公室不用。
+// 誰要填（2026-10 起照帳號層級，見 Levels.gs）：現場人員、主管要填；人事行政、總辦公室不用。
 // 題目：共同題目＋職務設定的專屬題目類別（Org.gs 的 questionCategoryOf_）。
 // 誰面談誰：照「管轄」（Supervision.gs），不再照館別，也沒有「代為面談」。
 //   一位同仁可以有多位主管，任何一位完成面談就算完成，自評表的 reviewed_by 記錄是誰面談的；
 //   面談草稿（主管意見、面談紀錄）多位主管共用一份，last_edited_by 記錄最後是誰存的。
-//   總公司行政、總辦公室看得到所有人的自評與進度（唯讀）。
+//   人事行政、總辦公室看得到所有人的自評與進度（唯讀）。
 // ============================================================
 
 const SELF_EVAL_SCHEDULE = { releaseDay: 1, staffDueDay: 10, interviewDueDay: 20 };
@@ -67,7 +67,7 @@ function byCategoryThenSort_(a, b) {
   return c !== 0 ? c : bySortOrder_(a, b);
 }
 
-// 同仁本人、他目前的主管、總公司行政與總辦公室（唯讀）可以看這位同仁的自評表；
+// 同仁本人、他目前的主管、人事行政與總辦公室（唯讀）可以看這位同仁的自評表；
 // 有給 submission 時，當初完成面談的主管也看得到那一份（主管換人後，歷史紀錄不會消失）
 function requireStaffAccess_(actor, staffId, submission) {
   if (staffId === actor.id || canViewAllSelfEval_(actor.level)) return;
@@ -162,7 +162,7 @@ function apiSelfEvalForm_(req) {
   if (!staffRow) throw httpError_(400, '找不到這位同仁');
   const role = roleById_(staffRow.role_id);
   const level = levelOf_(staffRow, role);
-  // 總公司行政、總辦公室不用填自評
+  // 人事行政、總辦公室不用填自評
   if (!fillsSelfEval_(level)) {
     return { not_required: true, level_label: levelLabel_(level), staff: { id: staffRow.id, name: staffRow.name } };
   }
@@ -241,12 +241,12 @@ function apiSelfEvalSave_(req) {
 
 // GET /api/self-eval/my-reviewees?eval_month=2026-07-01&scope=mine|all
 // 我要面談的同仁（我管轄的人）和他們這一期的自評狀態。
-// 總公司行政、總辦公室帶 scope=all 可以看全部要填自評的在職同仁（唯讀，只有自己管轄的人才能面談）。
+// 人事行政、總辦公室帶 scope=all 可以看全部要填自評的在職同仁（唯讀，只有自己管轄的人才能面談）。
 function apiSelfEvalMyReviewees_(req) {
   const actor = req.actor;
   const evalMonth = normalizeEvalMonth_(req.query.eval_month);
   const all = req.query.scope === 'all';
-  if (all) requireLevelFn_(actor, canViewAllSelfEval_, '只有總公司行政、總辦公室可以查看全部同仁');
+  if (all) requireLevelFn_(actor, canViewAllSelfEval_, '只有人事行政、總辦公室可以查看全部同仁');
 
   const supMap = supervisorMap_();
   const mine = {};
@@ -401,7 +401,7 @@ function progressRow_(person, sub, schedule, today, supervisorIds) {
 // 每個部門「同仁填寫」「主管面談」兩個階段的完成人數，以及每位同仁的狀態。
 // 不回傳作答內容——勾「否」不代表異常，那是同仁跟主管面談改善的起點。
 function apiSelfEvalHqProgress_(req) {
-  requireLevelFn_(req.actor, canViewAllSelfEval_, '各部門自評進度只有總公司行政、總辦公室可以查看');
+  requireLevelFn_(req.actor, canViewAllSelfEval_, '各部門自評進度只有人事行政、總辦公室可以查看');
   const evalMonth = normalizeEvalMonth_(req.query.eval_month);
   const schedule = scheduleFor_(evalMonth);
   const today = taipeiDate_();

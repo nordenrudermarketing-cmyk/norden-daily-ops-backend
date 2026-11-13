@@ -1,7 +1,7 @@
 // 帳號管理（檔名沿用 manage-passwords，原本連到「密碼管理」的連結才不會壞掉）
 // 依帳號層級（gas/Levels.gs）：只能建立、管理比自己低的層級，總辦公室可以管同級
-//   總辦公室：全部帳號；總公司行政：主管、現場人員；主管：自己管轄的現場人員
-//   總公司行政、總辦公室可以設定主管／總辦公室的「管轄部門」「管轄人員」
+//   總辦公室：全部帳號；人事行政：主管、現場人員；主管：自己管轄的現場人員
+//   人事行政、總辦公室可以設定主管／總辦公室的「管轄部門」「管轄人員」
 // 權限由後端 /api/accounts 依資料庫裡的真實帳號層級與管轄判斷，這裡只負責畫面
 
 // 部署時 API_BASE_URL 是空字串（前後端同網域），不能拿來當 if 判斷
@@ -89,7 +89,7 @@ async function init() {
   const SCOPE_TEXT = {
     office: '你可以管理所有帳號（含其他總辦公室），也可以設定主管、總辦公室的管轄。',
     hq_admin: '你可以管理主管、現場人員的帳號，也可以設定主管、總辦公室的管轄。',
-    manager: '你可以管理你管轄的現場人員帳號。管轄由總公司行政或總辦公室設定。',
+    manager: '你可以管理你管轄的現場人員帳號。管轄由人事行政或總辦公室設定。',
   };
   $('scopeLine').textContent = `你的帳號層級：${meta.actor.level_label}。${SCOPE_TEXT[meta.actor.level] || ''}`;
   $('listTitle').textContent = isManager ? '我管轄的同仁' : '所有帳號';
@@ -191,7 +191,7 @@ function accountCard(a, showBranch) {
     <div class="acct-row ${a.is_self ? 'self' : ''} ${a.is_active ? '' : 'inactive'}" data-id="${a.id}">
       <div>
         <p class="acct-name">${escapeHtml(a.name)}<span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}${a.is_intern ? '<span class="badge muted">實習生</span>' : ''}</p>
-        <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}${!isManager && a.effective_company ? `　${escapeHtml(a.effective_company)}` : ''}</p>
+        <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}</p>
         ${supervisionLine(a)}
         ${flags ? `<p class="acct-flags">${flags}</p>` : ''}
       </div>
@@ -254,7 +254,6 @@ function openEdit(account) {
   $('fLoginCode').value = account?.login_code || '';
   $('fPartTime').checked = !!account?.is_part_time;
   $('fIntern').checked = !!account?.is_intern;
-  $('fCompany').value = account?.company || '';
   $('fPassword').value = '';
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
@@ -285,10 +284,7 @@ function openEdit(account) {
   $('fLevel').value = account?.account_level || 'field';
 
   // 自己的帳號：部門、職務、層級都不能自己改（後端也會擋）
-  ['fBranch', 'fRole', 'fLevel', 'fIntern', 'fCompany'].forEach((id) => { $(id).disabled = isSelf; });
-  syncCompanyPlaceholder();
-  // 所屬公司是發薪用的，只給總公司行政、總辦公室設定（後端也只接受他們送的）
-  $('fCompanyField').style.display = isManager ? 'none' : '';
+  ['fBranch', 'fRole', 'fLevel', 'fIntern'].forEach((id) => { $(id).disabled = isSelf; });
   $('fRoleHint').style.display = isSelf ? '' : 'none';
 
   $('fVerifyEmail').value = account?.verify_email || '';
@@ -305,13 +301,6 @@ function syncVerifyEmailField() {
 }
 $('fLevel').addEventListener('change', syncVerifyEmailField);
 
-// 所屬公司空白時，提示會跟哪一家（部門的所屬公司）
-function syncCompanyPlaceholder() {
-  const branch = meta.branches.find((b) => b.id === $('fBranch').value);
-  $('fCompany').placeholder = branch?.company ? `空白＝跟部門（${branch.company}）` : '空白＝跟部門（部門還沒填所屬公司）';
-}
-$('fBranch').addEventListener('change', syncCompanyPlaceholder);
-
 async function saveEdit(event) {
   event.preventDefault();
   const body = {
@@ -322,7 +311,6 @@ async function saveEdit(event) {
     account_level: $('fLevel').value,
     is_part_time: $('fPartTime').checked,
     is_intern: $('fIntern').checked,
-    company: $('fCompany').value,
   };
   if (!editingId && $('fPassword').value) body.password = $('fPassword').value;
   if (!$('fLevel').disabled) body.verify_email = $('fVerifyEmail').value;
@@ -345,7 +333,7 @@ async function saveEdit(event) {
   }
 }
 
-// ---------- 管轄設定（總公司行政、總辦公室） ----------
+// ---------- 管轄設定（人事行政、總辦公室） ----------
 
 async function openSupervision(account) {
   supTarget = account;

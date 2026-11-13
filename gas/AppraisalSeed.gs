@@ -56,7 +56,7 @@ const APPRAISAL_SEED = [
         'D｜處理工作時容易避重就輕，在團隊最需要領導的時刻缺席或將責任轉交到其他同事身上，或是責任歸屬定義不清，常以感情用事。',
       ].join('\n') },
     { name: '客戶評價', source: 'input', default_base: 10, takes_reward: false,
-      description: '由總公司行政每月到各訂房平台查詢後輸入：每個平台評分超過 9 分（或 4.5 分）得 25 分。' },
+      description: '由人事行政每月到各訂房平台查詢後輸入：每個平台評分超過 9 分（或 4.5 分）得 25 分。' },
   ] },
   { group: '品牌', items: [
     { name: '主動與責任承擔', source: 'main', default_base: 6, takes_reward: true,

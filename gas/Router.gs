@@ -20,6 +20,8 @@ function routes_() {
     { method: 'GET', path: '/api/me', handler: apiMe_ },
     // 主管首頁（一次回傳例行任務、自評進度、管轄），見 Home.gs
     { method: 'GET', path: '/api/home/manager', handler: apiHomeManager_ },
+    // 我的待辦（每個人的總覽頁都用），見 Home.gs
+    { method: 'GET', path: '/api/home/todos', handler: apiHomeTodos_ },
 
     // 部門、職務（限總辦公室），見 Org.gs
     { method: 'GET', path: '/api/org/departments', handler: apiOrgDepartments_ },
@@ -77,6 +79,12 @@ function routes_() {
     { method: 'PUT', path: '/api/appraisal/roles/:id', handler: apiAppraisalRoleUpdate_ },
     { method: 'GET', path: '/api/appraisal/bases', handler: apiAppraisalBases_ },
     { method: 'PUT', path: '/api/appraisal/bases/:staffId', handler: apiAppraisalBasesUpdate_ },
+    // 評核彙整、客戶評價輸入、送審、審核定案，見 AppraisalSummary.gs
+    { method: 'GET', path: '/api/appraisal/summary', handler: apiAppraisalSummary_ },
+    { method: 'POST', path: '/api/appraisal/summary/submit', handler: apiAppraisalSubmit_ },
+    { method: 'POST', path: '/api/appraisal/summary/approve', handler: apiAppraisalApprove_ },
+    { method: 'POST', path: '/api/appraisal/summary/reopen', handler: apiAppraisalReopen_ },
+    { method: 'PUT', path: '/api/appraisal/inputs', handler: apiAppraisalInputSave_ },
 
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
     { method: 'GET', path: '/api/self-eval/categories', handler: apiQuestionCategories_ },

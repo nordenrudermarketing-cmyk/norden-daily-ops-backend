@@ -10,7 +10,7 @@
 //   - 一位同仁可以有多位主管，任何一位完成面談就算完成（自評表記錄是誰面談的）
 //   - 面談一律只限自己的管轄人員（沒有「代為面談」）
 //   - 主管還可以管理自己管轄的現場人員的帳號
-//   - 設定管轄關係：總公司行政、總辦公室
+//   - 設定管轄關係：人事行政、總辦公室
 //
 // 管轄部門（branch_supervisions 表，2026-11 起）：一位主管可以管多個部門，一個部門可以有多位主管。
 // 目前只是先把架構和設定畫面做好，給之後的新功能用，「不影響」面談和帳號權限——
@@ -116,10 +116,10 @@ function staffNames_(ids) {
   }).filter(Boolean);
 }
 
-// ---------- API（限總公司行政、總辦公室） ----------
+// ---------- API（限人事行政、總辦公室） ----------
 
 function requireCanSetSupervision_(actor) {
-  requireLevelFn_(actor, canSetSupervision_, '只有總公司行政、總辦公室可以設定管轄人員');
+  requireLevelFn_(actor, canSetSupervision_, '只有人事行政、總辦公室可以設定管轄人員');
 }
 
 function loadSupervisor_(id) {

@@ -56,7 +56,7 @@ function apiOrgDepartments_(req) {
   requireOffice_(req.actor, '部門管理只有總辦公室可以使用');
   const counts = countBy_(Db.where('staff', { is_active: true }), 'branch_id');
   return Db.all('branches').sort(byName_).map(function (b) {
-    return { id: b.id, name: b.name, code: b.code, company: b.company || '', is_active: b.is_active !== false, staff_count: counts[b.id] || 0 };
+    return { id: b.id, name: b.name, code: b.code, is_active: b.is_active !== false, staff_count: counts[b.id] || 0 };
   });
 }
 
@@ -64,18 +64,18 @@ function departmentNameTaken_(name, exceptId) {
   return Db.all('branches').some(function (b) { return b.name === name && b.id !== exceptId; });
 }
 
-// POST /api/org/departments  { name, code?, company? }
+// POST /api/org/departments  { name, code? }
 function apiOrgDepartmentCreate_(req) {
   requireOffice_(req.actor, '部門管理只有總辦公室可以使用');
   const name = cleanText_(req.body.name);
   if (!name) throw httpError_(400, '請填寫部門名稱');
   if (departmentNameTaken_(name)) throw httpError_(400, '已經有叫「' + name + '」的部門');
   return Db.insert('branches', {
-    name: name, code: cleanText_(req.body.code) || null, company: cleanText_(req.body.company) || null, is_active: true,
+    name: name, code: cleanText_(req.body.code) || null, is_active: true,
   })[0];
 }
 
-// PUT /api/org/departments/:id  { name?, code?, company?, is_active? }
+// PUT /api/org/departments/:id  { name?, code?, is_active? }
 function apiOrgDepartmentUpdate_(req) {
   requireOffice_(req.actor, '部門管理只有總辦公室可以使用');
   const dept = Db.first('branches', { id: req.params.id });
@@ -88,7 +88,6 @@ function apiOrgDepartmentUpdate_(req) {
     patch.name = name;
   }
   if (req.body.code !== undefined) patch.code = cleanText_(req.body.code) || null;
-  if (req.body.company !== undefined) patch.company = cleanText_(req.body.company) || null;
   if (req.body.is_active !== undefined) {
     if (req.body.is_active === false && Db.where('staff', { branch_id: dept.id, is_active: true }).length > 0) {
       throw httpError_(400, '這個部門還有在職的同仁，請先把他們調到其他部門，才能停用');
