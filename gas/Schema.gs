@@ -45,6 +45,8 @@ const SCHEMA = {
       verify_email: 'text',
       // 實習生（2026-11 起）：跟兼職一樣，評核時由同部門正職一起評分、自己不用評別人、沒有評核獎金
       is_intern: 'bool',
+      // 所屬公司（選填，2026-11 起）：空白＝跟部門的所屬公司；管理部的主管分屬不同公司時個別填
+      company: 'text',
     },
   },
   self_eval_templates: {

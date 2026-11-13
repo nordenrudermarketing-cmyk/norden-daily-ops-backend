@@ -115,6 +115,15 @@
         }
         addOption(a.id, a.name + (a.role_name ? '（' + a.role_name + '）' : ''));
       });
+      // 同步正式站資料之後要補做的整理（同試算表選單，不用登入 Google 也能按）
+      panel.appendChild(el('h4', 'group', '同步資料後的整理'));
+      [['relabel', '自評表月份改名'], ['seed-appraisal', '匯入評核項目預設值']].forEach(function (pair) {
+        var button = el('button', '', pair[1]);
+        button.type = 'button';
+        button.addEventListener('click', function () { runMaintenance(pair[0], pair[1]); });
+        panel.appendChild(button);
+      });
+      if (maintenanceMsg) panel.appendChild(el('div', 'muted', maintenanceMsg));
     }
     if (timings.length) {
       var box = el('div', 'timings', '');
@@ -138,6 +147,18 @@
       .then(function (res) {
         if (res.status === 200) { identities = res.body; identityMsg = ''; }
         else identityMsg = (res.body && res.body.error) || '無法載入同仁清單';
+        renderPanel();
+      });
+  }
+
+  var maintenanceMsg = '';
+  function runMaintenance(action, label) {
+    var staff = currentStaff();
+    maintenanceMsg = label + '：處理中…';
+    renderPanel();
+    window.__app.api({ method: 'POST', path: '/api/test/maintenance', query: {}, body: { action: action }, token: staff && staff.token })
+      .then(function (res) {
+        maintenanceMsg = label + '：' + (res.status === 200 ? res.body.lines.join('／') : ((res.body && res.body.error) || '失敗'));
         renderPanel();
       });
   }

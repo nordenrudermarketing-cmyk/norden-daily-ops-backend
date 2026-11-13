@@ -94,6 +94,7 @@ function routes_() {
     // 測試站專用：切換身分（正式站回 404），見 TestIdentity.gs
     { method: 'GET', path: '/api/test/identities', handler: apiTestIdentities_ },
     { method: 'POST', path: '/api/test/switch', handler: apiTestSwitch_ },
+    { method: 'POST', path: '/api/test/maintenance', handler: apiTestMaintenance_ },
   ];
 }
 

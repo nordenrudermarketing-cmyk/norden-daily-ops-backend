@@ -56,6 +56,20 @@ function apiTestIdentities_(req) {
   return { current_id: req.actor.id, origin: { id: origin.id, name: origin.name }, accounts: accounts };
 }
 
+// POST /api/test/maintenance  { action }
+// 測試站「從正式站同步最新資料」之後要補做的整理，不用登入 Google 試算表也能在網頁右下角面板按：
+//   relabel：自評表月份改名（同試算表選單「自評表月份改名（一次性）」）
+//   seed-appraisal：匯入評核項目預設值（同步會覆蓋職務表，職務的評核類別要重新對應）
+// 只限測試站、原本身分是總公司行政或總辦公室（跟切換身分同一套檢查）
+function apiTestMaintenance_(req) {
+  switchOrigin_(req.actor);
+  const action = req.body.action;
+  ensureSchema_();
+  if (action === 'relabel') return { lines: relabelSelfEvalMonths_() };
+  if (action === 'seed-appraisal') return { lines: seedAppraisal_() };
+  throw httpError_(400, '不認得的動作');
+}
+
 // POST /api/test/switch  { staff_id }
 // 回傳的內容跟登入（/api/login）一樣，網頁直接存進 localStorage 的 staff 就好
 function apiTestSwitch_(req) {

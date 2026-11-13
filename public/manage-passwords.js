@@ -191,7 +191,7 @@ function accountCard(a, showBranch) {
     <div class="acct-row ${a.is_self ? 'self' : ''} ${a.is_active ? '' : 'inactive'}" data-id="${a.id}">
       <div>
         <p class="acct-name">${escapeHtml(a.name)}<span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}${a.is_intern ? '<span class="badge muted">實習生</span>' : ''}</p>
-        <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}</p>
+        <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}${!isManager && a.effective_company ? `　${escapeHtml(a.effective_company)}` : ''}</p>
         ${supervisionLine(a)}
         ${flags ? `<p class="acct-flags">${flags}</p>` : ''}
       </div>
@@ -254,6 +254,7 @@ function openEdit(account) {
   $('fLoginCode').value = account?.login_code || '';
   $('fPartTime').checked = !!account?.is_part_time;
   $('fIntern').checked = !!account?.is_intern;
+  $('fCompany').value = account?.company || '';
   $('fPassword').value = '';
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
@@ -284,7 +285,10 @@ function openEdit(account) {
   $('fLevel').value = account?.account_level || 'field';
 
   // 自己的帳號：部門、職務、層級都不能自己改（後端也會擋）
-  ['fBranch', 'fRole', 'fLevel'].forEach((id) => { $(id).disabled = isSelf; });
+  ['fBranch', 'fRole', 'fLevel', 'fIntern', 'fCompany'].forEach((id) => { $(id).disabled = isSelf; });
+  syncCompanyPlaceholder();
+  // 所屬公司是發薪用的，只給總公司行政、總辦公室設定（後端也只接受他們送的）
+  $('fCompanyField').style.display = isManager ? 'none' : '';
   $('fRoleHint').style.display = isSelf ? '' : 'none';
 
   $('fVerifyEmail').value = account?.verify_email || '';
@@ -301,6 +305,13 @@ function syncVerifyEmailField() {
 }
 $('fLevel').addEventListener('change', syncVerifyEmailField);
 
+// 所屬公司空白時，提示會跟哪一家（部門的所屬公司）
+function syncCompanyPlaceholder() {
+  const branch = meta.branches.find((b) => b.id === $('fBranch').value);
+  $('fCompany').placeholder = branch?.company ? `空白＝跟部門（${branch.company}）` : '空白＝跟部門（部門還沒填所屬公司）';
+}
+$('fBranch').addEventListener('change', syncCompanyPlaceholder);
+
 async function saveEdit(event) {
   event.preventDefault();
   const body = {
@@ -311,6 +322,7 @@ async function saveEdit(event) {
     account_level: $('fLevel').value,
     is_part_time: $('fPartTime').checked,
     is_intern: $('fIntern').checked,
+    company: $('fCompany').value,
   };
   if (!editingId && $('fPassword').value) body.password = $('fPassword').value;
   if (!$('fLevel').disabled) body.verify_email = $('fVerifyEmail').value;
