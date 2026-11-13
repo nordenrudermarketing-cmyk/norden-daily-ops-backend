@@ -2,10 +2,14 @@
 // 每月自評表——規則與 Railway 版 routes/selfEval.js 相同
 //
 // 時程（全部以台灣時間計算）：
-//   每月 1 號   系統發布「上個月」的自評表（例如 9/1 發布 8 月的表）
+//   每月 1 號   發布「這個月」的自評表（2026-11 起月份以「填寫當下」命名，例如 11/1～10 填的就是 11 月自評表）
 //   每月 10 號前 同仁完成填寫並送出
 //   每月 20 號前 主管完成面談（在審閱頁按「完成面談」）
+//   21 號起     每月評核開放評分（Appraisal.gs），主管評分時看得到這份自評和面談紀錄
 // 逾期只會標示提醒，不會擋住填寫或面談。
+//
+// 2026-11 以前月份是「上個月」（11 月填的叫 10 月）。改名時用 relabelSelfEvalMonths_ 把舊資料的月份整批往後一個月，
+// 改過的資料 month_rule 會記成 'current'，新存的表也一律記 'current'，所以重複執行不會再往後移。
 //
 // 跟 Railway 版的差別：加上權限檢查（同仁只能填自己的表、題目管理限總辦公室）。
 //
@@ -29,10 +33,13 @@ function addMonths_(yearMonth, n) {
   return new Date(Date.UTC(parts[0], parts[1] - 1 + n, 1)).toISOString().slice(0, 7);
 }
 
-// 今天應該填的是哪個月份的表（上個月的 1 號）
+// 今天應該填的是哪個月份的表（這個月的 1 號）
 function currentEvalMonth_() {
-  return addMonths_(taipeiDate_().slice(0, 7), -1) + '-01';
+  return taipeiDate_().slice(0, 7) + '-01';
 }
+
+// 新的月份命名規則（見檔案開頭）。所有寫入 self_eval_submissions 的新資料都要帶這個值
+const SELF_EVAL_MONTH_RULE = 'current';
 
 // 接受 '2026-08' 或 '2026-08-01'，格式不對就回到目前這一期
 function normalizeEvalMonth_(value) {
@@ -41,12 +48,12 @@ function normalizeEvalMonth_(value) {
 }
 
 function scheduleFor_(evalMonth) {
-  const next = addMonths_(evalMonth.slice(0, 7), 1);
+  const ym = evalMonth.slice(0, 7);
   return {
     eval_month: evalMonth,
-    release_date: next + '-' + pad2_(SELF_EVAL_SCHEDULE.releaseDay),
-    staff_due_date: next + '-' + pad2_(SELF_EVAL_SCHEDULE.staffDueDay),
-    interview_due_date: next + '-' + pad2_(SELF_EVAL_SCHEDULE.interviewDueDay),
+    release_date: ym + '-' + pad2_(SELF_EVAL_SCHEDULE.releaseDay),
+    staff_due_date: ym + '-' + pad2_(SELF_EVAL_SCHEDULE.staffDueDay),
+    interview_due_date: ym + '-' + pad2_(SELF_EVAL_SCHEDULE.interviewDueDay),
   };
 }
 
@@ -207,6 +214,7 @@ function apiSelfEvalSave_(req) {
       status: b.submit ? 'submitted' : 'draft',
       due_date: scheduleFor_(evalMonth).staff_due_date,
       submitted_at: b.submit ? now : null,
+      month_rule: SELF_EVAL_MONTH_RULE,
       updated_at: now,
     }, {
       scope: { column: 'staff_id', value: actor.id },
@@ -467,4 +475,36 @@ function apiSelfEvalHqProgress_(req) {
     .sort(function (a, b) { return Number(a.is_hq) - Number(b.is_hq) || String(a.branch_name).localeCompare(String(b.branch_name), 'zh-Hant'); });
 
   return Object.assign({}, schedule, { today: today, current_eval_month: current, months: months, branches: branches });
+}
+
+// ---------- 月份改名（一次性，試算表選單，見 Setup.gs） ----------
+
+// 2026-11 起自評表月份改成「填寫當下」：把還沒改過的舊資料（month_rule 空白）月份整批往後一個月，
+// 例如 11/1～10 填、原本記成 2026-10-01 的表，改成 2026-11-01。
+// 改過的會記 month_rule = 'current'，所以可以重複執行（只會處理還沒改過的）。
+// 同一位同仁在新月份已經有新規則的表（例如改名前就用新版存過）時，不移動舊的那份，只列在報告裡讓人工確認。
+function relabelSelfEvalMonths_() {
+  return Db.transaction(function () {
+    const all = Db.all('self_eval_submissions');
+    const taken = {};
+    all.forEach(function (s) {
+      if (s.month_rule === SELF_EVAL_MONTH_RULE) taken[s.staff_id + '|' + s.eval_month] = true;
+    });
+    const patches = {};
+    const conflicts = [];
+    all.forEach(function (s) {
+      if (s.month_rule === SELF_EVAL_MONTH_RULE || !s.eval_month) return;
+      const target = addMonths_(String(s.eval_month).slice(0, 7), 1) + '-01';
+      if (taken[s.staff_id + '|' + target]) {
+        conflicts.push((staffName_(s.staff_id) || s.staff_id) + '：' + s.eval_month.slice(0, 7) + ' 的表沒有移動（' + target.slice(0, 7) + ' 已經有一份）');
+        return;
+      }
+      taken[s.staff_id + '|' + target] = true;
+      patches[s.id] = { eval_month: target, month_rule: SELF_EVAL_MONTH_RULE };
+    });
+    Db.updateById('self_eval_submissions', patches);
+    const report = ['已改名：' + Object.keys(patches).length + ' 份自評表（月份往後一個月）'];
+    if (conflicts.length) report.push('', '需要人工確認：');
+    return report.concat(conflicts);
+  });
 }

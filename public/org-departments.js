@@ -57,6 +57,7 @@ function render(list) {
     <div class="org-row ${d.is_active ? '' : 'inactive'}" data-id="${d.id}">
       <input type="text" class="name" value="${escapeHtml(d.name)}" data-field="name">
       <input type="text" class="code" value="${escapeHtml(d.code || '')}" data-field="code" placeholder="代碼">
+      <input type="text" class="company" value="${escapeHtml(d.company || '')}" data-field="company" placeholder="所屬公司">
       <span class="meta">在職 ${d.staff_count} 人${d.is_active ? '' : '・已停用'}</span>
       <button data-act="save">儲存</button>
       <button data-act="toggle" class="${d.is_active ? 'danger' : ''}">${d.is_active ? '停用' : '重新啟用'}</button>
@@ -70,6 +71,7 @@ function render(list) {
         run(() => api(`/${dept.id}`, 'PUT', {
           name: row.querySelector('[data-field="name"]').value,
           code: row.querySelector('[data-field="code"]').value,
+          company: row.querySelector('[data-field="company"]').value,
         }), '已儲存');
       } else {
         run(() => api(`/${dept.id}`, 'PUT', { is_active: !dept.is_active }),
@@ -82,9 +84,10 @@ function render(list) {
 async function add() {
   const name = $('newName').value.trim();
   if (!name) { setStatus('請填寫部門名稱', true); return; }
-  await run(() => api('', 'POST', { name, code: $('newCode').value.trim() }), `已新增「${name}」`);
+  await run(() => api('', 'POST', { name, code: $('newCode').value.trim(), company: $('newCompany').value.trim() }), `已新增「${name}」`);
   $('newName').value = '';
   $('newCode').value = '';
+  $('newCompany').value = '';
 }
 
 async function run(fn, successText) {

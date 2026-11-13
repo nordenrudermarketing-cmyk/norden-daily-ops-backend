@@ -42,6 +42,10 @@ PAGES = [
     "routine-tasks",
     "routine-tasks-overview",
     "routine-tasks-settings",
+    "appraisal",
+    "appraisal-progress",
+    "appraisal-settings",
+    "appraisal-bases",
 ]
 
 SCRIPT_TAG = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>', re.I)

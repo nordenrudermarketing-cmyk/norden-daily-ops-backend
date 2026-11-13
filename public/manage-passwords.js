@@ -190,7 +190,7 @@ function accountCard(a, showBranch) {
   return `
     <div class="acct-row ${a.is_self ? 'self' : ''} ${a.is_active ? '' : 'inactive'}" data-id="${a.id}">
       <div>
-        <p class="acct-name">${escapeHtml(a.name)}<span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}</p>
+        <p class="acct-name">${escapeHtml(a.name)}<span class="badge level-${a.account_level}">${escapeHtml(a.level_label)}</span>${a.is_active ? '' : '<span class="badge muted">已停用</span>'}${a.is_part_time ? '<span class="badge muted">兼職</span>' : ''}${a.is_intern ? '<span class="badge muted">實習生</span>' : ''}</p>
         <p class="acct-meta">登入代碼：${escapeHtml(a.login_code || '—')}${place ? `　${place}` : ''}</p>
         ${supervisionLine(a)}
         ${flags ? `<p class="acct-flags">${flags}</p>` : ''}
@@ -253,6 +253,7 @@ function openEdit(account) {
   $('fName').value = account?.name || '';
   $('fLoginCode').value = account?.login_code || '';
   $('fPartTime').checked = !!account?.is_part_time;
+  $('fIntern').checked = !!account?.is_intern;
   $('fPassword').value = '';
   $('fPasswordField').style.display = account ? 'none' : '';
   $('editError').textContent = '';
@@ -309,6 +310,7 @@ async function saveEdit(event) {
     role_id: $('fRole').value,
     account_level: $('fLevel').value,
     is_part_time: $('fPartTime').checked,
+    is_intern: $('fIntern').checked,
   };
   if (!editingId && $('fPassword').value) body.password = $('fPassword').value;
   if (!$('fLevel').disabled) body.verify_email = $('fVerifyEmail').value;

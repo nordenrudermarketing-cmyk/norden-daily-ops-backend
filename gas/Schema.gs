@@ -25,13 +25,15 @@ const SCHEMA = {
   branches: {
     manual: true,
     cache: true,
-    columns: { id: 'text', name: 'text', code: 'text', is_active: 'bool' },
+    // company：所屬公司（評核匯出薪資用 Excel 時依公司分組，2026-11 起）
+    columns: { id: 'text', name: 'text', code: 'text', is_active: 'bool', company: 'text' },
   },
   // 職務：只決定自評題目。template_category＝要加哪一類專屬題目（見 Org.gs 的 QUESTION_CATEGORIES）
   roles: {
     manual: true,
     cache: true,
-    columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool' },
+    // appraisal_group_id：每月評核用哪一組評核項目（見 Appraisal.gs，2026-11 起）
+    columns: { id: 'text', name: 'text', category: 'text', template_category: 'text', is_active: 'bool', appraisal_group_id: 'text' },
   },
   // account_level：帳號層級，決定權限（field 現場人員／manager 主管／hq_admin 總公司行政／office 總辦公室，見 Levels.gs）
   // verify_email：收登入驗證碼的 Email（選填、限主管以上，空白＝只用密碼，見 Auth.gs）
@@ -41,6 +43,8 @@ const SCHEMA = {
       id: 'text', name: 'text', branch_id: 'text', role_id: 'text', login_code: 'text',
       is_active: 'bool', is_part_time: 'bool', learning_map_enabled: 'bool', account_level: 'text',
       verify_email: 'text',
+      // 實習生（2026-11 起）：跟兼職一樣，評核時由同部門正職一起評分、自己不用評別人、沒有評核獎金
+      is_intern: 'bool',
     },
   },
   self_eval_templates: {
@@ -58,6 +62,8 @@ const SCHEMA = {
       due_date: 'text', submitted_at: 'text', manager_interview_notes: 'text', interview_date: 'text',
       manager_signed_at: 'text', created_at: 'text', updated_at: 'text',
       reviewed_by: 'text', last_edited_by: 'text',
+      // 月份命名規則：'current'＝填寫當下的月份（2026-11 起）；空白＝舊規則（上個月），見 SelfEval.gs 的 relabelSelfEvalMonths_
+      month_rule: 'text',
     },
   },
   // 管轄：哪位主管負責哪位同仁（一位同仁可以有多位主管），只有總公司能設定，見 Supervision.gs
@@ -86,6 +92,42 @@ const SCHEMA = {
     columns: {
       id: 'text', item_id: 'text', branch_id: 'text', period_key: 'text', kind: 'text',
       note: 'text', late_reason: 'text', staff_id: 'text', created_at: 'text',
+    },
+  },
+  // ---------- 每月評核（見 Appraisal.gs，2026-11 起） ----------
+  // 評核類別（例如房務、客務、主管、品牌）：職務的 appraisal_group_id 指到這裡
+  appraisal_groups: {
+    manual: true,
+    cache: true,
+    columns: { id: 'text', name: 'text', sort_order: 'number', is_active: 'bool' },
+  },
+  // 評核項目。source：main 主要項目（主管、總辦公室評；兼職、實習生另加同部門正職）／peer 同事內評／input 總公司行政輸入
+  //   default_base：預設獎金基數（每 1 分多少元）；takes_reward：獎懲加減在這一項；grade_desc：這一項專屬的 A～D 說明（空白＝用共通說明）
+  appraisal_items: {
+    manual: true,
+    cache: true,
+    columns: {
+      id: 'text', group_id: 'text', name: 'text', description: 'text', grade_desc: 'text', source: 'text',
+      default_base: 'number', takes_reward: 'bool', sort_order: 'number', is_active: 'bool',
+    },
+  },
+  // 個人獎金基數（總辦公室調整）：沒有資料＝用項目的預設基數（兼職、實習生預設 0）
+  appraisal_bases: {
+    cache: true,
+    columns: { id: 'text', staff_id: 'text', item_id: 'text', base: 'number', updated_at: 'text', updated_by: 'text' },
+  },
+  // 評分：一位評分者對一位同仁一個月一列。grades：{ 項目 id: 'A'～'D' }；comment：評核留言（具名給對方看）
+  appraisal_ratings: {
+    columns: {
+      id: 'text', eval_month: 'text', rater_id: 'text', ratee_id: 'text', grades: 'text', comment: 'text',
+      created_at: 'text', updated_at: 'text',
+    },
+  },
+  // 回饋與期望、期望學習部門（現場正職每月填一次）
+  appraisal_feedback: {
+    columns: {
+      id: 'text', eval_month: 'text', staff_id: 'text', branch_id: 'text', feedback: 'text', learn_depts: 'text',
+      created_at: 'text', updated_at: 'text',
     },
   },
   self_eval_answers: {

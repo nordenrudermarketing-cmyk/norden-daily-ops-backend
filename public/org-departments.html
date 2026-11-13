@@ -15,6 +15,7 @@
   .org-row input[type="text"], .org-row select { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--ink); }
   .org-row .name { flex: 1; min-width: 140px; }
   .org-row .code { width: 90px; }
+  .org-row .company { width: 180px; }
   .org-row .meta { font-size: 12px; color: var(--ink-soft); min-width: 80px; }
   .org-row button { font-size: 12px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit; color: var(--ink); }
   .org-row button.primary { border: none; background: var(--accent); color: #fff; }
@@ -33,13 +34,15 @@
 
     <p class="intro">
       部門代表同仁隸屬的分部門，例如台中館、台東1館、行銷、行政、咖啡廳。部門只用來分組和統計，不決定權限（權限看帳號層級）。<br>
-      部門不能刪除，不再使用的請「停用」；還有在職同仁的部門要先把同仁調走才能停用。代碼可以留空。
+      部門不能刪除，不再使用的請「停用」；還有在職同仁的部門要先把同仁調走才能停用。代碼可以留空。<br>
+      「所屬公司」填這個部門的同仁屬於哪一間公司（例如台中館填匯聚國際事業有限公司），每月評核匯出薪資用 Excel 時會依公司分組。
     </p>
 
     <p class="section-title">新增部門</p>
     <div class="org-row">
       <input type="text" class="name" id="newName" placeholder="部門名稱">
       <input type="text" class="code" id="newCode" placeholder="代碼（選填）">
+      <input type="text" class="company" id="newCompany" placeholder="所屬公司（選填）">
       <button class="primary" id="addBtn">新增</button>
     </div>
 

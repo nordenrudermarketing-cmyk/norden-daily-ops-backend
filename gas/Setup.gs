@@ -27,6 +27,8 @@ function onOpen() {
     .addItem('帳號層級轉換（一次性）', 'menuMigrateAccountLevels')
     .addItem('依部門建立初始管轄', 'menuSeedSupervisions')
     .addItem('匯入主管例行任務', 'menuSeedRoutineItems')
+    .addItem('自評表月份改名（一次性）', 'menuRelabelSelfEvalMonths')
+    .addItem('匯入評核項目預設值', 'menuSeedAppraisal')
     .addSeparator()
     .addItem('新增總辦公室帳號', 'menuCreateOfficeAccount')
     .addItem('把帳號設為總辦公室', 'menuPromoteToOffice')
@@ -217,6 +219,21 @@ function menuMigrateAccountLevels() {
   );
   if (answer !== ui.Button.OK) return;
   ui.alert('帳號層級轉換完成', migrateAccountLevels_().join('\n'), ui.ButtonSet.OK);
+}
+
+// 自評表月份改名（2026-11，見 SelfEval.gs 的 relabelSelfEvalMonths_），可以重複執行
+function menuRelabelSelfEvalMonths() {
+  const ui = SpreadsheetApp.getUi();
+  ensureSchema_();
+  const answer = ui.alert(
+    '自評表月份改名（一次性）',
+    '自評表的月份要改成「填寫當下」的月份：例如 11/1～10 填的表，原本叫 10 月，改成 11 月。\n\n' +
+    '會把還沒改過的自評資料月份整批往後一個月，內容不變。已經改過的不會再動，可以重複執行。\n\n' +
+    '請在新版程式上線（redeploy）前一刻執行，上線後再執行一次（補上這段期間用舊版存的表）。要繼續嗎？',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+  ui.alert('自評表月份改名', relabelSelfEvalMonths_().join('\n'), ui.ButtonSet.OK);
 }
 
 // 見 Supervision.gs 的 seedSupervisionsByBranch_

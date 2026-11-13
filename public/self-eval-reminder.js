@@ -1,4 +1,4 @@
-// 共用元件：檢查這位同仁上個月的自評表有沒有送出，沒送出就在頁面上插入提醒 banner
+// 共用元件：檢查這位同仁這個月的自評表有沒有送出，沒送出就在頁面上插入提醒 banner
 // 使用方式：頁面裡放一個 <div id="selfEvalReminder"></div>，並在 config.js 之後載入這個檔案
 (async function checkSelfEvalReminder() {
   const staff = JSON.parse(localStorage.getItem('staff') || 'null');

@@ -27,6 +27,15 @@ const FEATURE_CATALOG = [
     apis: ['/api/self-eval'],
   },
   {
+    key: 'appraisal',
+    label: '每月評核',
+    group: '共用',
+    description: '每月評分（同仁、主管、總辦公室）、評分進度、評核項目與獎金基數設定',
+    ported: true,
+    pages: ['appraisal.html', 'appraisal-progress.html', 'appraisal-settings.html', 'appraisal-bases.html'],
+    apis: ['/api/appraisal'],
+  },
+  {
     key: 'system_admin',
     label: '系統與帳號管理',
     group: '保留（不可關閉）',

@@ -64,6 +64,20 @@ function routes_() {
     { method: 'POST', path: '/api/routine-tasks/items', handler: apiRoutineItemCreate_ },
     { method: 'PUT', path: '/api/routine-tasks/items/:id', handler: apiRoutineItemUpdate_ },
 
+    // 每月評核（評分、進度、項目與獎金基數設定），見 Appraisal.gs
+    { method: 'GET', path: '/api/appraisal/mine', handler: apiAppraisalMine_ },
+    { method: 'POST', path: '/api/appraisal/rate', handler: apiAppraisalRate_ },
+    { method: 'POST', path: '/api/appraisal/feedback', handler: apiAppraisalFeedback_ },
+    { method: 'GET', path: '/api/appraisal/progress', handler: apiAppraisalProgress_ },
+    { method: 'GET', path: '/api/appraisal/settings', handler: apiAppraisalSettings_ },
+    { method: 'POST', path: '/api/appraisal/groups', handler: apiAppraisalGroupCreate_ },
+    { method: 'PUT', path: '/api/appraisal/groups/:id', handler: apiAppraisalGroupUpdate_ },
+    { method: 'POST', path: '/api/appraisal/items', handler: apiAppraisalItemCreate_ },
+    { method: 'PUT', path: '/api/appraisal/items/:id', handler: apiAppraisalItemUpdate_ },
+    { method: 'PUT', path: '/api/appraisal/roles/:id', handler: apiAppraisalRoleUpdate_ },
+    { method: 'GET', path: '/api/appraisal/bases', handler: apiAppraisalBases_ },
+    { method: 'PUT', path: '/api/appraisal/bases/:staffId', handler: apiAppraisalBasesUpdate_ },
+
     { method: 'GET', path: '/api/self-eval/schedule', handler: apiSelfEvalSchedule_ },
     { method: 'GET', path: '/api/self-eval/categories', handler: apiQuestionCategories_ },
     { method: 'GET', path: '/api/self-eval/templates', handler: apiSelfEvalTemplates_ },

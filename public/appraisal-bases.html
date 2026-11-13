@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>獎金基數 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 860px; }
+  .intro { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin: 0 0 12px; }
+  .status-line { font-size: 12px; min-height: 18px; margin: 0 0 8px; color: var(--accent); }
+  .status-line.err { color: var(--danger); }
+  .sec-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 18px 0 8px; }
+  .person { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; }
+  .person-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .person-head .name { font-size: 14px; font-weight: 500; }
+  .person-head .meta { font-size: 11.5px; color: var(--ink-soft); flex: 1; }
+  .bases { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; align-items: flex-end; }
+  .base { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-soft); }
+  .base input { width: 92px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; font-variant-numeric: tabular-nums; }
+  .base input.custom { border-color: var(--accent); background: var(--accent-soft); }
+  .small-btn { font-size: 12px; padding: 7px 12px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>獎金基數</h1>
+        <p id="staffLine">—</p>
+      </div>
+    </div>
+    <p class="intro">
+      每位同仁每個評核項目的獎金基數（每 1 分多少元）。當月獎金＝各項目分數 × 基數再加總，項目分數未滿 60 分，這一項沒有獎金。<br>
+      欄位留空＝用預設值（評核項目設定裡的預設基數；兼職、實習生預設 $0）。有特別設定的會用綠色標示。
+    </p>
+    <p class="status-line" id="statusLine"></p>
+    <div id="list"><p class="empty-state">載入中…</p></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="appraisal-bases.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

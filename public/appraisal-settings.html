@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>評核項目設定 | 路得行旅</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wide-screen { max-width: 860px; }
+  .intro { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin: 0 0 12px; }
+  .status-line { font-size: 12px; min-height: 18px; margin: 0 0 8px; color: var(--accent); }
+  .status-line.err { color: var(--danger); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 20px 0 8px; }
+
+  .group { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .group.inactive { background: #f3f1ec; }
+  .group-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group-head h3 { font-size: 15px; margin: 0; flex: 1; }
+  .group-head small { font-weight: 400; color: var(--ink-soft); font-size: 12px; }
+  .small-btn { font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-family: inherit; color: var(--ink); }
+  .small-btn.primary { border: none; background: var(--accent); color: #fff; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding: 9px 0; margin-top: 8px; }
+  .item-row.inactive { color: var(--ink-soft); }
+  .item-name { font-size: 14px; margin: 0; }
+  .item-meta { font-size: 11.5px; color: var(--ink-soft); margin: 2px 0 0; }
+  .roles-for { font-size: 12px; color: var(--ink-soft); margin: 8px 0 0; }
+
+  .role-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .role-row .name { flex: 1; min-width: 120px; font-size: 14px; }
+  .role-row .meta { font-size: 12px; color: var(--ink-soft); }
+  .role-row select { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--ink); }
+
+  dialog { border: none; border-radius: 14px; padding: 20px; width: min(560px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
+  dialog h2 { font-size: 16px; margin: 0 0 14px; }
+  .form-field { margin-bottom: 12px; }
+  .form-field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .form-field input[type="text"], .form-field input[type="number"], .form-field select, .form-field textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--ink); }
+  .form-field textarea { min-height: 90px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-field { flex: 1; }
+  .hint { font-size: 11px; color: var(--ink-soft); margin: 4px 0 0; line-height: 1.5; }
+  .check-field { font-size: 13px; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; cursor: pointer; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .dialog-actions button { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .dialog-actions .cancel { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .dialog-actions .save { border: none; background: var(--accent); color: #fff; }
+  .dialog-error { font-size: 12px; color: var(--danger); min-height: 16px; margin: 4px 0 0; }
+</style>
+</head>
+<body>
+  <div class="screen wide-screen">
+    <div class="topbar">
+      <div>
+        <h1>評核項目設定</h1>
+        <p id="staffLine">—</p>
+      </div>
+    </div>
+
+    <p class="intro">
+      每個<b>職務</b>對應一個<b>評核類別</b>，類別底下的項目就是這個職務每月要評的內容。<br>
+      「預設獎金基數」是每 1 分多少元（例如影響力分數 80 分 × $30 ＝ $2,400）；兼職、實習生預設 $0。個別同仁的基數在「獎金基數」頁調整。<br>
+      每個類別可以指定一個項目「接獎懲」，獎懲的加扣分會加減在這一項的分數上。
+    </p>
+    <p class="status-line" id="statusLine"></p>
+
+    <p class="section-title">評核類別與項目</p>
+    <div id="groups"><p class="empty-state">載入中…</p></div>
+    <div class="role-row">
+      <input type="text" id="newGroup" placeholder="新增評核類別（例如咖啡廳主管）" style="flex:1;min-width:160px;">
+      <button type="button" class="small-btn primary" id="addGroupBtn">新增類別</button>
+    </div>
+
+    <p class="section-title">職務對應的評核類別</p>
+    <p class="intro">沒有指定類別的職務不會被評核（也不會出現在任何人的評分名單上）。</p>
+    <div id="roles"></div>
+  </div>
+
+  <dialog id="itemDialog">
+    <form id="itemForm">
+      <h2 id="itemTitle">評核項目</h2>
+      <div class="form-row">
+        <div class="form-field"><label for="iName">項目名稱</label><input type="text" id="iName"></div>
+        <div class="form-field" style="max-width:150px;"><label for="iBase">預設獎金基數（元／分）</label><input type="number" id="iBase" min="0" step="1"></div>
+      </div>
+      <div class="form-field">
+        <label for="iSource">誰來評</label>
+        <select id="iSource"></select>
+        <p class="hint" id="iSourceHint"></p>
+      </div>
+      <div class="form-field">
+        <label for="iDesc">這一項看什麼（評分時顯示）</label>
+        <textarea id="iDesc"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="iGrade">A～D 說明（選填，每行一個；空白就用共通的分數說明）</label>
+        <textarea id="iGrade"></textarea>
+      </div>
+      <label class="check-field"><input type="checkbox" id="iReward"> 獎懲加減在這一項</label>
+      <label class="check-field"><input type="checkbox" id="iActive"> 使用中</label>
+      <p class="dialog-error" id="itemError"></p>
+      <div class="dialog-actions">
+        <button type="button" class="cancel" data-close>取消</button>
+        <button type="submit" class="save">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="appraisal-settings.js"></script>
+<script src="sidebar.js"></script></body>
+</html>

@@ -16,6 +16,11 @@ function escapeHtml(value) {
   }[c]));
 }
 
+// '2026-11-01' → '2026 年 11 月'（月份＝填寫當下的月份）
+function monthText(evalMonth) {
+  return `${evalMonth.slice(0, 4)} 年 ${Number(evalMonth.slice(5, 7))} 月`;
+}
+
 if (staff) load();
 
 async function load() {
@@ -31,7 +36,7 @@ async function load() {
     return;
   }
 
-  document.getElementById('staffLine').textContent = `${formData.staff.name}・評核月份：${formData.eval_month.slice(0, 7)}`;
+  document.getElementById('staffLine').textContent = `${formData.staff.name}・${monthText(formData.eval_month)}自評表`;
 
   const status = formData.submission?.status;
   const isSubmitted = status === 'submitted' || status === 'reviewed';
@@ -44,7 +49,7 @@ async function load() {
     ? `，主管會在 ${formData.interview_due_date} 前與你完成面談`
     : '';
   document.getElementById('dueBanner').innerHTML =
-    `<div class="due-banner${overdue ? ' overdue' : ''}">請於 ${staffDue} 前完成並送出（評核上個月 ${formData.eval_month.slice(0, 7)} 的工作表現）${interviewNote}${overdue ? '・已逾期，請儘速送出' : ''}</div>`;
+    `<div class="due-banner${overdue ? ' overdue' : ''}">請於 ${staffDue} 前完成並送出${interviewNote}${overdue ? '・已逾期，請儘速送出' : ''}</div>`;
 
   const statusBanner = document.getElementById('statusBanner');
   if (status === 'reviewed') {

@@ -69,6 +69,7 @@
       ] },
       { label: '其他', icon: 'dots', items: [
         { label: '每月自評表', url: 'self-eval.html' },
+        { label: '每月評核', url: 'appraisal.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
       ] },
@@ -89,6 +90,7 @@
       ] },
       { label: '其他', icon: 'dots', items: [
         { label: '每月自評表', url: 'self-eval.html' },
+        { label: '每月評核', url: 'appraisal.html' },
         { label: '個人清潔配額', url: 'staff-cleaning.html' },
         { label: '獎金申覆', url: 'bonus-appeals.html' },
         { label: '臨時任務', url: 'adhoc-tasks.html' },
@@ -123,11 +125,15 @@
         { label: '我的每月自評表', url: 'self-eval.html' },
         { label: '審閱同仁自評表', url: 'self-eval-review.html' },
       ] },
+      { label: '評核', icon: 'coin', items: [{ label: '每月評核', url: 'appraisal.html' }] },
       { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     // 其他職務的現場人員（例如之後的行銷、咖啡廳）：目前只有自評表
     field: [
-      { label: '自評', icon: 'dots', items: [{ label: '每月自評表', url: 'self-eval.html' }] },
+      { label: '自評', icon: 'dots', items: [
+        { label: '每月自評表', url: 'self-eval.html' },
+        { label: '每月評核', url: 'appraisal.html' },
+      ] },
     ],
     // 總公司行政：人事專用帳號，不填自評、不面談，只看（唯讀）和管理帳號
     hq_admin: [
@@ -139,6 +145,7 @@
         { label: '例行任務執行狀況', url: 'routine-tasks-overview.html' },
         { label: '例行任務設定', url: 'routine-tasks-settings.html' },
       ] },
+      { label: '評核', icon: 'coin', items: [{ label: '評分進度', url: 'appraisal-progress.html' }] },
       { label: '帳號', icon: 'lock', items: [{ label: '帳號管理', url: 'manage-passwords.html' }] },
     ],
     office: [
@@ -153,6 +160,12 @@
         { label: '審閱同仁自評表', url: 'self-eval-review.html' },
         { label: '各館週報', url: 'weekly-report.html' },
         { label: '各館主管工作日報表', url: 'manager-worksheet-hq.html' },
+      ] },
+      { label: '評核', icon: 'coin', items: [
+        { label: '每月評核', url: 'appraisal.html' },
+        { label: '評分進度', url: 'appraisal-progress.html' },
+        { label: '評核項目設定', url: 'appraisal-settings.html' },
+        { label: '獎金基數', url: 'appraisal-bases.html' },
       ] },
       { label: '組織', icon: 'doc', items: [
         { label: '部門管理', url: 'org-departments.html' },

@@ -94,6 +94,7 @@ function toPublicAccount_(actor, s, hasPassword, ctx) {
     fills_self_eval: fillsSelfEval_(level),
     is_active: isActive,
     is_part_time: !!s.is_part_time,
+    is_intern: !!s.is_intern,
     has_password: hasPassword,
     // 只給管得到這個帳號的人看；自己的 Email 不能自己改，也就不回傳
     verify_email: manageable ? (s.verify_email || '') : null,
@@ -208,7 +209,7 @@ function apiAccountsList_(req) {
     .map(function (s) { return toPublicAccount_(actor, s, !!flags[s.id], ctx); });
 }
 
-// POST /api/accounts  { name, login_code, branch_id, role_id, account_level, is_part_time, password?, verify_email? }
+// POST /api/accounts  { name, login_code, branch_id, role_id, account_level, is_part_time, is_intern, password?, verify_email? }
 function apiAccountsCreate_(req) {
   const actor = accountActor_(req);
   const name = cleanText_(req.body.name);
@@ -230,6 +231,7 @@ function apiAccountsCreate_(req) {
     verify_email: verifyEmail,
     is_active: true,
     is_part_time: !!req.body.is_part_time,
+    is_intern: !!req.body.is_intern,
     learning_map_enabled: false,
   })[0];
   // 沒給密碼就留空：同仁第一次登入時輸入的密碼會直接變成他的密碼
@@ -241,7 +243,7 @@ function apiAccountsCreate_(req) {
   return accountResponse_(actor, created.id);
 }
 
-// PUT /api/accounts/:id  { name, login_code, branch_id, role_id, account_level, is_part_time, verify_email? }
+// PUT /api/accounts/:id  { name, login_code, branch_id, role_id, account_level, is_part_time, is_intern, verify_email? }
 // 自己的帳號：只能改姓名、登入代碼、兼職（層級、職務、部門不能自己改；
 // 收驗證碼的 Email 也不能自己改，否則偷到登入狀態的人可以把信箱換成自己的）
 function apiAccountsUpdate_(req) {
@@ -263,6 +265,8 @@ function apiAccountsUpdate_(req) {
       throw httpError_(400, '這是最後一個在職的總辦公室帳號，不能改成其他層級');
     }
     Object.assign(patch, { branch_id: scope.branch_id, role_id: scope.role.id, account_level: scope.level });
+    // 實習生會影響評核獎金，自己不能改
+    if (req.body.is_intern !== undefined) patch.is_intern = !!req.body.is_intern;
     // 網頁沒送這個欄位就維持原本的；降成現場人員時一併清掉
     if (!canHaveVerifyEmail_(scope.level)) patch.verify_email = '';
     else if (req.body.verify_email !== undefined) patch.verify_email = cleanVerifyEmail_(req.body.verify_email);

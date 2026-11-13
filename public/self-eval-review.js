@@ -52,10 +52,8 @@ async function init() {
     schedule = await fetchSchedule();
     monthInput.value = schedule.eval_month.slice(0, 7);
   } catch (err) {
-    // 拿不到時程就退回用瀏覽器時間推算上個月
+    // 拿不到時程就退回用瀏覽器時間的這個月（月份＝填寫當下的月份）
     const d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() - 1);
     monthInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
   loadList();
@@ -200,8 +198,8 @@ function renderDetail(data) {
     ? `<br>面談進度上次由 ${escapeHtml(submission.last_edited_by_name)} 儲存，多位主管共用同一份面談紀錄`
     : '';
   info.innerHTML = (submission.status === 'reviewed'
-    ? `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・${reviewer}已完成面談`
-    : `評核 ${monthLabel(ym)}・同仁 ${submittedOn} 送出・請於 <strong>${schedule?.interview_due_date || '20 號'}</strong> 前完成面談${interviewOverdue ? '（已超過期限）' : ''}`) +
+    ? `${monthLabel(ym)}自評表・同仁 ${submittedOn} 送出・${reviewer}已完成面談`
+    : `${monthLabel(ym)}自評表・同仁 ${submittedOn} 送出・請於 <strong>${schedule?.interview_due_date || '20 號'}</strong> 前完成面談${interviewOverdue ? '（已超過期限）' : ''}`) +
     supervisors + lastEdit;
   detailView.appendChild(info);
 
