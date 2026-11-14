@@ -238,7 +238,7 @@ function renderResults() {
         <div><b>${money(data.total_bonus)}</b><span>獎金合計</span></div>
         <div><b>${missingPeople}</b><span>有項目沒分數</span></div>
       </div>
-      <p class="hint">點同仁可以展開：每一項誰給了幾分、平均、基數與獎金怎麼算、評核留言。最後分數未滿 ${data.pass_score} 分的項目沒有獎金。</p>
+      <p class="hint">點同仁可以展開：每一項誰給了幾分、平均、基數與獎金怎麼算、評核留言。最後分數未滿 ${data.pass_score} 分的項目沒有獎金（紅色）；只有 1 個人評的項目標黃色。</p>
       ${Object.keys(byBranch).map((b) => `
         <p class="branch">${escapeHtml(b)}　<span style="font-weight:400;">${money(byBranch[b].reduce((s, p) => s + p.total_bonus, 0))}</span></p>
         ${byBranch[b].map(personHtml).join('')}`).join('')}
@@ -252,27 +252,35 @@ function renderResults() {
 }
 
 function personHtml(p) {
+  // 分數旁邊標幾個人評；評分項目只有 1 個人評的標黃，審核時容易看出資料不夠
+  const votes = (i) => (i.source === 'input' ? '輸入' : `${i.ratings.length} 人評`);
   const chips = p.items.map((i) => {
     if (i.final === null) return `<span class="chip none">${escapeHtml(i.name)} 沒分數</span>`;
-    return `<span class="chip ${i.final < data.pass_score ? 'low' : ''}">${escapeHtml(i.name)} ${i.final}</span>`;
+    const thin = i.source !== 'input' && i.ratings.length === 1;
+    const cls = i.final < data.pass_score ? 'low' : thin ? 'thin' : '';
+    return `<span class="chip ${cls}">${escapeHtml(i.name)} ${i.final}<small>（${votes(i)}）</small></span>`;
   }).join('');
-  const rows = p.items.map((i) => {
+  // 每個項目一張小卡（手機也看得清楚，不用左右滑）
+  const cards = p.items.map((i) => {
     const raters = i.source === 'input'
       ? (i.final === null ? '還沒輸入' : `人事行政輸入${i.note ? '：' + escapeHtml(i.note) : ''}`)
       : (i.ratings.length ? i.ratings.map((r) => `${escapeHtml(r.rater_name)} ${r.grade}（${r.points}）`).join('、') : '還沒有人評');
-    const formula = i.final === null ? '—'
-      : i.final < data.pass_score ? `未滿 ${data.pass_score} 分`
-        : `${i.final} × ${i.base}`;
+    const calc = i.final === null ? '沒有分數，這一項沒有獎金'
+      : [
+        `平均 ${i.average}`,
+        i.reward ? `獎懲 ${i.reward > 0 ? '+' : ''}${i.reward}` : '',
+        `最後分數 ${i.final}`,
+        i.final < data.pass_score ? `未滿 ${data.pass_score} 分，沒有獎金` : `× 基數 ${money(i.base)}`,
+      ].filter(Boolean).join('　');
     return `
-      <tr>
-        <td>${escapeHtml(i.name)}${i.takes_reward ? '<br><span class="formula">接獎懲</span>' : ''}</td>
-        <td class="raters">${raters}</td>
-        <td>${i.average ?? '—'}</td>
-        <td>${i.reward ? (i.reward > 0 ? '+' : '') + i.reward : '—'}</td>
-        <td>${i.final ?? '—'}</td>
-        <td>${money(i.base)}</td>
-        <td><b>${money(i.bonus)}</b><br><span class="formula">${formula}</span></td>
-      </tr>`;
+      <div class="calc-item">
+        <div class="ci-head">
+          <span class="ci-name">${escapeHtml(i.name)}${i.takes_reward ? '<small>接獎懲</small>' : ''}${i.final !== null ? `<small>${votes(i)}</small>` : ''}</span>
+          <b>${money(i.bonus)}</b>
+        </div>
+        <div class="ci-calc">${calc}</div>
+        <div class="ci-raters">${raters}</div>
+      </div>`;
   }).join('');
   const comments = p.comments.length
     ? `<div class="comments">${p.comments.map((c) => `<p><b>${escapeHtml(c.rater_name)}：</b>${escapeHtml(c.comment)}</p>`).join('')}</div>`
@@ -287,10 +295,7 @@ function personHtml(p) {
         <span class="money">${money(p.total_bonus)}</span>
       </div>
       <div class="person-body">
-        <table class="calc">
-          <thead><tr><th>項目</th><th style="text-align:left;">誰給了幾分</th><th>平均</th><th>獎懲</th><th>最後分數</th><th>基數</th><th>獎金</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+        ${cards}
         ${comments}
       </div>
     </div>`;
